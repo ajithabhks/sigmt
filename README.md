@@ -11,4 +11,4 @@ Email: patrobpk@ngri.res.in
 
 Download sample data: https://devapps.ngri.res.in/patro/TEST.zip
 
-The user manual of this package is available in 'docs' folder.
+Download user manual: https://github.com/ajithabhks/SigMT/blob/main/docs/User_Manual_for_SigMT.pdf
