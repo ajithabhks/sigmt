@@ -1,9 +1,5 @@
 # SigMT
-Python package for MT signal processing
-
-Name of the package: SigMT
-
-SigMT: An open-source python package for magnetotelluric data processing
+An open-source python package for magnetotelluric data processing
 
 K.S. Ajithabh
 Email: ajithabhks@gmail.com
