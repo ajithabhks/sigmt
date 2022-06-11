@@ -1,6 +1,10 @@
 # SigMT
 An open-source python package for magnetotelluric data processing
 
+## Downloads
+*Download sample data: https://devapps.ngri.res.in/patro/TEST.zip
+*Download user manual: https://github.com/ajithabhks/SigMT/blob/main/docs/User_Manual_for_SigMT.pdf
+
 ## Contact details
 * K.S. Ajithabh
 
@@ -10,6 +14,4 @@ An open-source python package for magnetotelluric data processing
 
 `Email:` patrobpk@ngri.res.in
 
-Download sample data: https://devapps.ngri.res.in/patro/TEST.zip
 
-Download user manual: https://github.com/ajithabhks/SigMT/blob/main/docs/User_Manual_for_SigMT.pdf
