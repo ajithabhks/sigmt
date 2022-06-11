@@ -1,5 +1,5 @@
 # SigMT
-An open-source python package for magnetotelluric data processing
+SigMT is an open-source python package for magnetotelluric data processing.
 
 ## Downloads
 * Download sample data: https://devapps.ngri.res.in/patro/TEST.zip
