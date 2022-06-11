@@ -8,10 +8,10 @@ An open-source python package for magnetotelluric data processing
 ## Contact details
 * K.S. Ajithabh
 
-`Email:` ajithabhks@gmail.com
+  `Email:` ajithabhks@gmail.com
 
 * Prasanta K. Patro
 
-`Email:` patrobpk@ngri.res.in
+  `Email:` patrobpk@ngri.res.in
 
 
