@@ -1,11 +1,11 @@
 # SigMT
 An open-source python package for magnetotelluric data processing
 
-K.S. Ajithabh
+* K.S. Ajithabh
 
 Email: ajithabhks@gmail.com
 
-Prasanta K. Patro
+* Prasanta K. Patro
 
 Email: patrobpk@ngri.res.in
 
