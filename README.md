@@ -3,7 +3,7 @@ SigMT is a python package designed for the processing of the raw magnetotelluric
 
 ## How to use test data
 
-Test data is given in `data` folder. Give path to `data` folder in the `main_script.py` file for the testing purpose. Else download complete site data using the link https://devapps.ngri.res.in/patro/TEST.zip 
+Test data is given in `data` folder in the repository. Give path to `data` folder in the `main_script.py` file for the testing purpose. Else download complete site data using the link https://devapps.ngri.res.in/patro/TEST.zip 
 
 ## Downloads
 * Download sample MT data for testing: https://devapps.ngri.res.in/patro/TEST.zip
