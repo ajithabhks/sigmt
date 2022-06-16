@@ -13,7 +13,7 @@ Complete site data can be downloaded using the link https://devapps.ngri.res.in/
 * Download user manual: https://github.com/ajithabhks/SigMT/blob/main/docs/User_Manual_for_SigMT.pdf
 
 ## Contact details
-* K.S. Ajithabh
+* K. S. Ajithabh
 
   `Email:` ajithabhks@gmail.com
 
