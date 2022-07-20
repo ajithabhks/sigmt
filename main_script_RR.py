@@ -5,7 +5,7 @@ Created on Wed Jan  6 12:27:42 2021
 @author: AJITHABH
 """
 
-import mtprocRR, coh, coherency, tipperR, mahaDist, mtproc
+import mtprocRR, var, coherency, tipperR, mahaDist, mtproc
 from scipy import signal
 from matplotlib import pyplot as plt
 import numpy as np
@@ -269,8 +269,8 @@ Z_huber['Zyx'] = Zyx_huber
 # Z_tukey['Zyy'],Z_tukey['Zyx'],tukey_matrixEy = mtproc.tukeyEy(bandavgEy_huber)
 #print('Finished.')
 Zvar = {}
-Zvar['xx'],Zvar['xy'],cohEx = coh.ZExvar(Z_huber,bandavg)
-Zvar['yx'],Zvar['yy'],cohEy = coh.ZEyvar(Z_huber,bandavg)
+Zvar['xx'],Zvar['xy'],cohEx = var.ZExvar(Z_huber,bandavg)
+Zvar['yx'],Zvar['yy'],cohEy = var.ZEyvar(Z_huber,bandavg)
 # ----------------------------------------------------------------------
 # Apparant resistivities and phase
 rho_xy = (0.2/ftlist) * ((abs(Z_huber.get('Zxy'))) ** 2)

@@ -4,7 +4,7 @@ Created on Mon May  4 16:49:35 2020
 
 @author: AJITHABH
 """
-import mtproc, coh, coherency, tipper, mahaDist
+import mtproc, var, coherency, tipper, mahaDist
 from scipy import signal
 from matplotlib import pyplot as plt
 import numpy as np
@@ -49,9 +49,9 @@ procinfo = {}
 # trend removed 
 # V - mv/km
 # H - mV
-dflag = 0
+dflag = 1
 if dflag == 1:
-    decimate = [8,4]
+    decimate = [8,8,4]
     for d in decimate:
         ts['tsEx'] = signal.decimate(ts.get('tsEx'), d, n=None, ftype='iir')
         ts['tsEy'] = signal.decimate(ts.get('tsEy'), d, n=None, ftype='iir')
@@ -225,8 +225,8 @@ Z_huber['Zyx'] = Zyx_huber
 # Z_tukey['Zyy'],Z_tukey['Zyx'],tukey_matrixEy = mtproc.tukeyEy(bandavgEy_huber)
 #print('Finished.')
 Zvar = {}
-Zvar['xx'],Zvar['xy'],cohEx = coh.ZExvar(Z_huber,bandavg)
-Zvar['yx'],Zvar['yy'],cohEy = coh.ZEyvar(Z_huber,bandavg)
+Zvar['xx'],Zvar['xy'],cohEx = var.ZExvar(Z_huber,bandavg)
+Zvar['yx'],Zvar['yy'],cohEy = var.ZEyvar(Z_huber,bandavg)
 #
 #
 # ----------------------------------------------------------------------
