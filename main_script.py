@@ -49,9 +49,9 @@ procinfo = {}
 # trend removed 
 # V - mv/km
 # H - mV
-dflag = 1
+dflag = 0
 if dflag == 1:
-    decimate = [8,8,4]
+    decimate = [8,4]
     for d in decimate:
         ts['tsEx'] = signal.decimate(ts.get('tsEx'), d, n=None, ftype='iir')
         ts['tsEy'] = signal.decimate(ts.get('tsEy'), d, n=None, ftype='iir')
