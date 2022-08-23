@@ -2,13 +2,25 @@
 """
 Created on Fri May 29 16:37:20 2020
 
-@author: K.S. AJITHABH
+@author: AJITHABH K. S.
+Dr. Manoj Nair helped with equations of variance and fisher distribution.
+Last modified: 21-07-2022
+
+This module is used to computer variances.
+The function ZExvar will compute variance for Ex component
+and
+The function ZEyvar will compute variance for Ey component
+
+Both the functions will together return variances for
+components Zxx,Zxy,Zyx,Zyy
+
+The 'fisher' function is used to calculate Fisher distribution.
 """
 
 import numpy as np
 def ZExvar(Z_tukey,bandavg):
-    #Ex predicted
-    cohMatrixEx = bandavg.get('coh_selectedEx')
+    #Ex
+    cohMatrixEx = bandavg.get('selectedEx')
     ExExc = bandavg.get('ExExc') * cohMatrixEx
     ExHxc = bandavg.get('ExHxc') * cohMatrixEx
     ExHyc = bandavg.get('ExHyc') * cohMatrixEx
@@ -39,18 +51,12 @@ def ZExvar(Z_tukey,bandavg):
         else:
             Ccoh[i,0] = 1+1j
     cohEx = abs(Ccoh)
-    #
-    #
-    #
     for i in range(cohEx.shape[0]):
         if cohEx[i,0] > 1.0:
             cohEx[i,0] = 1/cohEx[i,0]
         # cohEx[i,0] = 1.0
     cohEx = cohEx ** 2
-    #
-    #
-    #
-    fis = fischer(bandavg.get('dof'))
+    fis = fisher(bandavg.get('dof'))
     d = (4/bandavg.get('dof')) * fis * (1.0 - cohEx) * ExExc
     r2xy = np.empty((ZpZp.shape),dtype=complex)
     for i in range(ZpZp.shape[0]):
@@ -80,8 +86,8 @@ def ZExvar(Z_tukey,bandavg):
 
 
 def ZEyvar(Z_tukey,bandavg):
-    #Ey predicted
-    cohMatrixEy = bandavg.get('coh_selectedEy')
+    #Ey
+    cohMatrixEy = bandavg.get('selectedEy')
     EyEyc = bandavg.get('EyEyc') * cohMatrixEy
     EyHxc = bandavg.get('EyHxc') * cohMatrixEy
     EyHyc = bandavg.get('EyHyc') * cohMatrixEy
@@ -112,18 +118,12 @@ def ZEyvar(Z_tukey,bandavg):
         else:
             Ccoh[i,0] = 1+1j
     cohEy = abs(Ccoh)
-    #
-    #
-    #
     for i in range(cohEy.shape[0]):
         if cohEy[i,0] > 1.0:
             cohEy[i,0] = 1/cohEy[i,0]
         # cohEy[i,0] = 1.0
     cohEy = cohEy ** 2
-    #
-    #
-    #
-    fis = fischer(bandavg.get('dof'))
+    fis = fisher(bandavg.get('dof'))
     d = (4/bandavg.get('dof')) * fis * (1.0 - cohEy) * EyEyc
     r2xy = np.empty((ZpZp.shape),dtype=complex)
     for i in range(ZpZp.shape[0]):
@@ -151,7 +151,7 @@ def ZEyvar(Z_tukey,bandavg):
     cohEy = np.sqrt(cohEy)
     return ZyxVar,ZyyVar,cohEy
 
-def fischer(nue):
+def fisher(nue):
     w = np.empty(nue.shape,dtype=float)
     for i in range(nue.shape[0]):
         if nue[i] < 6.0:

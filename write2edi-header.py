@@ -2,7 +2,18 @@
 """
 Created on Mon Jan 11 10:37:43 2021
 
-@author: AJITHABH
+@author: AJITHABH K. S.
+Last modified: 21-07-2022
+
+This script can be used to create EDI header information.
+
+See user manual for more detailed explanation
+
+Give path and EDI name with 'HEADER' text in the variable 'f'. Then a header file
+will be created with the information of the present site.
+
+Join it with 'write2edi-data.py' output to get a final EDI file.
+
 """
 import pandas as pd
 

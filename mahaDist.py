@@ -1,11 +1,32 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jan 20 12:41:28 2021
+@author: AJITHABH K. S.
+Last modified: 13-07-2022
 
-@author: AJITHABH
+This module contains functions to calculate Mahalanobis distance (MD) for every
+time windows for all target frequencies. It is also used to select time windows/events within
+a MD threshold.
+
+Input files are impedance values and a matrix contains pre-selection information.
+The discarded time windows will have value '0' and selected windows will have value
+'1' in the pre-selectoion matrix.
+
+MD will be calculated for every selected time windows/events.
+An MD value of 10 will be assigned for the discarded time windows.
+
+The output of the module consists of a matrix contains selected events details (mahaWt).
+The value of '1' is given for the events falls within the MD threshold and '0' for others.
+The MD thresholds can be set in the 'config.py' file.
+
+Other outputs are:-
+Z1_mcd_mean: Robust cluster center
+Z2_mcd_mean: Robust cluster center
+mahal_robust: MD values for all events
+
 """
 
-def mcd(bandavg,mode):
+def mcd(bandavg,mode,config):
     import numpy as np
     if (mode == 'Ex'):
         Z1 = bandavg.get('Zxx_single') * bandavg.get('pre_sel_matEx')
@@ -23,7 +44,7 @@ def mcd(bandavg,mode):
     for i in range(Z1.shape[1]):
         Z1_single = Z1[:,i].reshape(-1,1)
         Z2_single = Z2[:,i].reshape(-1,1)
-        [mahaWt_single,Z1_mean,Z2_mean,mahal_single] = getmahaWt(Z1_single,Z2_single)
+        [mahaWt_single,Z1_mean,Z2_mean,mahal_single] = getmahaWt(Z1_single,Z2_single,config)
         Z1_mcd_mean[i] = Z1_mean
         Z2_mcd_mean[i] = Z2_mean
         for k in range(mahaWt_single.shape[0]):
@@ -31,7 +52,7 @@ def mcd(bandavg,mode):
             mahal_robust[i,k] = mahal_single[k]
     return mahaWt, Z1_mcd_mean, Z2_mcd_mean, mahal_robust
     #
-def getmahaWt(Z1_single,Z2_single):
+def getmahaWt(Z1_single,Z2_single,config):
     import numpy as np
     nozeromat = np.where(Z1_single != 0)[0]
     zeromat = np.where(Z1_single == 0)[0]
@@ -54,9 +75,8 @@ def getmahaWt(Z1_single,Z2_single):
         mahaWt_temp[zeromat[n]] = 10
     mahaWt = np.zeros(([nozeromat.shape[0] + zeromat.shape[0],1]),dtype=int)
     for k in range(nozeromat.shape[0] + zeromat.shape[0]):
-        if (mahaWt_temp[k] <= 1.0):
+        if (mahaWt_temp[k] <= config.get('MD_threshold_impedance')): # MD threshold
             mahaWt[k] = 1
-    #out_mahal = np.where(mahal_robust_cov > 1.5)
     Z1_mean = np.complex(robust_cov.location_[0],robust_cov.location_[1])
     Z2_mean = np.complex(robust_cov.location_[2],robust_cov.location_[3])
     return mahaWt, Z1_mean, Z2_mean, mahaWt_temp

@@ -2,7 +2,23 @@
 """
 Created on Sat Sep 19 15:19:53 2020
 
-@author: AJITHABH
+@author: AJITHABH K. S.
+Last modified: 21-07-2022
+
+This script helps to create a text file with all impedance values, tipper data and variances.
+
+This is required because, processing is done for data with different sampling frequencies. So,
+text file need to be created with data of each target frequencies (For e.g. 1024 Hz). After
+processing all data, join the text files to create a final text file contains data for all target
+frequencies.
+
+Then it can be converted to EDI format using 'write2edi-data.py' script.
+
+Give path to save the text file with a filename in variable 'f'.
+
+If the sampling frequency is 1024 Hz, give filename as '1024Hz.txt'
+
+Read usermanual for more details.
 """
 
 ftlist = ftlist

@@ -2,71 +2,62 @@
 """
 Created on Wed Jan  6 12:27:42 2021
 
-@author: AJITHABH
-"""
+@author: AJITHABH K. S.
+Last modified: 27-07-2022
 
-import mtprocRR, var, coherency, tipperR, mahaDist, mtproc
-from scipy import signal
+##########
+Program: SigMT
+Program for the processing of MT time series.
+Authors: Ajithabh K.S. and Prasanta K. Patro
+CSIR - National Geophysical Research Institute, Hyderabad, India.
+##########
+
+This code controls remote reference method in MT data processing.
+This code calls functions in other modules for different operations.
+
+Give the path of the folder where your sites are kept in the
+'project_path' variable.
+
+Then input such as site name and measurements will be asked in the console.
+First, the details of the local site will be asked. Then, the details of the 
+remote site need to be entered.
+
+In case decimation is required, make 'dflag = 1' and give decimation sequence 
+in 'decimate' variable.
+
+Make 'ctflag =1' to enable coherency threshold.
+
+Make 'pdflag =1' to enable polarization direction based data selection.
+
+Read user manual for more details about the data selection
+"""
+# Importing necessary modules
+import mtprocRR, var, data_sel, tipperR, mahaDist, mtproc, config, plotting
 from matplotlib import pyplot as plt
+from scipy import signal
 import numpy as np
 import os
 import time
 import math
-#
-#
-# provide project path where sites are kept
-#
+config = config.configuration()
+# define project path where sites are kept
 project_path = 'D:/NGRI/FIELD RAW DATA/KL DATA/'
+# #
+# #========= Selection of site and setting a path =========
+sites, selectedsite, measid, all_meas, select_meas, proc_path = mtproc.makeprocpath(project_path)
+# #========= Site is selected and path is created =========
+# #========= Selection of remote site and setting a path ==
+sites, selectedsiteR, measidR, all_measR, select_measR, proc_pathR = mtproc.makeprocpath(project_path)
+# #========= Remote site is selected and path is created ==
 #
-#
-os.chdir(project_path)
-sites = [d for d in os.listdir('.') if os.path.isdir(d)]
-# all site names are stored in variable 'sites'
-#
-#-- Select Single Site
-print('Sites in the project are:  ')
-print(sites)
-selectedsite = input("Enter the site: ")
-siteindex = sites.index(selectedsite)
-measid = mtprocRR.measid(siteindex)
-# selectedsite = 'KL13'
-os.chdir(project_path+selectedsite)
-all_meas = [d for d in os.listdir('.') if os.path.isdir(d)]
-for i in range(len(all_meas)):
-    '\n'
-    print ([list((i, all_meas[i]))]) 
-select_meas = input("Select measurement: ")
-select_meas = int(select_meas)
-# select_meas = 12
-proc_path = project_path+selectedsite+'/'+all_meas[select_meas]
-#
-#-- Select Remote Site
-#
-print('Sites in the project are:  ')
-print(sites)
-selectedsiteR = input("Enter the remote site: ")
-siteindexR = sites.index(selectedsiteR)
-measidR = mtprocRR.measid(siteindexR)
-# selectedsite = 'KL13'
-os.chdir(project_path+selectedsiteR)
-all_measR = [d for d in os.listdir('.') if os.path.isdir(d)]
-for i in range(len(all_measR)):
-    '\n'
-    print ([list((i, all_measR[i]))]) 
-select_measR = input("Select measurement: ")
-select_measR = int(select_measR)
-# select_meas = 12
-proc_pathR = project_path+selectedsiteR+'/'+all_measR[select_measR]
-#
-# read all channel from the selected measurement
 timer_start = time.time()
 #-------- Time series reading starts ------------------
 #
 #
 procinfo = {}
 procinfoR = {}
-[ts,procinfo['fs'],procinfo['sensor_no'],timeline,procinfo['ChoppStat'],loc] = mtprocRR.ts(proc_path)
-[tsR,procinfoR['fs'],procinfoR['sensor_no'],timelineR,procinfoR['ChoppStat'],locR] = mtprocRR.ts(proc_pathR)
+ts, procinfo['fs'], procinfo['sensor_no'], timeline, procinfo['ChoppStat'], loc = mtprocRR.ts(proc_path)
+tsR, procinfoR['fs'], procinfoR['sensor_no'], timelineR, procinfoR['ChoppStat'], locR = mtprocRR.ts(proc_pathR)
 #==============
 #==============
 # Prepare ts data for RR 
@@ -89,12 +80,9 @@ tsR['tsRx'] = tsRx
 tsR['tsRy'] = tsRy 
 del timelineR, Rstart, Rend
 del Rstart_ind, Rend_ind, tsRx, tsRy
-#==============
-#==============
-# trend removed 
-# V - mv/km
-# H - mV
-dflag = 0
+#========= Decimation section ================= 
+# Keep dflag = 0 if decimation is not required
+dflag = 1
 if dflag == 1:
     decimate = [8,4]
     for d in decimate:
@@ -103,8 +91,13 @@ if dflag == 1:
         ts['tsHx'] = signal.decimate(ts.get('tsHx'), d, n=None, ftype='iir')
         ts['tsHy'] = signal.decimate(ts.get('tsHy'), d, n=None, ftype='iir')
         ts['tsHz'] = signal.decimate(ts.get('tsHz'), d, n=None, ftype='iir')
+        tsR['tsRx'] = signal.decimate(tsR.get('tsRx'), d, n=None, ftype='iir')
+        tsR['tsRy'] = signal.decimate(tsR.get('tsRy'), d, n=None, ftype='iir')
         procinfo['fs'] = procinfo.get('fs')/d
-procinfo['fs'] = procinfo.get('fs')
+#========= Decimation section end =============
+#
+# Some calculations and printing some information
+# No need to edit
 procinfo['nofs'] = len(ts['tsEx'])
 procinfo['notch'] = 1 # Notch flag 1 - On, 0 - Off
 print('--------------------')
@@ -119,58 +112,51 @@ print('--------------------')
 procinfo['meas'] = all_meas[select_meas]
 procinfo['proc_path'] = proc_path
 procinfo['selectedsite'] = selectedsite
-del all_meas, i, select_meas, selectedsite
+del all_meas, select_meas, selectedsite
 del all_measR, select_measR, selectedsiteR, proc_pathR
 del proc_path, project_path, sites
 print('Unused variables deleted.')
 print('\n\n--------------------')
 # Find out window length
-procinfo['WindowLength'] = mtprocRR.FFTLength(procinfo.get('nofs'))
-#procinfo['WindowLength'] = 512
-procinfo['overlap'] = 50 #Input in percentage %
+if config.get('FFT_Length') == 0:
+    procinfo['WindowLength'] = mtproc.FFTLength(procinfo.get('nofs'))
+else:
+    procinfo['WindowLength'] = config.get('FFT_Length')
+procinfo['overlap'] = 50 #Input in percentage 
 print('\nWindow Length selected: '+ str(procinfo.get('WindowLength')))
 procinfo['nstacks'] = math.floor(procinfo.get('nofs')/procinfo.get('WindowLength'))
 procinfo['nstacks'] = (procinfo.get('nstacks') * 2) - 1
-# procinfo['nstacks'] = 300
-# if procinfo.get('overlap') !=0:
-#     procinfo['nstacks'] = math.floor(procinfo.get('nstacks') *  (100/(100-procinfo.get('overlap')))) - 1
 print('Time series overlap: ' + str(procinfo.get('overlap'))+'%')
 print('No. of stacks: '+ str(procinfo.get('nstacks')))
 print('--------------------')
 print('\nBand averaging over target frequencies:')
-#
-#
-#-------- Get band average ------------------
-#
-#
+#==================== Start band averaging ====================
+# No need to edit
 # Band average value after calibration and averaging using parzen window
-ftlist,bandavg = mtprocRR.bandavg(ts,procinfo,tsR,procinfoR)
-#====== Tipper =========
-[TxAll, TyAll] = tipperR.tippall(bandavg)
+ftlist,bandavg = mtprocRR.bandavg(ts,procinfo,tsR,procinfoR,config)
+#
+#==================== Band averaging finished ====================
 timer_end = time.time()
 print('\nElapsed time: ' + str(timer_end - timer_start)+'s')
 del timer_start, timer_end
 print('Finished.')
-#====================Selective Stacking===========================
-#
-mahaWtTx, Tx_mcd_mean, Txmahal_robust = tipperR.mcd(TxAll)
-mahaWtTy, Ty_mcd_mean, Tymahal_robust = tipperR.mcd(TyAll)
+#########
 spmat = mtprocRR.cleanSpec(bandavg)
 #
-#==================== Band averaging finished ====================
-# Coherency Threshold
+#====Data selection tools section. Coherency threshold & Polarization direction
 cohMatrixEx = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
 cohMatrixEy = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
-mpdmat = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
-AllcohEx = coherency.cohEx(bandavg)
-AllcohEy = coherency.cohEy(bandavg)
+pdmat = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
+# Calculation of coherency values for all time windows
+AllcohEx = data_sel.cohEx(bandavg)
+AllcohEy = data_sel.cohEy(bandavg)
+# Calculation of polarization directions for all time windows
+alpha_degH,alpha_degE = data_sel.pdvalues(bandavg)
 #
-alpha_degH,alpha_degE = mtproc.mpdvalues(bandavg)
-#
-#
+#====== Coherency threshold ======
 ctflag = 0
 if ctflag == 1:
-    CohThre = [0.7,0.7,0.7,0.7,0.7,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
+    CohThre = [0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6]
     for i in range(np.shape(AllcohEx)[0]):
         for j in range(np.shape(AllcohEx)[1]):
             if AllcohEx[i,j] < CohThre[i]:
@@ -182,179 +168,60 @@ if ctflag == 1:
             else:
                 cohMatrixEy[i,j] = 1
 #
-mpdflag = 0
-if mpdflag == 1:
-    mpdlim = [-10,10]
-    for i in range(np.shape(mpdmat)[0]):
-        for j in range(np.shape(mpdmat)[1]):
-            if alpha_degE[i,j] > mpdlim[0] and alpha_degE[i,j] < mpdlim[1]:
-                mpdmat[i,j] = 0
+#====== Polarization direction ======
+pdflag = 0
+if pdflag == 1:
+    pdlim = [-10,10]
+    alpha = alpha_degE #Use either alpha_degE or alpha_degH
+    for i in range(np.shape(pdmat)[0]):
+        for j in range(np.shape(pdmat)[1]):
+            if alpha[i,j] > pdlim[0] and alpha[i,j] < pdlim[1]:
+                pdmat[i,j] = 0
             else:
-                mpdmat[i,j] = 1
+                pdmat[i,j] = 1
+#            
+pdflag = 0
+if pdflag == 1:
+    timewindow_limits = [300,400]
+    for i in range(np.shape(pdmat)[0]):
+        for j in range(np.shape(pdmat)[1]):
+            if j > timewindow_limits[0] and j < timewindow_limits[1]:
+                pdmat[i,j] = 0
+            else:
+                pdmat[i,j] = 1
 #
-mpdflag = 0
-if mpdflag == 1:
-    for i in range(np.shape(mpdmat)[0]):
-        for j in range(np.shape(mpdmat)[1]):
-            if j > 0 and j < 220:
-                mpdmat[i,j] = 0
-            else:
-                mpdmat[i,j] = 1
-    
-    
 bandavg['cohMatrixEx'] = cohMatrixEx
 bandavg['cohMatrixEy'] = cohMatrixEy
-
-bandavg['pre_sel_matEx'] = cohMatrixEx * mpdmat
-bandavg['pre_sel_matEy'] = cohMatrixEy * mpdmat
-
-bandavg['mdmatrixEx'],bandavg['Zxx_mcd'],bandavg['Zxy_mcd'],bandavg['mahal_robustEx'] = mahaDist.mcd(bandavg,'Ex')
-bandavg['mdmatrixEy'],bandavg['Zyx_mcd'],bandavg['Zyy_mcd'],bandavg['mahal_robustEy'] = mahaDist.mcd(bandavg,'Ey')
-bandavg['coh_selectedEx'] = bandavg.get('mdmatrixEx') * spmat
-bandavg['coh_selectedEy'] = bandavg.get('mdmatrixEy') * spmat
+bandavg['pre_sel_matEx'] = cohMatrixEx * pdmat
+bandavg['pre_sel_matEy'] = cohMatrixEy * pdmat
+bandavg['mdmatrixEx'],bandavg['Zxx_mcd'],bandavg['Zxy_mcd'],bandavg['mahal_robustEx'] = mahaDist.mcd(bandavg,'Ex',config)
+bandavg['mdmatrixEy'],bandavg['Zyx_mcd'],bandavg['Zyy_mcd'],bandavg['mahal_robustEy'] = mahaDist.mcd(bandavg,'Ey',config)
+bandavg['selectedEx'] = bandavg.get('mdmatrixEx') * spmat
+bandavg['selectedEy'] = bandavg.get('mdmatrixEy') * spmat
 #bandavg['tipp_selected'] = cohMatrixEx * cohMatrixEy * selmatTx * selmatTy
-bandavg['tipp_selected'] = mahaWtTx * mahaWtTy
+
 # bandavg['coh_selected'] = selmatEx * selmatEy
-bandavg['avgt'] = np.sum((bandavg.get('coh_selectedEx'))!=0,axis=1)
+bandavg['avgt'] = np.sum((bandavg.get('selectedEx'))!=0,axis=1)
 del cohMatrixEx,cohMatrixEy
 #
-#=========== Tipper ==============================================
+#=========== Tipper estimation ===================================
+[TxAll, TyAll] = tipperR.tippall(bandavg)
+mahaWtTx, Tx_mcd_mean = tipperR.mcd(TxAll,config)
+mahaWtTy, Ty_mcd_mean = tipperR.mcd(TyAll,config)
+bandavg['tipp_selected'] = mahaWtTx * mahaWtTy
 [Tx, Ty] = tipperR.tipper(bandavg)
 [TxVar, TyVar] = tipperR.tipperVar(bandavg)
+#=========== Tipper estimation DONE===============================
 #==================== Robust estimation begins ===================
 #
+Z_huber = mtprocRR.perform_robust(ftlist,bandavg)
 #
-#
-# #del ts
-Zxx_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-Zxy_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-Zyx_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-Zyy_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-# Tx_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-# Ty_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-for stacki in range(np.shape(ftlist)[0]):
-    print('\nComputing Jackknife estimate....ft = ' + str(ftlist[stacki,0]))
-    bandavg_singleEx = mtprocRR.makeband(bandavg,stacki,'coh_selectedEx')
-    bandavg_singleEy = mtprocRR.makeband(bandavg,stacki,'coh_selectedEy')
-    # bandavgT_single = tipper.makeband(bandavg,stacki)
-    Zxx_jackk[stacki,0],Zxy_jackk[stacki,0] = (mtprocRR.getjackknife(bandavg_singleEx,'Ex'))
-    Zyx_jackk[stacki,0],Zyy_jackk[stacki,0] = (mtprocRR.getjackknife(bandavg_singleEy,'Ey'))
-    # Tx_jackk[stacki,0],Ty_jackk[stacki,0] = (tipper.getjackknife(bandavgT_single))
-print('Finished.')
-Z_jackk = {'Zxx': Zxy_jackk}
-Z_jackk['Zxy'] = Zxy_jackk
-Z_jackk['Zyx'] = Zyx_jackk
-Z_jackk['Zyy'] = Zyy_jackk
-del Zxx_jackk,Zxy_jackk,Zyx_jackk,Zyy_jackk
-#
-Z_huber = {}
-Zxx_huber = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-Zxy_huber = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-Zyx_huber = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-Zyy_huber = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-for stacki in range(np.shape(ftlist)[0]):
-    print('\nComputing Huber estimate....ft = ' + str(ftlist[stacki,0]))
-    bandavg_singleEx = mtprocRR.makeband(bandavg,stacki,'coh_selectedEx')
-    bandavg_singleEy = mtprocRR.makeband(bandavg,stacki,'coh_selectedEy')
-    Zxx_huber[stacki,0],Zxy_huber[stacki,0],bandavgEx_huber = mtprocRR.huberEx(bandavg_singleEx,Z_jackk,stacki)
-    Zyy_huber[stacki,0],Zyx_huber[stacki,0],bandavgEy_huber = mtprocRR.huberEy(bandavg_singleEy,Z_jackk,stacki)
-print('Finished.')
-Z_huber['Zxx'] = Zxx_huber
-Z_huber['Zxy'] = Zxy_huber
-Z_huber['Zyy'] = Zyy_huber
-Z_huber['Zyx'] = Zyx_huber
-#Z_tukey = {}
-#print('\nComputing Tukey estimate....')
-# Z_tukey['Zxx'],Z_tukey['Zxy'],tukey_matrixEx = mtproc.tukeyEx(bandavgEx_huber)
-# Z_tukey['Zyy'],Z_tukey['Zyx'],tukey_matrixEy = mtproc.tukeyEy(bandavgEy_huber)
-#print('Finished.')
+#==================== Calculation of variance ===================
 Zvar = {}
 Zvar['xx'],Zvar['xy'],cohEx = var.ZExvar(Z_huber,bandavg)
 Zvar['yx'],Zvar['yy'],cohEy = var.ZEyvar(Z_huber,bandavg)
 # ----------------------------------------------------------------------
-# Apparant resistivities and phase
-rho_xy = (0.2/ftlist) * ((abs(Z_huber.get('Zxy'))) ** 2)
-rho_yx = (0.2/ftlist) * ((abs(Z_huber.get('Zyx'))) ** 2)
-phase_xy = np.degrees(np.arctan(Z_huber.get('Zxy').imag/Z_huber.get('Zxy').real))
-phase_yx = np.degrees(np.arctan(Z_huber.get('Zyx').imag/Z_huber.get('Zyx').real))
 #
 #
-# Errors for app. resistivity and phase
-err_rxy = (0.4/ftlist) * ((abs(Z_huber.get('Zxy')))) * Zvar.get('xy')
-err_ryx = (0.4/ftlist) * ((abs(Z_huber.get('Zyx')))) * Zvar.get('yx')
-err_pxy = np.degrees((Zvar.get('xy')) / abs(Z_huber.get('Zxy')))
-err_pyx = np.degrees((Zvar.get('yx')) / abs(Z_huber.get('Zyx')))
-err_rxy = err_rxy.reshape((-1,))
-err_ryx = err_ryx.reshape((-1,))
-err_pxy = err_pxy.reshape((-1,))
-err_pyx = err_pyx.reshape((-1,))
-#
-plt.figure(num=1)
-plt.subplot(211)
-plt.scatter(ftlist,rho_xy,c='r',s=10)
-plt.scatter(ftlist,rho_yx,c='b',s=10)
-plt.errorbar(ftlist,rho_xy,err_rxy,ecolor='r',fmt="none")
-plt.errorbar(ftlist,rho_yx,err_ryx,ecolor='b',fmt="none")
-plt.xscale('log')
-plt.yscale('log')
-plt.xlim((10000, 0.001)) 
-plt.ylim(0.1, 10000)
-plt.yticks([0.1, 1, 10, 100, 1000, 10000])
-plt.grid(which='both',linestyle='-.', linewidth=0.4)
-plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+' ('+str(procinfo.get('fs'))+' Hz)')
-plt.subplot(212)
-plt.scatter(ftlist,phase_xy,c='r',s=10)
-plt.scatter(ftlist,phase_yx,c='b',s=10)
-plt.errorbar(ftlist,phase_xy,err_pxy,ecolor='r',fmt="none")
-plt.errorbar(ftlist,phase_yx,err_pyx,ecolor='b',fmt="none")
-plt.xscale('log')
-plt.xlim((10000, 0.001))
-plt.ylim((0, 90))
-plt.yticks([0,15,30,45,60,75,90])
-plt.grid(which='both',linestyle='-.', linewidth=0.4)
-# plt.savefig('C:/Users/AJITHABH/Desktop/MTProc/RR/'+ procinfo.get('meas')+'.png', format='png', dpi=600)
-plt.figure(num=2)
-plt.scatter(ftlist,cohEx,c='r')
-plt.scatter(ftlist,cohEy,c='b')
-plt.xscale('log')
-plt.xlim((10000, 0.001))
-plt.ylim(0, 1)
-plt.yticks([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
-plt.grid(which='both',linestyle='-.', linewidth=0.4)
-# plt.savefig('C:/Users/AJITHABH/Desktop/MTProc/RR/'+ 'coh' + procinfo.get('meas')+'.png', format='png', dpi=600)
-# Plot tipper =====
-TxA = np.sqrt((np.real(Tx) ** 2) + (np.imag(Tx) ** 2))
-TyA = np.sqrt((np.real(Ty) ** 2) + (np.imag(Ty) ** 2))
-TxP = np.degrees(np.arctan2(Tx.imag,Tx.real))
-TyP = np.degrees(np.arctan2(Ty.imag,Ty.real))
-plt.figure(num=3)
-plt.subplot(211)
-plt.scatter(ftlist,TxA,c='r')
-plt.scatter(ftlist,TyA,c='b')
-plt.ylim(0, 1)
-plt.xscale('log')
-plt.xlim((10000, 0.001))
-plt.grid(which='both',linestyle='-.', linewidth=0.4)
-plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+' ('+str(procinfo.get('fs'))+' Hz)')
-plt.subplot(212)
-plt.scatter(ftlist,TxP,c='r')
-plt.scatter(ftlist,TyP,c='b')
-plt.xscale('log')
-plt.xlim((10000, 0.001))
-plt.grid(which='both',linestyle='-.', linewidth=0.4)
-#----------
-plt.figure(num=4)
-plt.subplot(211)
-plt.scatter(ftlist,Tx.real,c='r')
-plt.scatter(ftlist,Ty.real,c='b')
-#plt.ylim(0, 1)
-plt.xscale('log')
-plt.xlim((10000, 0.001))
-plt.grid(which='both',linestyle='-.', linewidth=0.4)
-plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+' ('+str(procinfo.get('fs'))+' Hz)')
-plt.subplot(212)
-plt.scatter(ftlist,Tx.imag,c='r')
-plt.scatter(ftlist,Ty.imag,c='b')
-plt.xscale('log')
-plt.xlim((10000, 0.001))
-plt.grid(which='both',linestyle='-.', linewidth=0.4)
+### Plotting figures ###
+plotting.plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy)

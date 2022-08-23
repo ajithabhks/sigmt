@@ -2,7 +2,22 @@
 """
 Created on Tue Aug 18 14:38:27 2020
 
-@author: AJITHABH
+@author: AJITHABH K. S.
+Last modified: 21-07-2022
+
+This script can be used to plot polarization directions
+for all the time windows for all target frequencies.
+
+X axis: Time window/Event
+Y axis (Subplot 1): Magnetic polarization direction (alphaH)
+Y axis (Subplot 2): Magnetic polarization direction (alphaE)
+
+Number of figures generated will be equal to the number
+of target frequencies. First figure will represent values
+of first target frequency and so on.
+
+See variable 'ftlist' in variable explorer to see all target
+frequencies.
 """
 
 import matplotlib
@@ -65,6 +80,7 @@ for fnum in range(np.size(ftlist)):
     plt.subplot(411)
     plt.scatter(b,directionH)
     plt.ylim(-90, 90)
+    plt.ylabel(r'$\alpha_H$ (deg.)')
     plt.xticks(**afont,fontsize=12)
     plt.yticks(yticks,**afont,fontsize=12)
     plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+
@@ -72,5 +88,7 @@ for fnum in range(np.size(ftlist)):
     plt.subplot(412)
     plt.scatter(b,directionE)
     plt.ylim(-90, 90)
+    plt.ylabel(r'$\alpha_E$ (deg.)')
+    plt.xlabel('Time window')
     plt.xticks(**afont,fontsize=12)
     plt.yticks(yticks,**afont,fontsize=12)

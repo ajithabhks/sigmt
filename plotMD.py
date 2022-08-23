@@ -2,8 +2,45 @@
 """
 Created on Thu Jan 21 14:14:08 2021
 
-@author: AJITHABH
+@author: AJITHABH K. S.
+Last modified: 21-07-2022
+
+This script can be used to see the Mahalanobis distance (MD) for
+all time windows/events for all target frequencies.
+
+Any impedance
+value can be selected for plotting. The color of the data points
+indicate the coherency value.
+
+Change following three lines to see different impedance values
+and MD for Ex and Ey components
+Z2_all = bandavg.get('Zxy_single') 'Change xy to yx'
+Z2_mcd = bandavg.get('Zxy_mcd') 'Change xy to yx'
+maha = bandavg.get('mahal_robustEx') 'Change Ex to Ey'
+
 """
+
+### Colorbar 
+import matplotlib as mpl
+def reverse_colourmap(cmap, name = 'my_cmap_r'):
+    reverse = []
+    k = []   
+
+    for key in cmap._segmentdata:    
+        k.append(key)
+        channel = cmap._segmentdata[key]
+        data = []
+
+        for t in channel:                    
+            data.append((1-t[0],t[2],t[1]))            
+        reverse.append(sorted(data))    
+
+    LinearL = dict(zip(k,reverse))
+    my_cmap_r = mpl.colors.LinearSegmentedColormap(name, LinearL) 
+    return my_cmap_r
+
+
+### Ploting of Mahalanobis distance
 import matplotlib
 import numpy as np
 #matplotlib.use('TkAgg')
@@ -54,42 +91,6 @@ for fnum in range(np.size(ftlist)):
     plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+
              ' ('+str(procinfo.get('fs'))+' Hz) f='+ str(round(ftlist[fnum][0],2)) +' Hz')
     #plt.scatter(np.mean(Zxy_singleR),np.mean(Zxy_singleI))
-    plt.savefig('C:/Users/Ajithabh/Desktop/myImagePDF.eps', format='eps', dpi=1200)
+    # plt.savefig('C:/Users/Ajithabh/Desktop/myImagePDF.eps', format='eps', dpi=1200)
     
 
-import matplotlib as mpl
-def reverse_colourmap(cmap, name = 'my_cmap_r'):
-    """
-    In: 
-    cmap, name 
-    Out:
-    my_cmap_r
-
-    Explanation:
-    t[0] goes from 0 to 1
-    row i:   x  y0  y1 -> t[0] t[1] t[2]
-                   /
-                  /
-    row i+1: x  y0  y1 -> t[n] t[1] t[2]
-
-    so the inverse should do the same:
-    row i+1: x  y1  y0 -> 1-t[0] t[2] t[1]
-                   /
-                  /
-    row i:   x  y1  y0 -> 1-t[n] t[2] t[1]
-    """        
-    reverse = []
-    k = []   
-
-    for key in cmap._segmentdata:    
-        k.append(key)
-        channel = cmap._segmentdata[key]
-        data = []
-
-        for t in channel:                    
-            data.append((1-t[0],t[2],t[1]))            
-        reverse.append(sorted(data))    
-
-    LinearL = dict(zip(k,reverse))
-    my_cmap_r = mpl.colors.LinearSegmentedColormap(name, LinearL) 
-    return my_cmap_r

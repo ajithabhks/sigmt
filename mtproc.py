@@ -2,9 +2,17 @@
 """
 Created on Mon May  4 17:25:49 2020
 
-@author: AJITHABH
+@author: AJITHABH K. S.
+Last modified: 27-07-2022
+
+This is the main module of this package.
+
+It consists of functions to read time series data, detrending, calibration,
+computation of fourier transform, calculation of impedances, etc.
+
+Purpose of each functions are given as comments.
+
 """
-#from readats import readats
 import os
 from scipy import signal
 from scipy.fft import fft
@@ -13,7 +21,8 @@ from datetime import datetime as dt
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 from scipy.signal import butter, lfilter, freqz, iirfilter
-import mne
+#
+#
 # to read ADU07e rawdata
 def readADU07e(filename):  
     with open(filename, 'rb') as f:
@@ -80,10 +89,32 @@ def readADU07e(filename):
         ts = np.fromfile(f,dtype=np.int32, count = header['nsamples'][0])
         ts = ts * header['lsb'][0]
         return header, ts
-# Get trend and bias removed time series data
+
+def makeprocpath(project_path):
+    #========= Selection of site and setting a path =========
+    # No need to edit
+    os.chdir(project_path)
+    sites = [d for d in os.listdir('.') if os.path.isdir(d)]
+    # all site names are stored in variable 'sites'
+    print('Sites in the project are:  ')
+    print(sites)
+    selectedsite = input("Enter the site: ")
+    siteindex = sites.index(selectedsite)
+    measid = measid_create(siteindex)
+    del siteindex
+    os.chdir(project_path+selectedsite)
+    all_meas = [d for d in os.listdir('.') if os.path.isdir(d)]
+    for i in range(len(all_meas)):
+        '\n'
+        print ([list((i, all_meas[i]))]) 
+    select_meas = input("Select measurement: ")
+    select_meas = int(select_meas)
+    proc_path = project_path+selectedsite+'/'+all_meas[select_meas]
+    return sites, selectedsite, measid, all_meas, select_meas, proc_path
+
+# Function to return time series data.
 def ts(path):
     files = []
-    # r=root, d=directories, f = files
     for r, d, f in os.walk(path):
         for file in f:
             if '.ats' in file:
@@ -121,6 +152,7 @@ def ts(path):
         timeline.append(start_time[x]/3600/24 + GPS_initial)
     return ts,fs[0],sensor_no,timeline,ChoppStat[0],loc
 
+# Funtion to normalize data. NOT USED!!
 def normalize(data):
     MI = np.nanmin(data)
     MA = np.nanmax(data)
@@ -132,6 +164,7 @@ def normalize(data):
 def datenum(d):
     return 366 + d.toordinal() + (d - dt.fromordinal(d.toordinal())).total_seconds()/(24*60*60)
 
+# Function to select a preferred FFT length
 def FFTLength(nofsamples):
     #Based on Borah & Patro, 2015
     i = 1
@@ -151,6 +184,7 @@ def FFTLength(nofsamples):
     # WindowLength = 256
     return WindowLength
 
+# Low pass filter. NOT USED!!!
 def butter_lowpass(cutoff, fs, order=5):
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
@@ -163,8 +197,9 @@ def butter_lowpass_filter(data, cutoff, fs, order):
     return y
 
 
-#Calibrated spectra
-def bandavg(ts,procinfo):
+# This is an important function. Here, auto and cross spectra are calculated for 
+# each target frequencies and impedance values are computed for all events.
+def bandavg(ts,procinfo,config):
     WindowLength = procinfo.get('WindowLength')
     sensor_no = procinfo.get('sensor_no')
     overlap = procinfo.get('overlap')
@@ -239,18 +274,6 @@ def bandavg(ts,procinfo):
             tsHx = ts.get('tsHx')[s1[stack]:s2[stack]]
             tsHy = ts.get('tsHy')[s1[stack]:s2[stack]]
             tsHz = ts.get('tsHz')[s1[stack]:s2[stack]]
-            # if fs >= 512:
-            #     tsEx = signal.lfilter(bbb, aaa, tsEx)
-            #     tsEy = signal.lfilter(bbb, aaa, tsEy)
-            #     tsHx = signal.lfilter(bbb, aaa, tsHx)
-            #     tsHy = signal.lfilter(bbb, aaa, tsHy)
-            #     tsHz = signal.lfilter(bbb, aaa, tsHz)
-            # if fs >= 512:
-            #     tsEx = mne.filter.notch_filter(tsEx,fs,50,filter_length=4096,trans_bandwidth=10,phase='zero')
-            #     tsEy = mne.filter.notch_filter(tsEy,fs,50,filter_length=4096,trans_bandwidth=10,phase='zero')
-            #     tsHx = mne.filter.notch_filter(tsHx,fs,50,filter_length=4096,trans_bandwidth=10,phase='zero')
-            #     tsHy = mne.filter.notch_filter(tsHy,fs,50,filter_length=4096,trans_bandwidth=10,phase='zero')
-            #     tsHz = mne.filter.notch_filter(tsHz,fs,50,filter_length=4096,trans_bandwidth=10,phase='zero')
             dtsEx = signal.detrend(tsEx)
             dtsEy = signal.detrend(tsEy)
             dtsHx = signal.detrend(tsHx)
@@ -276,18 +299,6 @@ def bandavg(ts,procinfo):
             tsHx = ts.get('tsHx')[s1[stack]:s2[stack]]
             tsHy = ts.get('tsHy')[s1[stack]:s2[stack]]
             tsHz = ts.get('tsHz')[s1[stack]:s2[stack]]
-            # if fs >= 512:
-            #     tsEx = signal.lfilter(bbb, aaa, tsEx)
-            #     tsEy = signal.lfilter(bbb, aaa, tsEy)
-            #     tsHx = signal.lfilter(bbb, aaa, tsHx)
-            #     tsHy = signal.lfilter(bbb, aaa, tsHy)
-            #     tsHz = signal.lfilter(bbb, aaa, tsHz)
-            # if fs >= 512:
-            #     tsEx = mne.filter.notch_filter(tsEx,fs,50,filter_length=4096,trans_bandwidth=10,phase='zero')
-            #     tsEy = mne.filter.notch_filter(tsEy,fs,50,filter_length=4096,trans_bandwidth=10,phase='zero')
-            #     tsHx = mne.filter.notch_filter(tsHx,fs,50,filter_length=4096,trans_bandwidth=10,phase='zero')
-            #     tsHy = mne.filter.notch_filter(tsHy,fs,50,filter_length=4096,trans_bandwidth=10,phase='zero')
-            #     tsHz = mne.filter.notch_filter(tsHz,fs,50,filter_length=4096,trans_bandwidth=10,phase='zero')
             dtsEx = signal.detrend(tsEx)
             dtsEy = signal.detrend(tsEy)
             dtsHx = signal.detrend(tsHx)
@@ -306,15 +317,17 @@ def bandavg(ts,procinfo):
             calHy = calibrateoff(f,xfftHy,ChoppDataHy,calt_Hy)
             calHz = calibrateoff(f,xfftHz,ChoppDataHz,calt_Hz)
             f = np.delete(f,0,)
-        if fs >= 1000:
-            cr = 0.05
-        elif (fs < 1000):
-            cr = 0.25
-        if fs == 512:
-            cr = 0.1
-        if fs <= 0.125:
-            cr = 0.4
-        # cr = 0.4
+        if config.get('parzen_radius') == 0:
+            if fs >= 1000:
+                cr = 0.05
+            elif (fs < 1000):
+                cr = 0.25
+            if fs == 512:
+                cr = 0.1
+            if fs <= 0.125:
+                cr = 0.4
+        else:
+            cr = config.get('parzen_radius')
         for i in (range(np.shape(ftlist)[0])):
             ft = ftlist[i]
             pf = parzen(f,ft,cr)
@@ -407,6 +420,7 @@ def ChoppData(sensorno,ChoppStat):
         ChoppData = ChoppOffData
     return ChoppData
 
+# Function to perform FFT
 def dofft(dts,fs,WindowLength):
     w = np.hanning(WindowLength)
     fft_value = np.fft.fft(dts*w,WindowLength)
@@ -415,7 +429,8 @@ def dofft(dts,fs,WindowLength):
     fline = np.asarray([np.linspace(0, int(WindowLength/2), num=int(WindowLength/2),dtype=int)])
     f =  np.asarray(fline * fs/(WindowLength)).T
     return f,xfft
-    
+  
+# Parzen window  
 def parzen(f,ft,cr):
     pf = np.empty((np.shape(f)[0],))
     pf[:] = np.nan
@@ -535,7 +550,7 @@ def targetfreq(fs):
         # ftlist = ( 7.01387158203311E+0000)
     return ftlist
 
-# Get Jackknife
+# Get Jackknife values
 def getjackknife(bandavg,mode):
     Z_deno = ((bandavg.get('HxHxc') * bandavg.get('HyHyc')) - 
         ( bandavg.get('HxHyc') * bandavg.get('HyHxc')))
@@ -583,6 +598,7 @@ def jackknife(Z):
         del Zminusi, Zidiff
     return mean_jackknife
         
+# Computing huber estimates for Ex
 def huberEx(bandavg,Z_jackk,stacki):
     Ex = bandavg.get('Ex')
     Hx = bandavg.get('Hx')
@@ -655,6 +671,7 @@ def huberEx(bandavg,Z_jackk,stacki):
     bandavgEx_huber['huber_matrix'] = huber_matrix
     return Zxx_robust_huber, Zxy_robust_huber,bandavgEx_huber
 
+# Computing huber estimates for Ey
 def huberEy(bandavg,Z_jackk,stacki):
     Ey = bandavg.get('Ey')
     Hx = bandavg.get('Hx')
@@ -725,6 +742,7 @@ def huberEy(bandavg,Z_jackk,stacki):
     bandavgEy_huber['HyHxc'] = HyHxc_hup_avg
     bandavgEy_huber['huber_matrix'] = huber_matrix
     return Zyy_robust_huber, Zyx_robust_huber,bandavgEy_huber
+
 def huberwt(rl,km):
     huber_matrix1 = (rl <= km) * 1
     huber_matrix2 = (rl > km) * 1
@@ -732,6 +750,7 @@ def huberwt(rl,km):
     huber_matrix = huber_matrix1 + huber_matrix2
     return huber_matrix
 
+# Computing Tukey estimates for Ex. Not used presently!!
 def tukeyEx(bandavgEx_huber):
     huber_matrixEx = bandavgEx_huber.get('huber_matrix')
     rxl = bandavgEx_huber.get('rxl')
@@ -770,6 +789,7 @@ def tukeyEx(bandavgEx_huber):
     specavgEx_tukey['HyHxc'] = HyHxc_tukey_avg
     return Zxx_robust_tukey,Zxy_robust_tukey,tukey_matrix
 
+# Computing Tukey estimates for Ey. Not used presently!!
 def tukeyEy(bandavgEy_huber):
     huber_matrixEy = bandavgEy_huber.get('huber_matrix')
     ryl = bandavgEy_huber.get('ryl')
@@ -808,6 +828,48 @@ def tukeyEy(bandavgEy_huber):
     specavgEy_tukey['HyHxc'] = HyHxc_tukey_avg
     return Zyy_robust_tukey,Zyx_robust_tukey,tukey_matrix
 
+
+def perform_robust(ftlist,bandavg):
+    import numpy as np
+    Zxx_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
+    Zxy_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
+    Zyx_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
+    Zyy_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
+    for stacki in range(np.shape(ftlist)[0]):
+        print('\nComputing Jackknife estimate....ft = ' + str(ftlist[stacki,0]))
+        bandavg_singleEx = makeband(bandavg,stacki,'selectedEx')
+        bandavg_singleEy = makeband(bandavg,stacki,'selectedEy')
+        Zxx_jackk[stacki,0],Zxy_jackk[stacki,0] = (getjackknife(bandavg_singleEx,'Ex'))
+        Zyx_jackk[stacki,0],Zyy_jackk[stacki,0] = (getjackknife(bandavg_singleEy,'Ey'))
+    print('Finished.')
+    Z_jackk = {'Zxx': Zxy_jackk}
+    Z_jackk['Zxy'] = Zxy_jackk
+    Z_jackk['Zyx'] = Zyx_jackk
+    Z_jackk['Zyy'] = Zyy_jackk
+    del Zxx_jackk,Zxy_jackk,Zyx_jackk,Zyy_jackk
+    #
+    Z_huber = {}
+    Zxx_huber = np.empty((np.shape(ftlist)[0],1),dtype=complex)
+    Zxy_huber = np.empty((np.shape(ftlist)[0],1),dtype=complex)
+    Zyx_huber = np.empty((np.shape(ftlist)[0],1),dtype=complex)
+    Zyy_huber = np.empty((np.shape(ftlist)[0],1),dtype=complex)
+    for stacki in range(np.shape(ftlist)[0]):
+        print('\nComputing Huber estimate....ft = ' + str(ftlist[stacki,0]))
+        bandavg_singleEx = makeband(bandavg,stacki,'selectedEx')
+        bandavg_singleEy = makeband(bandavg,stacki,'selectedEy')
+        Zxx_huber[stacki,0],Zxy_huber[stacki,0],bandavgEx_huber = huberEx(bandavg_singleEx,Z_jackk,stacki)
+        Zyy_huber[stacki,0],Zyx_huber[stacki,0],bandavgEy_huber = huberEy(bandavg_singleEy,Z_jackk,stacki)
+    print('Finished.')
+    Z_huber['Zxx'] = Zxx_huber
+    Z_huber['Zxy'] = Zxy_huber
+    Z_huber['Zyy'] = Zyy_huber
+    Z_huber['Zyx'] = Zyx_huber
+    return Z_huber
+
+# This function is used to make an array with only selected
+# time windows for a particular target frequency. Because
+# final estimates are computed individually for each target
+# frequency.
 def makeband(bandavg,i,coh_mode):
     Ex = bandavg.get('Ex')[i,:].reshape(1,-1)
     Ey = bandavg.get('Ey')[i,:].reshape(1,-1)
@@ -862,35 +924,8 @@ def makeband(bandavg,i,coh_mode):
     bandavg_single['ExEyc'] = ExEyc
     return bandavg_single
     
-def getPT(bandavg):
-    ZXXR = np.real(bandavg.get('Zxx_single'))
-    ZXXI = np.imag(bandavg.get('Zxx_single'))
-    ZXYR = np.real(bandavg.get('Zxy_single'))
-    ZXYI = np.imag(bandavg.get('Zxy_single'))
-    ZYXR = np.real(bandavg.get('Zyx_single'))
-    ZYXI = np.imag(bandavg.get('Zyx_single'))
-    ZYYR = np.real(bandavg.get('Zyy_single'))
-    ZYYI = np.imag(bandavg.get('Zyy_single'))
-    #
-    #====PHASE TENSOR SKEW START=============================
-    phi_deno = (ZXXR*ZYYR) - (ZYXR*ZXYR)
-    phi_12 =  (ZYYR*ZXYI - ZXYR*ZYYI)/phi_deno
-    phi_21 =  (ZXXR*ZYXI - ZYXR*ZXXI)/phi_deno
-    phi_11 =  (ZYYR*ZXXI - ZXYR*ZYXI)/phi_deno
-    phi_22 =  (ZXXR*ZYYI - ZYXR*ZXYI)/phi_deno
-    #
-    tr_phi = phi_11 + phi_22
-    sk_phi = phi_12 - phi_21
-    det_phi = (phi_11*phi_22) - (phi_12*phi_21)
-    phi_1 = tr_phi/2
-    phi_2 = np.sqrt(det_phi)
-    phi_3 = sk_phi/2
-    #beta = 0.5 * atan(phi_3/phi_1)
-    beta = 0.5 * np.arctan2(phi_3,phi_1)
-    beta = abs(np.degrees(beta))
-    return beta
 
-def measid(siteindex):
+def measid_create(siteindex):
     measid = {}
     measid['Hx'] = 10 * siteindex + 3 + (1/1000)
     measid['Hy'] = 10 * siteindex + 4 + (1/1000)
@@ -915,21 +950,4 @@ def cleanSpec(bandavg):
     spmat = spmatHx * spmatHy 
     return spmat
 
-def mpdvalues(bandavg):
-    HxHxc = bandavg.get('HxHxc')
-    HyHyc = bandavg.get('HyHyc')
-    HxHyc = bandavg.get('HxHyc')
-    nstacks = np.shape(HxHyc)[1]
-    alphaH = np.arctan(2*np.real(HxHyc)/(HxHxc-HyHyc))
-    alpha_degH = np.degrees(np.real(alphaH))
-
-    #Electric field
-    
-    ExExc = bandavg.get('ExExc')
-    EyEyc = bandavg.get('EyEyc')
-    ExEyc = bandavg.get('ExEyc')
-    alphaE = np.arctan(2*np.real(ExEyc)/(ExExc-EyEyc))
-    alpha_degE = np.degrees(np.real(alphaE))
-    # PD calculated
-    
-    return alpha_degH,alpha_degE
+# Calculating polarization directions

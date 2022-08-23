@@ -2,16 +2,27 @@
 """
 Created on Wed Jan 13 15:47:38 2021
 
-@author: AJITHABH
+@author: AJITHABH K. S.
+Last modified: 21-07-2022
+
+This script can be used to arrange the impedance values, tipper and variances
+in text file to as in EDI file.
+
+See user manual for more detailed explanation
+
+Give path of text file in 'txtfilename' variable.
+
+Give path and EDI name to be created in the variable 'f'.
+
 """
 
 import pandas as pd
 import numpy as np
 
-edifilename = 'C:/Users/Ajithabh/Desktop/Outputs/KL33A/bands/all.txt'
+txtfilename = 'C:/Users/Ajithabh/Desktop/Outputs/KL33A/bands/all.txt'
 f = open("C:/Users/Ajithabh/Desktop/Outputs/KL33A/KL33A-DATA.edi", "x")
 
-data = pd.read_csv(edifilename, sep='\t', lineterminator='\n')
+data = pd.read_csv(txtfilename, sep='\t', lineterminator='\n')
 data = np.asarray(data)
 freq = data[:,0]
 zxxr = data[:,1]
