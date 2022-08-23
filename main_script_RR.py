@@ -41,7 +41,7 @@ import time
 import math
 config = config.configuration()
 # define project path where sites are kept
-project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
+project_path = 'D:/NGRI/FIELD RAW DATA/KL DATA/'
 # #
 # #========= Selection of site and setting a path =========
 sites, selectedsite, measid, all_meas, select_meas, proc_path = mtproc.makeprocpath(project_path)
@@ -156,7 +156,7 @@ alpha_degH,alpha_degE = data_sel.pdvalues(bandavg)
 #====== Coherency threshold ======
 ctflag = 0
 if ctflag == 1:
-    CohThre = [0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6]
+    CohThre = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
     for i in range(np.shape(AllcohEx)[0]):
         for j in range(np.shape(AllcohEx)[1]):
             if AllcohEx[i,j] < CohThre[i]:
