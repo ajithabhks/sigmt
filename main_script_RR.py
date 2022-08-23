@@ -82,7 +82,7 @@ del timelineR, Rstart, Rend
 del Rstart_ind, Rend_ind, tsRx, tsRy
 #========= Decimation section ================= 
 # Keep dflag = 0 if decimation is not required
-dflag = 1
+dflag = 0
 if dflag == 1:
     decimate = [8,4]
     for d in decimate:
