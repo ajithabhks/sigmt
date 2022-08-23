@@ -52,7 +52,7 @@ procinfo = {}
 ts, procinfo['fs'], procinfo['sensor_no'], timeline, procinfo['ChoppStat'], loc = mtproc.ts(proc_path)
 #========= Decimation section ================= 
 # Keep dflag = 0 if decimation is not required
-dflag = 1
+dflag = 0
 if dflag == 1:
     decimate = [8,2]
     for d in decimate:
