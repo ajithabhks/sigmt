@@ -41,7 +41,7 @@ import time
 import math
 config = config.configuration()
 # define project path where sites are kept
-project_path = 'D:/NGRI/FIELD RAW DATA/KL DATA/'
+project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
 # #
 # #========= Selection of site and setting a path =========
 sites, selectedsite, measid, all_meas, select_meas, proc_path = mtproc.makeprocpath(project_path)
