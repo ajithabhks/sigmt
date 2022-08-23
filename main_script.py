@@ -123,7 +123,7 @@ alpha_degH,alpha_degE = data_sel.pdvalues(bandavg)
 #====== Coherency threshold ======
 ctflag = 0 # Give '1' to perform coherency threshold based selection
 if ctflag == 1:
-    CohThre = [0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.9,0.9,0.9,0.9,0.9,0.9]
+    CohThre = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
     for i in range(np.shape(AllcohEx)[0]):
         for j in range(np.shape(AllcohEx)[1]):
             if AllcohEx[i,j] < CohThre[i]:
