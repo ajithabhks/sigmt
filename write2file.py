@@ -22,14 +22,14 @@ Read usermanual for more details.
 """
 
 ftlist = ftlist
-ZxxR = np.real(Zxx_huber)
-ZxxI = np.imag(Zxx_huber)
-ZxyR = np.real(Zxy_huber)
-ZxyI = np.imag(Zxy_huber)
-ZyxR = np.real(Zyx_huber)
-ZyxI = np.imag(Zyx_huber)
-ZyyR = np.real(Zyy_huber)
-ZyyI = np.imag(Zyy_huber)
+ZxxR = np.real(Z_huber.get('Zxx'))
+ZxxI = np.imag(Z_huber.get('Zxx'))
+ZxyR = np.real(Z_huber.get('Zxy'))
+ZxyI = np.imag(Z_huber.get('Zxy'))
+ZyxR = np.real(Z_huber.get('Zyx'))
+ZyxI = np.imag(Z_huber.get('Zyx'))
+ZyyR = np.real(Z_huber.get('Zyy'))
+ZyyI = np.imag(Z_huber.get('Zyy'))
 ZxxVar = Zvar.get('xx')
 ZxyVar = Zvar.get('xy')
 ZyxVar = Zvar.get('yx')
