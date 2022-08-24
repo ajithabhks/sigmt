@@ -38,7 +38,7 @@ TxR = np.real(Tx)
 TxI = np.imag(Tx)
 TyR = np.real(Ty)
 TyI = np.imag(Ty)
-f = open('C:/Users/Ajithabh/Desktop/Outputs/KL33A/bands/1024Hz.txt', 'w')
+f = open('D:/NGRI/PROCESSING FOLDER/JD/bands/32Hz.txt', 'w')
 for i in range(ftlist.shape[0]):
     f.write("%.9E \t %.9E  \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \n" % (ftlist[i][0],
     ZxxR[i][0], ZxxI[i][0], ZxyR[i][0], ZxyI[i][0],ZyxR[i][0], ZyxI[i][0],ZyyR[i][0], 
