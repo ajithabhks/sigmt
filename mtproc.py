@@ -205,9 +205,9 @@ def bandavg(ts,procinfo,config):
     overlap = procinfo.get('overlap')
     ChoppStat = procinfo.get('ChoppStat')
     fs = procinfo.get('fs')
-    ChoppDataHx = np.asarray(ChoppData(sensor_no.get('Hx')[0],ChoppStat))
-    ChoppDataHy = np.asarray(ChoppData(sensor_no.get('Hy')[0],ChoppStat))
-    ChoppDataHz = np.asarray(ChoppData(sensor_no.get('Hz')[0],ChoppStat))
+    ChoppDataHx = np.asarray(ChoppData(sensor_no.get('Hx')[0],ChoppStat,procinfo))
+    ChoppDataHy = np.asarray(ChoppData(sensor_no.get('Hy')[0],ChoppStat,procinfo))
+    ChoppDataHz = np.asarray(ChoppData(sensor_no.get('Hz')[0],ChoppStat,procinfo))
     cal = {}
     # Make calibration values
     magnitude = ChoppDataHx[:,0] * ChoppDataHx[:,1]
@@ -398,8 +398,8 @@ def bandavg(ts,procinfo,config):
     return ftlist,bandavg
 
 #Return Chopper Data from MFS06e cal files
-def ChoppData(sensorno,ChoppStat):
-    f=open('D:/Pyth/SigMT/calfiles/'+str(sensorno)+'.txt', "r")
+def ChoppData(sensorno,ChoppStat,procinfo):
+    f=open(procinfo.get('cal_path')+str(sensorno)+'.txt', "r")
     f1=f.readlines()
     temp1indx = f1.index('Chopper On\n')
     temp2indx = f1.index('Chopper Off                             \n')
@@ -548,6 +548,16 @@ def targetfreq(fs):
                    #3.27356191481513E-0004, 2.44140625000000E-0004,
                    #2.21221629107045E-0004, 1.69779424635856E-0004)
         # ftlist = ( 7.01387158203311E+0000)
+    # else:
+    #     with open('ADU-07.flst') as f:
+    #         lines = f.readlines()
+    #     fup = (fs/8)/(np.sqrt(2 ** (1-1)))
+    #     lines[min(range(len(lines)), key = lambda i: abs(lines[i]-fup))]
+    #     index = np.argmin(np.abs(np.array(arr)-fup))
+    #     flist = [0,0,0,0,0,0,0,0,]
+    #     for i in range(10):
+    #         flist[i] = (fs/8)/(np.sqrt(2 ** (i-1)))
+    #     flist = tuple(flist)
     return ftlist
 
 # Get Jackknife values

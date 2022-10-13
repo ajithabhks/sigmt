@@ -185,11 +185,11 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
     ChoppStat = procinfo.get('ChoppStat')
     ChoppStatR = procinfo.get('ChoppStat')
     fs = procinfo.get('fs')
-    ChoppDataHx = np.asarray(ChoppData(sensor_no.get('Hx')[0],ChoppStat))
-    ChoppDataHy = np.asarray(ChoppData(sensor_no.get('Hy')[0],ChoppStat))
-    ChoppDataHz = np.asarray(ChoppData(sensor_no.get('Hz')[0],ChoppStat))
-    ChoppDataRx = np.asarray(ChoppData(sensor_noR.get('Hx')[0],ChoppStatR))
-    ChoppDataRy = np.asarray(ChoppData(sensor_noR.get('Hy')[0],ChoppStatR))
+    ChoppDataHx = np.asarray(ChoppData(sensor_no.get('Hx')[0],ChoppStat,procinfo))
+    ChoppDataHy = np.asarray(ChoppData(sensor_no.get('Hy')[0],ChoppStat,procinfo))
+    ChoppDataHz = np.asarray(ChoppData(sensor_no.get('Hz')[0],ChoppStat,procinfo))
+    ChoppDataRx = np.asarray(ChoppData(sensor_noR.get('Hx')[0],ChoppStatR,procinfo))
+    ChoppDataRy = np.asarray(ChoppData(sensor_noR.get('Hy')[0],ChoppStatR,procinfo))
     cal = {}
     # Make calibration values
     magnitude = ChoppDataHx[:,0] * ChoppDataHx[:,1]
@@ -410,7 +410,7 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
 
 #Return Chopper Data from MFS06e cal files
 def ChoppData(sensorno,ChoppStat):
-    f=open('D:/Pyth/SigMT/calfiles/'+str(sensorno)+'.txt', "r")
+    f=open(procinfo.get('cal_path')+str(sensorno)+'.txt', "r")
     f1=f.readlines()
     temp1indx = f1.index('Chopper On\n')
     temp2indx = f1.index('Chopper Off                             \n')

@@ -40,8 +40,10 @@ import os
 import time
 import math
 config = config.configuration()
+## Provide path to folder where calibration files are kept
+cal_path = 'D:/Pyth/SigMT/calfiles/'
 # define project path where sites are kept
-project_path = 'D:/NGRI/FIELD RAW DATA/KL DATA/'
+project_path = 'D:/NGRI/FIELD RAW DATA/JD/'
 # #
 # #========= Selection of site and setting a path =========
 sites, selectedsite, measid, all_meas, select_meas, proc_path = mtproc.makeprocpath(project_path)
@@ -82,9 +84,9 @@ del timelineR, Rstart, Rend
 del Rstart_ind, Rend_ind, tsRx, tsRy
 #========= Decimation section ================= 
 # Keep dflag = 0 if decimation is not required
-dflag = 0
+dflag = 1
 if dflag == 1:
-    decimate = [8,4]
+    decimate = [8,8,4]
     for d in decimate:
         ts['tsEx'] = signal.decimate(ts.get('tsEx'), d, n=None, ftype='iir')
         ts['tsEy'] = signal.decimate(ts.get('tsEy'), d, n=None, ftype='iir')
@@ -112,6 +114,7 @@ print('--------------------')
 procinfo['meas'] = all_meas[select_meas]
 procinfo['proc_path'] = proc_path
 procinfo['selectedsite'] = selectedsite
+procinfo['cal_path'] = cal_path
 del all_meas, select_meas, selectedsite
 del all_measR, select_measR, selectedsiteR, proc_pathR
 del proc_path, project_path, sites

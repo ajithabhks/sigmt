@@ -38,7 +38,9 @@ import time
 import math
 #
 config = config.configuration()
-## provide project path where sites are kept
+## Provide path to folder where calibration files are kept
+cal_path = 'D:/Pyth/SigMT/calfiles/'
+## Provide project path where sites are kept
 project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
 # #
 # #========= Selection of site and setting a path =========
@@ -54,7 +56,7 @@ ts, procinfo['fs'], procinfo['sensor_no'], timeline, procinfo['ChoppStat'], loc 
 # Keep dflag = 0 if decimation is not required
 dflag = 0
 if dflag == 1:
-    decimate = [8,2]
+    decimate = [8,8,4]
     for d in decimate:
         ts['tsEx'] = signal.decimate(ts.get('tsEx'), d, n=None, ftype='iir')
         ts['tsEy'] = signal.decimate(ts.get('tsEy'), d, n=None, ftype='iir')
@@ -79,6 +81,7 @@ print('--------------------')
 procinfo['meas'] = all_meas[select_meas]
 procinfo['proc_path'] = proc_path
 procinfo['selectedsite'] = selectedsite
+procinfo['cal_path'] = cal_path
 del all_meas, select_meas, selectedsite
 del proc_path, project_path, sites
 print('Unused variables deleted.')
@@ -123,7 +126,7 @@ alpha_degH,alpha_degE = data_sel.pdvalues(bandavg)
 #====== Coherency threshold ======
 ctflag = 0 # Give '1' to perform coherency threshold based selection
 if ctflag == 1:
-    CohThre = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
+    CohThre = [0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.9,0.9,0.9]
     for i in range(np.shape(AllcohEx)[0]):
         for j in range(np.shape(AllcohEx)[1]):
             if AllcohEx[i,j] < CohThre[i]:
@@ -138,7 +141,7 @@ if ctflag == 1:
 #====== Polarization direction ======
 pdflag = 0 # Give '1' to perform polarization direction based selection
 if pdflag == 1:
-    pdlim = [-10,10]
+    pdlim = [40,60]
     alpha = alpha_degE # Use either alpha_degE or alpha_degH
     for i in range(np.shape(pdmat)[0]):
         for j in range(np.shape(pdmat)[1]):
