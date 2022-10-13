@@ -409,7 +409,7 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
     return ftlist,bandavg
 
 #Return Chopper Data from MFS06e cal files
-def ChoppData(sensorno,ChoppStat):
+def ChoppData(sensorno,ChoppStat,procinfo):
     f=open(procinfo.get('cal_path')+str(sensorno)+'.txt', "r")
     f1=f.readlines()
     temp1indx = f1.index('Chopper On\n')

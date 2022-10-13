@@ -43,7 +43,7 @@ config = config.configuration()
 ## Provide path to folder where calibration files are kept
 cal_path = 'D:/Pyth/SigMT/calfiles/'
 # define project path where sites are kept
-project_path = 'D:/NGRI/FIELD RAW DATA/JD/'
+project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
 # #
 # #========= Selection of site and setting a path =========
 sites, selectedsite, measid, all_meas, select_meas, proc_path = mtproc.makeprocpath(project_path)
