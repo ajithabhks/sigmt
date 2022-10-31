@@ -3,7 +3,7 @@
 Created on Wed Jan  6 12:27:42 2021
 
 @author: AJITHABH K. S.
-Last modified: 27-07-2022
+Last modified: 31-10-2022
 
 ##########
 Program: SigMT
@@ -41,7 +41,7 @@ import time
 import math
 config = config.configuration()
 ## Provide path to folder where calibration files are kept
-cal_path = 'D:/SigMT/calfiles/'
+cal_path = 'D:/Pyth/SigMT/calfiles/'
 # define project path where sites are kept
 project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
 # #
@@ -84,7 +84,7 @@ del timelineR, Rstart, Rend
 del Rstart_ind, Rend_ind, tsRx, tsRy
 #========= Decimation section ================= 
 # Keep dflag = 0 if decimation is not required
-dflag = 0
+dflag = 1
 if dflag == 1:
     decimate = [8,8,4]
     for d in decimate:

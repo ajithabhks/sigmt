@@ -2,7 +2,7 @@
 """
 Created on Mon May  4 16:49:35 2020
 @author: AJITHABH K. S.
-Last modified: 27-07-2022
+Last modified: 31-10-2022
 
 ##########
 Program: SigMT
@@ -39,7 +39,7 @@ import math
 #
 config = config.configuration()
 ## Provide path to folder where calibration files are kept
-cal_path = 'D:/SigMT/calfiles/'
+cal_path = 'D:/Pyth/SigMT/calfiles/'
 ## Provide project path where sites are kept
 # project_path = 'D:/NGRI/FIELD RAW DATA/LU_DATA_MT/'
 project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
