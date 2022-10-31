@@ -12,7 +12,7 @@ computation of fourier transform, calculation of impedances, etc.
 
 Purpose of each functions are given as comments.
 """
-import os
+import os, re
 from scipy import signal
 from scipy.fft import fft
 import numpy as np
@@ -185,11 +185,11 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
     ChoppStat = procinfo.get('ChoppStat')
     ChoppStatR = procinfo.get('ChoppStat')
     fs = procinfo.get('fs')
-    ChoppDataHx = np.asarray(ChoppData(sensor_no.get('Hx')[0],ChoppStat,procinfo))
-    ChoppDataHy = np.asarray(ChoppData(sensor_no.get('Hy')[0],ChoppStat,procinfo))
-    ChoppDataHz = np.asarray(ChoppData(sensor_no.get('Hz')[0],ChoppStat,procinfo))
-    ChoppDataRx = np.asarray(ChoppData(sensor_noR.get('Hx')[0],ChoppStatR,procinfo))
-    ChoppDataRy = np.asarray(ChoppData(sensor_noR.get('Hy')[0],ChoppStatR,procinfo))
+    ChoppDataHx = ChoppData(sensor_no.get('Hx')[0],ChoppStat,procinfo)
+    ChoppDataHy = ChoppData(sensor_no.get('Hy')[0],ChoppStat,procinfo)
+    ChoppDataHz = ChoppData(sensor_no.get('Hz')[0],ChoppStat,procinfo)
+    ChoppDataRx = ChoppData(sensor_noR.get('Hx')[0],ChoppStatR,procinfo)
+    ChoppDataRy = ChoppData(sensor_noR.get('Hy')[0],ChoppStatR,procinfo)
     cal = {}
     # Make calibration values
     magnitude = ChoppDataHx[:,0] * ChoppDataHx[:,1]
@@ -410,21 +410,18 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
 
 #Return Chopper Data from MFS06e cal files
 def ChoppData(sensorno,ChoppStat,procinfo):
-    f=open(procinfo.get('cal_path')+str(sensorno)+'.txt', "r")
-    f1=f.readlines()
-    temp1indx = f1.index('Chopper On\n')
-    temp2indx = f1.index('Chopper Off                             \n')
-    ChoppOnData = f1[temp1indx+1:temp1indx+1+56]
-    ChoppOffData = f1[temp2indx+1:temp2indx+1+45]
-    # f1.index('Chopper On')
     a = []
-    for line in ChoppOnData:
-        a.append([float(x) for x in line.split("  ")[0:3]])
-    ChoppOnData = a
-    a = []
-    for line in ChoppOffData:
-        a.append([float(x) for x in line.split("  ")[0:3]])
-    ChoppOffData = a
+    with open(procinfo.get('cal_path')+str(sensorno)+'.txt', 'r') as file_1:
+        for line in file_1.readlines():
+            if re.match(r'([+-]?[\d.]+(?:e-?\d+)?){3}', line): 
+                line = line.strip()
+                a.append([float(x) for x in line.split("  ")[0:3]])
+                # print(line)
+        a = np.asarray(a)
+        bb = a[:,0]
+        np.where(bb == 1)[0][1]
+        ChoppOnData = a[0:np.where(bb == 1)[0][1],:]
+        ChoppOffData = a[np.where(bb == 1)[0][1]:np.shape(a)[0],:]
     if ChoppStat == 1:
         ChoppData = ChoppOnData
     elif ChoppStat == 0:

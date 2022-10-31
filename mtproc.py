@@ -13,7 +13,7 @@ computation of fourier transform, calculation of impedances, etc.
 Purpose of each functions are given as comments.
 
 """
-import os
+import os, re
 from scipy import signal
 from scipy.fft import fft
 import numpy as np
@@ -205,9 +205,10 @@ def bandavg(ts,procinfo,config):
     overlap = procinfo.get('overlap')
     ChoppStat = procinfo.get('ChoppStat')
     fs = procinfo.get('fs')
-    ChoppDataHx = np.asarray(ChoppData(sensor_no.get('Hx')[0],ChoppStat,procinfo))
-    ChoppDataHy = np.asarray(ChoppData(sensor_no.get('Hy')[0],ChoppStat,procinfo))
-    ChoppDataHz = np.asarray(ChoppData(sensor_no.get('Hz')[0],ChoppStat,procinfo))
+    notch = procinfo.get('notch')
+    ChoppDataHx = ChoppData(sensor_no.get('Hx')[0],ChoppStat,procinfo)
+    ChoppDataHy = ChoppData(sensor_no.get('Hy')[0],ChoppStat,procinfo)
+    ChoppDataHz = ChoppData(sensor_no.get('Hz')[0],ChoppStat,procinfo)
     cal = {}
     # Make calibration values
     magnitude = ChoppDataHx[:,0] * ChoppDataHx[:,1]
@@ -223,23 +224,17 @@ def bandavg(ts,procinfo,config):
     ftlist = targetfreq(fs) # get frequency list
     ftlist = np.asarray(ftlist)
     ftlist = ftlist.reshape(-1, 1)
-    if fs >= 512:
-        # Notch filter
+    if notch == 1:
         f0 = 50.0  # Frequency to be removed from signal (Hz)
-        Q = 2.0  # Quality factor
-        w0 = f0/(fs/2)  # Normalized Frequency
+        Qua = 20.0  # Quality factor
         # Design notch filter
-        bbb, aaa = signal.iirnotch(w0, Q)
-    # if fs >=512:
-    #     nyq  = fs/2.0
-    #     low  = 50 - 5/2.0
-    #     high = 50 + 5/2.0
-    #     low  = low/nyq
-    #     high = high/nyq
-    #     bbb, aaa = iirfilter(6, [low, high], rp=1, btype='bandstop',
-    #                       analog=False, ftype='butter')
-    # #
-    #
+        b_notch, a_notch = signal.iirnotch(f0, Qua, fs)
+        f1 = 150.0  # Frequency to be removed from signal (Hz)
+        # Design notch filter
+        b2_notch, a2_notch = signal.iirnotch(f1, Qua, fs)
+        f2 = 100.0  # Frequency to be removed from signal (Hz)
+        # Design notch filter
+        b3_notch, a3_notch = signal.iirnotch(f2, Qua, fs)
     # Get time series / prob loop here later
     # ExHxc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')))
     dof = np.empty((np.shape(ftlist)[0],1),dtype=int)
@@ -274,6 +269,22 @@ def bandavg(ts,procinfo,config):
             tsHx = ts.get('tsHx')[s1[stack]:s2[stack]]
             tsHy = ts.get('tsHy')[s1[stack]:s2[stack]]
             tsHz = ts.get('tsHz')[s1[stack]:s2[stack]]
+            if notch == 1:
+                tsEx = signal.filtfilt(b_notch, a_notch, tsEx)
+                tsEy = signal.filtfilt(b_notch, a_notch, tsEy)
+                tsHx = signal.filtfilt(b_notch, a_notch, tsHx)
+                tsHy = signal.filtfilt(b_notch, a_notch, tsHy)
+                tsHz = signal.filtfilt(b_notch, a_notch, tsHz)
+                tsEx = signal.filtfilt(b2_notch, a2_notch, tsEx)
+                tsEy = signal.filtfilt(b2_notch, a2_notch, tsEy)
+                tsHx = signal.filtfilt(b2_notch, a2_notch, tsHx)
+                tsHy = signal.filtfilt(b2_notch, a2_notch, tsHy)
+                tsHz = signal.filtfilt(b2_notch, a2_notch, tsHz)
+                tsEx = signal.filtfilt(b3_notch, a3_notch, tsEx)
+                tsEy = signal.filtfilt(b3_notch, a3_notch, tsEy)
+                tsHx = signal.filtfilt(b3_notch, a3_notch, tsHx)
+                tsHy = signal.filtfilt(b3_notch, a3_notch, tsHy)
+                tsHz = signal.filtfilt(b3_notch, a3_notch, tsHz)
             dtsEx = signal.detrend(tsEx)
             dtsEy = signal.detrend(tsEy)
             dtsHx = signal.detrend(tsHx)
@@ -299,6 +310,22 @@ def bandavg(ts,procinfo,config):
             tsHx = ts.get('tsHx')[s1[stack]:s2[stack]]
             tsHy = ts.get('tsHy')[s1[stack]:s2[stack]]
             tsHz = ts.get('tsHz')[s1[stack]:s2[stack]]
+            if notch == 1:
+                tsEx = signal.filtfilt(b_notch, a_notch, tsEx)
+                tsEy = signal.filtfilt(b_notch, a_notch, tsEy)
+                tsHx = signal.filtfilt(b_notch, a_notch, tsHx)
+                tsHy = signal.filtfilt(b_notch, a_notch, tsHy)
+                tsHz = signal.filtfilt(b_notch, a_notch, tsHz)
+                tsEx = signal.filtfilt(b2_notch, a2_notch, tsEx)
+                tsEy = signal.filtfilt(b2_notch, a2_notch, tsEy)
+                tsHx = signal.filtfilt(b2_notch, a2_notch, tsHx)
+                tsHy = signal.filtfilt(b2_notch, a2_notch, tsHy)
+                tsHz = signal.filtfilt(b2_notch, a2_notch, tsHz)
+                tsEx = signal.filtfilt(b3_notch, a3_notch, tsEx)
+                tsEy = signal.filtfilt(b3_notch, a3_notch, tsEy)
+                tsHx = signal.filtfilt(b3_notch, a3_notch, tsHx)
+                tsHy = signal.filtfilt(b3_notch, a3_notch, tsHy)
+                tsHz = signal.filtfilt(b3_notch, a3_notch, tsHz)
             dtsEx = signal.detrend(tsEx)
             dtsEy = signal.detrend(tsEy)
             dtsHx = signal.detrend(tsHx)
@@ -399,21 +426,18 @@ def bandavg(ts,procinfo,config):
 
 #Return Chopper Data from MFS06e cal files
 def ChoppData(sensorno,ChoppStat,procinfo):
-    f=open(procinfo.get('cal_path')+str(sensorno)+'.txt', "r")
-    f1=f.readlines()
-    temp1indx = f1.index('Chopper On\n')
-    temp2indx = f1.index('Chopper Off                             \n')
-    ChoppOnData = f1[temp1indx+1:temp1indx+1+56]
-    ChoppOffData = f1[temp2indx+1:temp2indx+1+45]
-    # f1.index('Chopper On')
     a = []
-    for line in ChoppOnData:
-        a.append([float(x) for x in line.split("  ")[0:3]])
-    ChoppOnData = a
-    a = []
-    for line in ChoppOffData:
-        a.append([float(x) for x in line.split("  ")[0:3]])
-    ChoppOffData = a
+    with open(procinfo.get('cal_path')+str(sensorno)+'.txt', 'r') as file_1:
+        for line in file_1.readlines():
+            if re.match(r'([+-]?[\d.]+(?:e-?\d+)?){3}', line): 
+                line = line.strip()
+                a.append([float(x) for x in line.split("  ")[0:3]])
+                # print(line)
+        a = np.asarray(a)
+        bb = a[:,0]
+        np.where(bb == 1)[0][1]
+        ChoppOnData = a[0:np.where(bb == 1)[0][1],:]
+        ChoppOffData = a[np.where(bb == 1)[0][1]:np.shape(a)[0],:]
     if ChoppStat == 1:
         ChoppData = ChoppOnData
     elif ChoppStat == 0:
@@ -545,6 +569,12 @@ def targetfreq(fs):
                    2.55084524166997E-0003, 1.90240773745913E-0003, 1.41880626092981E-0003,
                    1.05813867680238E-0003, 7.89154580281698E-0004, 5.88547574370430E-0004,
                    4.38935863710846E-0004)
+    elif fs==32768:
+        ftlist = ( 8.00000000000000E+0003, 5.96636034638832E+0003, 4.44968197286938E+0003,
+         3.31855075962085E+0003, 2.47495870745984E+0003, 1.84581193639211E+0003,
+         1.37659739302252E+0003, 1.02665951233389E+0003, 7.65677575453908E+0002,
+         5.71038540538369E+0002, 4.25877713065949E+0002, 3.17617487455902E+0002,
+         2.36877547809548E+0002)
                    #3.27356191481513E-0004, 2.44140625000000E-0004,
                    #2.21221629107045E-0004, 1.69779424635856E-0004)
         # ftlist = ( 7.01387158203311E+0000)

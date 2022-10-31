@@ -7,7 +7,7 @@ Last modified: 27-07-2022
 ##########
 Program: SigMT
 Program for the processing of MT time series.
-Authors: Ajithabh K.S. and Prasanta K. Patro
+Authors: Ajithabh K. S. and Prasanta K. Patro
 CSIR - National Geophysical Research Institute, Hyderabad, India.
 ##########
 
@@ -39,8 +39,9 @@ import math
 #
 config = config.configuration()
 ## Provide path to folder where calibration files are kept
-cal_path = 'D:/Pyth/SigMT/calfiles/'
+cal_path = 'D:/SigMT/calfiles/'
 ## Provide project path where sites are kept
+# project_path = 'D:/NGRI/FIELD RAW DATA/LU_DATA_MT/'
 project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
 # #
 # #========= Selection of site and setting a path =========
@@ -96,7 +97,7 @@ print('\nWindow Length selected: '+ str(procinfo.get('WindowLength')))
 procinfo['nstacks'] = math.floor(procinfo.get('nofs')/procinfo.get('WindowLength'))
 procinfo['nstacks'] = (procinfo.get('nstacks') * 2) - 1
 print('Time series overlap: ' + str(procinfo.get('overlap'))+'%')
-print('No. of stacks: '+ str(procinfo.get('nstacks')))
+print('No. of windows: '+ str(procinfo.get('nstacks') + 1))
 print('--------------------')
 print('\nBand averaging over target frequencies:')
 #
@@ -126,7 +127,7 @@ alpha_degH,alpha_degE = data_sel.pdvalues(bandavg)
 #====== Coherency threshold ======
 ctflag = 0 # Give '1' to perform coherency threshold based selection
 if ctflag == 1:
-    CohThre = [0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.7,0.9,0.9,0.9]
+    CohThre = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
     for i in range(np.shape(AllcohEx)[0]):
         for j in range(np.shape(AllcohEx)[1]):
             if AllcohEx[i,j] < CohThre[i]:
@@ -141,7 +142,7 @@ if ctflag == 1:
 #====== Polarization direction ======
 pdflag = 0 # Give '1' to perform polarization direction based selection
 if pdflag == 1:
-    pdlim = [40,60]
+    pdlim = [-10,10]
     alpha = alpha_degE # Use either alpha_degE or alpha_degH
     for i in range(np.shape(pdmat)[0]):
         for j in range(np.shape(pdmat)[1]):
