@@ -97,9 +97,8 @@ print('\nWindow Length selected: '+ str(procinfo.get('WindowLength')))
 procinfo['nstacks'] = math.floor(procinfo.get('nofs')/procinfo.get('WindowLength'))
 procinfo['nstacks'] = (procinfo.get('nstacks') * 2) - 1
 print('Time series overlap: ' + str(procinfo.get('overlap'))+'%')
-print('No. of windows: '+ str(procinfo.get('nstacks') + 1))
+print('No. of windows: '+ str(procinfo.get('nstacks')))
 print('--------------------')
-print('\nBand averaging over target frequencies:')
 #
 #
 #==================== Start band averaging ====================

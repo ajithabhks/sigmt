@@ -20,7 +20,6 @@ import numpy as np
 from datetime import datetime as dt
 from matplotlib import pyplot as plt
 from tqdm import tqdm
-from scipy.signal import butter, lfilter, freqz, iirfilter
 #
 #
 # to read ADU07e rawdata
@@ -184,18 +183,6 @@ def FFTLength(nofsamples):
     # WindowLength = 256
     return WindowLength
 
-# Low pass filter. NOT USED!!!
-def butter_lowpass(cutoff, fs, order=5):
-    nyq = 0.5 * fs
-    normal_cutoff = cutoff / nyq
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
-    return b, a
-
-def butter_lowpass_filter(data, cutoff, fs, order):
-    b, a = butter_lowpass(cutoff, fs, order=order)
-    y = lfilter(b, a, data)
-    return y
-
 
 # This is an important function. Here, auto and cross spectra are calculated for 
 # each target frequencies and impedance values are computed for all events.
@@ -224,17 +211,6 @@ def bandavg(ts,procinfo,config):
     ftlist = targetfreq(fs) # get frequency list
     ftlist = np.asarray(ftlist)
     ftlist = ftlist.reshape(-1, 1)
-    if notch == 1:
-        f0 = 50.0  # Frequency to be removed from signal (Hz)
-        Qua = 20.0  # Quality factor
-        # Design notch filter
-        b_notch, a_notch = signal.iirnotch(f0, Qua, fs)
-        f1 = 150.0  # Frequency to be removed from signal (Hz)
-        # Design notch filter
-        b2_notch, a2_notch = signal.iirnotch(f1, Qua, fs)
-        f2 = 100.0  # Frequency to be removed from signal (Hz)
-        # Design notch filter
-        b3_notch, a3_notch = signal.iirnotch(f2, Qua, fs)
     # Get time series / prob loop here later
     # ExHxc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')))
     dof = np.empty((np.shape(ftlist)[0],1),dtype=int)
@@ -262,129 +238,100 @@ def bandavg(ts,procinfo,config):
     s2 = np.empty(procinfo.get('nstacks')+1,dtype=int)
     s1[0] = 0
     s2[0] = WindowLength
-    for stack in tqdm(range(procinfo.get('nstacks'))):
-        if ChoppStat == 1:
-            tsEx = ts.get('tsEx')[s1[stack]:s2[stack]]
-            tsEy = ts.get('tsEy')[s1[stack]:s2[stack]]
-            tsHx = ts.get('tsHx')[s1[stack]:s2[stack]]
-            tsHy = ts.get('tsHy')[s1[stack]:s2[stack]]
-            tsHz = ts.get('tsHz')[s1[stack]:s2[stack]]
-            if notch == 1:
-                tsEx = signal.filtfilt(b_notch, a_notch, tsEx)
-                tsEy = signal.filtfilt(b_notch, a_notch, tsEy)
-                tsHx = signal.filtfilt(b_notch, a_notch, tsHx)
-                tsHy = signal.filtfilt(b_notch, a_notch, tsHy)
-                tsHz = signal.filtfilt(b_notch, a_notch, tsHz)
-                tsEx = signal.filtfilt(b2_notch, a2_notch, tsEx)
-                tsEy = signal.filtfilt(b2_notch, a2_notch, tsEy)
-                tsHx = signal.filtfilt(b2_notch, a2_notch, tsHx)
-                tsHy = signal.filtfilt(b2_notch, a2_notch, tsHy)
-                tsHz = signal.filtfilt(b2_notch, a2_notch, tsHz)
-                tsEx = signal.filtfilt(b3_notch, a3_notch, tsEx)
-                tsEy = signal.filtfilt(b3_notch, a3_notch, tsEy)
-                tsHx = signal.filtfilt(b3_notch, a3_notch, tsHx)
-                tsHy = signal.filtfilt(b3_notch, a3_notch, tsHy)
-                tsHz = signal.filtfilt(b3_notch, a3_notch, tsHz)
-            dtsEx = signal.detrend(tsEx)
-            dtsEy = signal.detrend(tsEy)
-            dtsHx = signal.detrend(tsHx)
-            dtsHy = signal.detrend(tsHy)
-            dtsHz = signal.detrend(tsHz)
-            # Finding FFT and Freq values
-            f,xfftEx = dofft(np.asarray(dtsEx),fs,WindowLength)
-            f,xfftEy = dofft(np.asarray(dtsEy),fs,WindowLength)
-            f,xfftHx = dofft(np.asarray(dtsHx),fs,WindowLength)
-            f,xfftHy = dofft(np.asarray(dtsHy),fs,WindowLength)
-            f,xfftHz = dofft(np.asarray(dtsHz),fs,WindowLength)
-            f = f[:,0]
-            # do Calibration
-            calEx = np.delete(xfftEx,0,)
-            calEy = np.delete(xfftEy,0,)
-            calHx = calibrateon(f,xfftHx,ChoppDataHx,calt_Hx)
-            calHy = calibrateon(f,xfftHy,ChoppDataHy,calt_Hy)
-            calHz = calibrateon(f,xfftHz,ChoppDataHz,calt_Hz)
-            f = np.delete(f,0,)        
-        elif ChoppStat == 0:
-            tsEx = ts.get('tsEx')[s1[stack]:s2[stack]]
-            tsEy = ts.get('tsEy')[s1[stack]:s2[stack]]
-            tsHx = ts.get('tsHx')[s1[stack]:s2[stack]]
-            tsHy = ts.get('tsHy')[s1[stack]:s2[stack]]
-            tsHz = ts.get('tsHz')[s1[stack]:s2[stack]]
-            if notch == 1:
-                tsEx = signal.filtfilt(b_notch, a_notch, tsEx)
-                tsEy = signal.filtfilt(b_notch, a_notch, tsEy)
-                tsHx = signal.filtfilt(b_notch, a_notch, tsHx)
-                tsHy = signal.filtfilt(b_notch, a_notch, tsHy)
-                tsHz = signal.filtfilt(b_notch, a_notch, tsHz)
-                tsEx = signal.filtfilt(b2_notch, a2_notch, tsEx)
-                tsEy = signal.filtfilt(b2_notch, a2_notch, tsEy)
-                tsHx = signal.filtfilt(b2_notch, a2_notch, tsHx)
-                tsHy = signal.filtfilt(b2_notch, a2_notch, tsHy)
-                tsHz = signal.filtfilt(b2_notch, a2_notch, tsHz)
-                tsEx = signal.filtfilt(b3_notch, a3_notch, tsEx)
-                tsEy = signal.filtfilt(b3_notch, a3_notch, tsEy)
-                tsHx = signal.filtfilt(b3_notch, a3_notch, tsHx)
-                tsHy = signal.filtfilt(b3_notch, a3_notch, tsHy)
-                tsHz = signal.filtfilt(b3_notch, a3_notch, tsHz)
-            dtsEx = signal.detrend(tsEx)
-            dtsEy = signal.detrend(tsEy)
-            dtsHx = signal.detrend(tsHx)
-            dtsHy = signal.detrend(tsHy)
-            dtsHz = signal.detrend(tsHz)
-            # Finding FFT and Freq values
-            f,xfftEx = dofft(np.asarray(dtsEx),fs,WindowLength)
-            f,xfftEy = dofft(np.asarray(dtsEy),fs,WindowLength)
-            f,xfftHx = dofft(np.asarray(dtsHx),fs,WindowLength)
-            f,xfftHy = dofft(np.asarray(dtsHy),fs,WindowLength)
-            f,xfftHz = dofft(np.asarray(dtsHz),fs,WindowLength)
-            f = f[:,0]
-            calEx = np.delete(xfftEx,0,)
-            calEy = np.delete(xfftEy,0,)
-            calHx = calibrateoff(f,xfftHx,ChoppDataHx,calt_Hx)
-            calHy = calibrateoff(f,xfftHy,ChoppDataHy,calt_Hy)
-            calHz = calibrateoff(f,xfftHz,ChoppDataHz,calt_Hz)
-            f = np.delete(f,0,)
-        if config.get('parzen_radius') == 0:
-            if fs >= 1000:
-                cr = 0.05
-            elif (fs < 1000):
-                cr = 0.25
-            if fs == 512:
-                cr = 0.1
-            if fs <= 0.125:
-                cr = 0.4
-        else:
-            cr = config.get('parzen_radius')
-        for i in (range(np.shape(ftlist)[0])):
-            ft = ftlist[i]
-            pf = parzen(f,ft,cr)
-            dof[i,0] = (2*2*np.sum(pf!=0))-4
-            # dof = dof * ((1/2) + (1/np.pi))
-            Ex[i,stack] = np.sum((calEx) * pf) / np.sum(pf)
-            # Ex[i,stack] = np.sum((calEx * np.conj(calEx)) * pf) / np.sum(pf)
-            Ey[i,stack] = np.sum((calEy) * pf) / np.sum(pf)
-            # Ey[i,stack] = np.sum((calEy * np.conj(calEy)) * pf) / np.sum(pf)
-            Hx[i,stack] = np.sum((calHx) * pf) / np.sum(pf)
-            Hy[i,stack] = np.sum((calHy) * pf) / np.sum(pf)
-            Hz[i,stack] = np.sum((calHz) * pf) / np.sum(pf)
-            ExHxc[i,stack] = np.sum((calEx * np.conj(calHx)) * pf) / np.sum(pf)
-            ExHyc[i,stack] = np.sum((calEx * np.conj(calHy)) * pf) / np.sum(pf)
-            EyHxc[i,stack] = np.sum((calEy * np.conj(calHx)) * pf) / np.sum(pf)
-            EyHyc[i,stack] = np.sum((calEy * np.conj(calHy)) * pf) / np.sum(pf)
-            HxHxc[i,stack] = np.sum((calHx * np.conj(calHx)) * pf) / np.sum(pf)
-            HxHyc[i,stack] = np.sum((calHx * np.conj(calHy)) * pf) / np.sum(pf)
-            HyHxc[i,stack] = np.sum((calHy * np.conj(calHx)) * pf) / np.sum(pf)
-            HyHyc[i,stack] = np.sum((calHy * np.conj(calHy)) * pf) / np.sum(pf)
-            ExExc[i,stack] = np.sum((calEx * np.conj(calEx)) * pf) / np.sum(pf)
-            EyEyc[i,stack] = np.sum((calEy * np.conj(calEy)) * pf) / np.sum(pf)
-            ExEyc[i,stack] = np.sum((calEx * np.conj(calEy)) * pf) / np.sum(pf)
-            HzHxc[i,stack] = np.sum((calHz * np.conj(calHx)) * pf) / np.sum(pf)
-            HzHyc[i,stack] = np.sum((calHz * np.conj(calHy)) * pf) / np.sum(pf)
-            avgf[i,0] = np.sum(pf!=0)
-        # s1 = s2+1
-        # s2 = s1+WindowLength-1 
+    tsEx = np.empty((WindowLength,procinfo.get('nstacks')),dtype=float)
+    tsEy = np.empty((WindowLength,procinfo.get('nstacks')),dtype=float)
+    tsHx = np.empty((WindowLength,procinfo.get('nstacks')),dtype=float)
+    tsHy = np.empty((WindowLength,procinfo.get('nstacks')),dtype=float)
+    tsHz = np.empty((WindowLength,procinfo.get('nstacks')),dtype=float)
+    for stack in (range(procinfo.get('nstacks'))):
+        #tsEx[:,stack] = ts.get('tsEx')[s1[0]:s2[0]]
+        tsEx[:,stack] = ts.get('tsEx')[s1[stack]:s2[stack]]
+        tsEy[:,stack] = ts.get('tsEy')[s1[stack]:s2[stack]]
+        tsHx[:,stack] = ts.get('tsHx')[s1[stack]:s2[stack]]
+        tsHy[:,stack] = ts.get('tsHy')[s1[stack]:s2[stack]]
+        tsHz[:,stack] = ts.get('tsHz')[s1[stack]:s2[stack]]
         s1[stack+1] = int(s2[stack]-(WindowLength/2))
         s2[stack+1] = int(s2[stack]+(WindowLength/2))
+    if notch == 1:
+        print("Applying notch filter...")
+        tsEx = notchfil(tsEx,fs)
+        tsEy = notchfil(tsEy,fs)
+        tsHx = notchfil(tsHx,fs)
+        tsHy = notchfil(tsHy,fs)
+        tsHz = notchfil(tsHz,fs)
+        print("Done!")
+    print("\nApplying detrend...")
+    dtsEx = signal.detrend(tsEx,axis= 0)
+    dtsEy = signal.detrend(tsEy,axis= 0)
+    dtsHx = signal.detrend(tsHx,axis= 0)
+    dtsHy = signal.detrend(tsHy,axis= 0)
+    dtsHz = signal.detrend(tsHz,axis= 0)
+    print("Done!")
+    #
+    print("\nComputing FFT...")
+    fqs,xfftEx = dofft(dtsEx,fs,WindowLength)
+    fqs,xfftEy = dofft(dtsEy,fs,WindowLength)
+    fqs,xfftHx = dofft(dtsHx,fs,WindowLength)
+    fqs,xfftHy = dofft(dtsHy,fs,WindowLength)
+    fqs,xfftHz = dofft(dtsHz,fs,WindowLength)
+    print("Done!")
+    calEx = np.delete(xfftEx, 0, 0)
+    calEy = np.delete(xfftEy, 0, 0)
+    calHx = np.empty(calEx.shape,dtype=complex)
+    calHy = np.empty(calEx.shape,dtype=complex)
+    calHz = np.empty(calEx.shape,dtype=complex)
+    print('\nCalibrating...')
+    for stack in range(procinfo.get('nstacks')):
+        if ChoppStat == 1:
+            f = fqs[:,0]
+            # do Calibration
+            calHx[:,stack] = calibrateon(f,xfftHx[:,stack],ChoppDataHx,calt_Hx)
+            calHy[:,stack] = calibrateon(f,xfftHy[:,stack],ChoppDataHy,calt_Hy)
+            calHz[:,stack] = calibrateon(f,xfftHz[:,stack],ChoppDataHz,calt_Hz)
+            f = np.delete(f,0,)        
+        elif ChoppStat == 0:
+            f = fqs[:,0]
+            calHx[:,stack] = calibrateoff(f,xfftHx[:,stack],ChoppDataHx,calt_Hx)
+            calHy[:,stack] = calibrateoff(f,xfftHy[:,stack],ChoppDataHy,calt_Hy)
+            calHz[:,stack] = calibrateoff(f,xfftHz[:,stack],ChoppDataHz,calt_Hz)
+            f = np.delete(f,0,)
+    print("Done!")
+    print('\nBand averaging over target frequencies:')
+    if config.get('parzen_radius') == 0:
+        if fs >= 1000:
+            cr = 0.05
+        elif (fs < 1000):
+            cr = 0.25
+        if fs == 512:
+            cr = 0.1
+        if fs <= 0.125:
+            cr = 0.4
+    else:
+        cr = config.get('parzen_radius')
+    for i in tqdm(range(np.shape(ftlist)[0])):
+        ft = ftlist[i]
+        pf = parzen(f,ft,cr)
+        dof[i,0] = (2*2*np.sum(pf!=0))-4
+        for stack in (range(procinfo.get('nstacks'))):
+            Ex[i,stack] = np.sum((calEx[:,stack]) * pf) / np.sum(pf)
+            Ey[i,stack] = np.sum((calEy[:,stack]) * pf) / np.sum(pf)
+            Hx[i,stack] = np.sum((calHx[:,stack]) * pf) / np.sum(pf)
+            Hy[i,stack] = np.sum((calHy[:,stack]) * pf) / np.sum(pf)
+            Hz[i,stack] = np.sum((calHz[:,stack]) * pf) / np.sum(pf)
+            ExHxc[i,stack] = np.sum((calEx[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
+            ExHyc[i,stack] = np.sum((calEx[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
+            EyHxc[i,stack] = np.sum((calEy[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
+            EyHyc[i,stack] = np.sum((calEy[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
+            HxHxc[i,stack] = np.sum((calHx[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
+            HxHyc[i,stack] = np.sum((calHx[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
+            HyHxc[i,stack] = np.sum((calHy[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
+            HyHyc[i,stack] = np.sum((calHy[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
+            ExExc[i,stack] = np.sum((calEx[:,stack] * np.conj(calEx[:,stack])) * pf) / np.sum(pf)
+            EyEyc[i,stack] = np.sum((calEy[:,stack] * np.conj(calEy[:,stack])) * pf) / np.sum(pf)
+            ExEyc[i,stack] = np.sum((calEx[:,stack] * np.conj(calEy[:,stack])) * pf) / np.sum(pf)
+            HzHxc[i,stack] = np.sum((calHz[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
+            HzHyc[i,stack] = np.sum((calHz[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
+            avgf[i,0] = np.sum(pf!=0)
     Zyy_num = (HxHxc * EyHyc) - (HxHyc * EyHxc)
     Zyx_num = (HyHyc * EyHxc) - (HyHxc * EyHyc)
     Z_deno = (HxHxc * HyHyc) - (HxHyc * HyHxc)
@@ -446,14 +393,30 @@ def ChoppData(sensorno,ChoppStat,procinfo):
 
 # Function to perform FFT
 def dofft(dts,fs,WindowLength):
-    w = np.hanning(WindowLength)
-    fft_value = np.fft.fft(dts*w,WindowLength)
-    #fft_value = fft(dts,WindowLength)
-    xfft = np.asarray(fft_value[0:int(WindowLength/2)])
+    w = np.hanning(WindowLength).reshape(-1,1)
+    fft_value = np.fft.fft(dts*w,WindowLength,axis=0)
+    xfft = np.asarray(fft_value[0:int(WindowLength/2),:])
     fline = np.asarray([np.linspace(0, int(WindowLength/2), num=int(WindowLength/2),dtype=int)])
     f =  np.asarray(fline * fs/(WindowLength)).T
     return f,xfft
-  
+
+def notchfil(ts,fs):
+    f0 = 50.0  # Frequency to be removed from signal (Hz)
+    Qua = 20.0  # Quality factor
+    # Design notch filter
+    b_notch, a_notch = signal.iirnotch(f0, Qua, fs)
+    f1 = 150.0  # Frequency to be removed from signal (Hz)
+    # Design notch filter
+    b2_notch, a2_notch = signal.iirnotch(f1, Qua, fs)
+    f2 = 100.0  # Frequency to be removed from signal (Hz)
+    # Design notch filter
+    b3_notch, a3_notch = signal.iirnotch(f2, Qua, fs)
+    #
+    ts = signal.filtfilt(b_notch, a_notch, ts, axis = 0)
+    ts = signal.filtfilt(b2_notch, a2_notch, ts, axis = 0)
+    ts = signal.filtfilt(b3_notch, a3_notch, ts, axis = 0)
+    return ts
+
 # Parzen window  
 def parzen(f,ft,cr):
     pf = np.empty((np.shape(f)[0],))

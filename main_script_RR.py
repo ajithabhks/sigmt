@@ -84,7 +84,7 @@ del timelineR, Rstart, Rend
 del Rstart_ind, Rend_ind, tsRx, tsRy
 #========= Decimation section ================= 
 # Keep dflag = 0 if decimation is not required
-dflag = 1
+dflag = 0
 if dflag == 1:
     decimate = [8,8,4]
     for d in decimate:
@@ -130,9 +130,8 @@ print('\nWindow Length selected: '+ str(procinfo.get('WindowLength')))
 procinfo['nstacks'] = math.floor(procinfo.get('nofs')/procinfo.get('WindowLength'))
 procinfo['nstacks'] = (procinfo.get('nstacks') * 2) - 1
 print('Time series overlap: ' + str(procinfo.get('overlap'))+'%')
-print('No. of windows: '+ str(procinfo.get('nstacks') + 1))
+print('No. of windows: '+ str(procinfo.get('nstacks')))
 print('--------------------')
-print('\nBand averaging over target frequencies:')
 #==================== Start band averaging ====================
 # No need to edit
 # Band average value after calibration and averaging using parzen window
