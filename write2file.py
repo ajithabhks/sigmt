@@ -21,7 +21,6 @@ If the sampling frequency is 1024 Hz, give filename as '1024Hz.txt'
 Read usermanual for more details.
 """
 
-ftlist = ftlist
 ZxxR = np.real(Z_huber.get('Zxx'))
 ZxxI = np.imag(Z_huber.get('Zxx'))
 ZxyR = np.real(Z_huber.get('Zxy'))
@@ -38,7 +37,7 @@ TxR = np.real(Tx)
 TxI = np.imag(Tx)
 TyR = np.real(Ty)
 TyI = np.imag(Ty)
-f = open('D:/NGRI/PROCESSING FOLDER/AMT/B4NIGHT/bands/4096-2Hz.txt', 'w')
+f = open('D:/NGRI/PROCESSING FOLDER/AMT/C6DAYPOFF/bands/65536Hz.txt', 'w')
 for i in range(ftlist.shape[0]):
     f.write("%.9E \t %.9E  \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \n" % (ftlist[i][0],
     ZxxR[i][0], ZxxI[i][0], ZxyR[i][0], ZxyI[i][0],ZyxR[i][0], ZyxI[i][0],ZyyR[i][0], 
