@@ -36,7 +36,7 @@ from datetime import date
 today = date.today()
 d1 = today.strftime("%m/%d/%Y")
 
-f = open("D:/NGRI/PROCESSING FOLDER/AMT/B4NIGHT/B4NIGHT-HEADER.edi", "x")
+f = open("D:/NGRI/PROCESSING FOLDER/AMT/TK4PON/TK4PON-HEADER.edi", "x")
 #===== Header =====
 f.write(">HEAD\n")
 f.write("  DATAID=" + procinfo.get('selectedsite'))

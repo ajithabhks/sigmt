@@ -14,6 +14,25 @@ This module plots four figures after the processing is completed.
 """
   
 def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
+    """
+
+    Parameters
+    ----------
+    procinfo : It is a Python dictionary containing few information regarding the processing.
+    ftlist : It is an array of float which is a list of target frequencies.
+    Z_huber : It is a Python dictionary containing huber estimates for all target
+        frequencies.
+    Zvar : It is a Python dictionary containing impedance variance information.
+    Tx : It is an array pf complex which are the tipper data for all target frequencies.
+    Ty : It is an array pf complex which are the tipper data for all target frequencies.
+    cohEx : It is an array of float containing the coherency information for Ex component.
+    cohEy : It is an array of float containing the coherency information for Ey component.
+
+    Returns
+    -------
+    None.
+
+    """
     import numpy as np
     from matplotlib import pyplot as plt
     # ----------------------------------------------------------------------

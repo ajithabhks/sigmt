@@ -19,8 +19,8 @@ Give path and EDI name to be created in the variable 'f'.
 import pandas as pd
 import numpy as np
 
-txtfilename = 'D:/NGRI/PROCESSING FOLDER/AMT/B4NIGHT/bands/all.txt'
-f = open("D:/NGRI/PROCESSING FOLDER/AMT/B4NIGHT/B4NIGHT-DATA.edi", "x")
+txtfilename = 'D:/NGRI/PROCESSING FOLDER/AMT/TK4PON/bands/all.txt'
+f = open("D:/NGRI/PROCESSING FOLDER/AMT/TK4PON/TK4PON-DATA.edi", "x")
 
 data = pd.read_csv(txtfilename, sep='\t', lineterminator='\n')
 data = np.asarray(data)

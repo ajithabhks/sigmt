@@ -45,14 +45,16 @@ cal_path = 'D:/Pyth/SigMT/calfiles/'
 project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
 # #
 # #========= Selection of site and setting a path =========
-sites, selectedsite, measid, all_meas, select_meas, proc_path = mtproc.makeprocpath(project_path)
+sites, selectedsite, measid, all_meas, select_meas, \
+    proc_path = mtproc.makeprocpath(project_path)
 #
 #========= Site is selected and path is created =========
 timer_start = time.time()
 #
 #========= Time series reading starts =========
 procinfo = {}
-ts, procinfo['fs'], procinfo['sensor_no'], timeline, procinfo['ChoppStat'], loc = mtproc.ts(proc_path)
+ts, procinfo['fs'], procinfo['sensor_no'], timeline, \
+    procinfo['ChoppStat'], loc = mtproc.ts(proc_path)
 #========= Decimation section ================= 
 # Keep dflag = 0 if decimation is not required
 dflag = 0
@@ -107,10 +109,6 @@ print('--------------------')
 ftlist,bandavg = mtproc.bandavg(ts,procinfo,config)
 #
 #==================== Band averaging finished =================
-timer_end = time.time()
-print('\nElapsed time: ' + str(timer_end - timer_start)+'s')
-del timer_start, timer_end
-print('Finished.')
 #
 #
 #====Data selection tools section. Coherency threshold & Polarization direction
@@ -193,3 +191,7 @@ Zvar['yx'],Zvar['yy'],cohEy = var.ZEyvar(Z_huber,bandavg)
 #
 ### Plotting figures ###
 plotting.plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy)
+timer_end = time.time()
+print('\nElapsed time: ' + str(timer_end - timer_start)+'s')
+del timer_start, timer_end
+print('Finished.')

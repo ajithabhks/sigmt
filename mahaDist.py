@@ -10,7 +10,7 @@ a MD threshold.
 
 Input files are impedance values and a matrix contains pre-selection information.
 The discarded time windows will have value '0' and selected windows will have value
-'1' in the pre-selectoion matrix.
+'1' in the pre-selection matrix.
 
 MD will be calculated for every selected time windows/events.
 An MD value of 10 will be assigned for the discarded time windows.
@@ -27,6 +27,29 @@ mahal_robust: MD values for all events
 """
 
 def mcd(bandavg,mode,config):
+    """
+    
+    Parameters
+    ----------
+    bandavg : It is a python dictionary containing the auto- and cross- spectra
+        values, impedance values, arrays containing pre-selection information 
+        (pre_sel_matEx and pre_sel_matEy) for all time windows at all target 
+        frequencies. The discarded time windows will have value '0' and selected 
+        windows will have value '1' in the pre-selection arrays.
+    mode : It is a string which is either 'Ex' or 'Ey'.
+    config : It is a python dictionary containing processing parameters such as
+        FFT length, Parzen window radius, Mahalanobis distance threshold values.
+
+    Returns
+    -------
+    mahaWt : It is an array containing selected events details (mahaWt). The value 
+        of '1' is given for the events falls within the MD threshold and '0' for others.
+    Z1_mcd_mean : It is an array containing robust cluster centers.
+    Z2_mcd_mean : It is an array containing robust cluster centers.
+    mahal_robust : It is an array containing mahalanobis distances for all time 
+    windows at all target frequencies.
+
+    """
     import numpy as np
     if (mode == 'Ex'):
         Z1 = bandavg.get('Zxx_single') * bandavg.get('pre_sel_matEx')
@@ -52,7 +75,29 @@ def mcd(bandavg,mode,config):
             mahal_robust[i,k] = mahal_single[k]
     return mahaWt, Z1_mcd_mean, Z2_mcd_mean, mahal_robust
     #
+    
 def getmahaWt(Z1_single,Z2_single,config):
+    """
+    
+    Parameters
+    ----------
+    Z1_single : It is an array containing impedance value (either Zxx or Zyx) for 
+    all time windows at a particular target frequency.
+    Z2_single : It is an array containing impedance value (either Zxy or Zyy) for 
+    all time windows at a particular target frequency.
+    config : It is a python dictionary containing processing parameters such as
+        FFT length, Parzen window radius, Mahalanobis distance threshold values.
+
+    Returns
+    -------
+    mahaWt : It is an array containing selected events details (mahaWt). The value 
+        of '1' is given for the events falls within the MD threshold and '0' for others.
+    Z1_mean : It is an array containing robust cluster center.
+    Z2_mean : It is an array containing robust cluster center.
+    mahaWt_temp : It is an array containing mahalanobis distances for all time 
+    windows at a particular target frequency.
+
+    """
     import numpy as np
     nozeromat = np.where(Z1_single != 0)[0]
     zeromat = np.where(Z1_single == 0)[0]

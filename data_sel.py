@@ -6,23 +6,23 @@ This module contains functions to perform calculations for
 different data selection methods.
 """
 #######################################################################
-"""
-This funtions cohEx and cohEy compute the coherency values for all 
-time windows with respect to corresponding target frequencies.
-
-The inputs are the auto- and cross-spectra values and impedance
-values for all time windows with respect to corresponding target frequencies.
-
-The outputs are coherency values for Ex and Ey components. 
-
-The variable AllcohEx contains coherency values for Ex components. Number of rows represent
-number of target frequencies and column represent number of time windows/events.
-
-The variable AllcohEy contains coherency values for Ey components. Number of rows represent
-number of target frequencies and column represent number of time windows/events.
-"""
 import numpy as np
 def cohEx(bandavg):
+    """
+    
+    Parameters
+    ----------
+    bandavg : It is a Python dictionary containing the auto- and cross- spectra
+        values and impedance values for all time windows at all target frequencies. 
+
+    Returns
+    -------
+    AllcohEx : It is an array containing coherency values of Ex component for
+        all time windows for all target frequencies. Number of rows represent
+        number of target frequencies and number of column represent number of time 
+        windows/events.
+
+    """
     #Ex predicted
     ExExc = bandavg.get('ExExc')
     ExHxc = bandavg.get('ExHxc')
@@ -54,6 +54,21 @@ def cohEx(bandavg):
 
 
 def cohEy(bandavg):
+    """
+    
+    Parameters
+    ----------
+    bandavg : It is a Python dictionary containing the auto- and cross- spectra
+        values and impedance values for all time windows at all target frequencies. 
+
+    Returns
+    -------
+    AllcohEx : It is an array containing coherency values of Ey component for
+        all time windows for all target frequencies. Number of rows represent
+        number of target frequencies and number of column represent number of time 
+        windows/events.
+
+    """
     #Ey predicted
     EyEyc = bandavg.get('EyEyc')
     EyHxc = bandavg.get('EyHxc')
@@ -84,14 +99,25 @@ def cohEy(bandavg):
     AllcohEy = cohEy
     return AllcohEy
 
-"""
-This funtions returns magnetic polarization direction (alpha_degH) and electric
-polarization direction (alpha_degE) for all time windows for all target frequencies.
-Number of rows represent number of target frequencies and column represent number 
-of time windows/events.
-"""
 
 def pdvalues(bandavg):
+    """
+    
+    Parameters
+    ----------
+    bandavg : It is a Python dictionary containing the auto- and cross- spectra
+        values and impedance values for all time windows at all target frequencies.
+
+    Returns
+    -------
+    alpha_degH : It is an array containing magnetic polarization directions for 
+        all time windows at all target frequencies. Number of rows represent number 
+        of target frequencies and number of column represent number of time windows/events.
+    alpha_degE : It is an array containing electric polarization direction for 
+        all time windows at all target frequencies. Number of rows represent number 
+        of target frequencies and number of column represent number of time windows/events.
+
+    """
     HxHxc = bandavg.get('HxHxc')
     HyHyc = bandavg.get('HyHyc')
     HxHyc = bandavg.get('HxHyc')
@@ -99,13 +125,9 @@ def pdvalues(bandavg):
     alphaH = np.arctan(2*np.real(HxHyc)/(HxHxc-HyHyc))
     alpha_degH = np.degrees(np.real(alphaH))
 
-    #Electric field
-    
     ExExc = bandavg.get('ExExc')
     EyEyc = bandavg.get('EyEyc')
     ExEyc = bandavg.get('ExEyc')
     alphaE = np.arctan(2*np.real(ExEyc)/(ExExc-EyEyc))
     alpha_degE = np.degrees(np.real(alphaE))
-    # PD calculated
-    
     return alpha_degH,alpha_degE

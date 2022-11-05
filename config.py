@@ -12,10 +12,11 @@ Mahalanobis Distance (MD) threshold for impedance and tipper calculations.
 def configuration():
     config = {}
     config['FFT_Length'] = 0
-    # Give '0' (default value) to automatically select an FFT length according to Borah & Patro, 2015
+    # Give '0' to automatically select an FFT length according to
+    # Borah & Patro, 2015
     # Otherwise try 256, 512, 1024, 2048, 4096, 8192, 16384
     config['parzen_radius'] = 0
-    # Give '0' (default value) to select parzen radius according to Borah & Patro, 2015
+    # Give '0' to select default parzen radius
     config['MD_threshold_impedance'] = 1.5
     # Mahalanobis distance threshold value for impedance calculations
     config['MD_threshold_tipper'] = 1.0

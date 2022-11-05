@@ -18,7 +18,25 @@ The 'fisher' function is used to calculate Fisher distribution.
 """
 
 import numpy as np
-def ZExvar(Z_tukey,bandavg):
+def ZExvar(Z_huber,bandavg):
+    """
+
+    Parameters
+    ----------
+    Z_huber : It is a Python dictionary containing huber estimates.
+    bandavg : It is a Python dictionary containing the auto- and cross- spectra
+        values, impedance values, arrays containing pre-selection information 
+        (pre_sel_matEx and pre_sel_matEy) for all time windows at all target 
+        frequencies. The discarded time windows will have value '0' and selected 
+        windows will have value '1' in the pre-selection arrays.
+
+    Returns
+    -------
+    ZxxVar : It is an array of float containing variance values.
+    ZxyVar : It is an array of float containing variance values.
+    cohEx : It is an array of float containing coherency value.
+
+    """
     #Ex
     cohMatrixEx = bandavg.get('selectedEx')
     ExExc = bandavg.get('ExExc') * cohMatrixEx
@@ -36,8 +54,8 @@ def ZExvar(Z_tukey,bandavg):
     HyHxc = (np.sum(HyHxc,axis=1)/np.sum(cohMatrixEx,axis=1)).reshape(-1,1)
     HxHyc = (np.sum(HxHyc,axis=1)/np.sum(cohMatrixEx,axis=1)).reshape(-1,1)
     HyHyc = (np.sum(HyHyc,axis=1)/np.sum(cohMatrixEx,axis=1)).reshape(-1,1)
-    Zxx = Z_tukey.get('Zxx')
-    Zxy = Z_tukey.get('Zxy')
+    Zxx = Z_huber.get('Zxx')
+    Zxy = Z_huber.get('Zxy')
     ZpZ = Zxx * np.conj(ExHxc) + Zxy * np.conj(ExHyc)
         # ZpZ = a*HxEx + b*HyEx
     ZpX = Zxx * HxHxc + Zxy * HyHxc
@@ -85,8 +103,25 @@ def ZExvar(Z_tukey,bandavg):
     return ZxxVar,ZxyVar,cohEx
 
 
-def ZEyvar(Z_tukey,bandavg):
-    #Ey
+def ZEyvar(Z_huber,bandavg):
+    """
+
+    Parameters
+    ----------
+    Z_huber : It is a Python dictionary containing huber estimates.
+    bandavg : It is a Python dictionary containing the auto- and cross- spectra
+        values, impedance values, arrays containing pre-selection information 
+        (pre_sel_matEx and pre_sel_matEy) for all time windows at all target 
+        frequencies. The discarded time windows will have value '0' and selected 
+        windows will have value '1' in the pre-selection arrays.
+
+    Returns
+    -------
+    ZyxVar : It is an array of float containing variance values.
+    ZyyVar : It is an array of float containing variance values.
+    cohEy : It is an array of float containing coherency value.
+
+    """
     cohMatrixEy = bandavg.get('selectedEy')
     EyEyc = bandavg.get('EyEyc') * cohMatrixEy
     EyHxc = bandavg.get('EyHxc') * cohMatrixEy
@@ -103,8 +138,8 @@ def ZEyvar(Z_tukey,bandavg):
     HyHxc = (np.sum(HyHxc,axis=1)/np.sum(cohMatrixEy,axis=1)).reshape(-1,1)
     HxHyc = (np.sum(HxHyc,axis=1)/np.sum(cohMatrixEy,axis=1)).reshape(-1,1)
     HyHyc = (np.sum(HyHyc,axis=1)/np.sum(cohMatrixEy,axis=1)).reshape(-1,1)
-    Zyy = Z_tukey.get('Zyy')
-    Zyx = Z_tukey.get('Zyx')
+    Zyy = Z_huber.get('Zyy')
+    Zyx = Z_huber.get('Zyx')
     ZpZ = Zyx * np.conj(EyHxc) + Zyy * np.conj(EyHyc)
         # ZpZ = a*HxEx + b*HyEx
     ZpX = Zyx * HxHxc + Zyy * HyHxc
@@ -152,6 +187,17 @@ def ZEyvar(Z_tukey,bandavg):
     return ZyxVar,ZyyVar,cohEy
 
 def fisher(nue):
+    """
+
+    Parameters
+    ----------
+    nue : It is an array of float containing degree of freedom values.
+
+    Returns
+    -------
+    w : It is an array of float containing fisher distribution values.
+
+    """
     w = np.empty(nue.shape,dtype=float)
     for i in range(nue.shape[0]):
         if nue[i] < 6.0:

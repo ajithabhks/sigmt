@@ -10,10 +10,27 @@ More details of each functions are given as comments below.
 """
 
 import numpy as np
-
-# This function computes tipper values for all time windows
-# for all target frequencies
 def tippall(bandavg):
+    """
+    This function computes tipper values for all time windows for all target 
+    frequencies.
+
+    Parameters
+    ----------
+    bandavg : It is a python dictionary containing the auto- and cross- spectra
+        values, impedance values, arrays containing pre-selection information 
+        (pre_sel_matEx and pre_sel_matEy) for all time windows at all target 
+        frequencies. The discarded time windows will have value '0' and selected 
+        windows will have value '1' in the pre-selection arrays.
+
+    Returns
+    -------
+    Tx : It is an array of complex which contains TipperX values for all time windows
+        for all target frequencies.
+    Ty : It is an array of complex which contains TipperY values for all time windows
+        for all target frequencies.
+
+    """
     HzHxc = bandavg.get('HzHxc')
     HzHyc = bandavg.get('HzHyc')
     HxHxc = bandavg.get('HxHxc')
@@ -25,8 +42,25 @@ def tippall(bandavg):
     Ty = ((HzHyc * HxHxc) - (HzHxc * HxHyc))/det
     return Tx,Ty
 
-# This function estimates the tipper values using the selected time windows
+
 def tipper(bandavg):
+    """
+    This function estimates the tipper values using the selected time windows.
+
+    Parameters
+    ----------
+    bandavg : It is a python dictionary containing the auto- and cross- spectra
+        values, impedance values, arrays containing pre-selection information 
+        (pre_sel_matEx and pre_sel_matEy) for all time windows at all target 
+        frequencies. The discarded time windows will have value '0' and selected 
+        windows will have value '1' in the pre-selection arrays.
+
+    Returns
+    -------
+    Tx : It is an array of complex which contains TipperX values for all target frequencies.
+    Ty : It is an array of complex which contains TipperY values for all target frequencies.
+
+    """
     selMatrix = bandavg.get('tipp_selected')
     HzHxc = bandavg.get('HzHxc') * selMatrix
     HzHyc = bandavg.get('HzHyc') * selMatrix
@@ -45,8 +79,26 @@ def tipper(bandavg):
     Ty = 1 * ((HzHyc * HxHxc) - (HzHxc * HxHyc))/det
     return Tx,Ty
 
-# This function computes the tipper variances
 def tipperVar(bandavg):
+    """
+    This function computes the tipper variances.
+
+    Parameters
+    ----------
+    bandavg : It is a python dictionary containing the auto- and cross- spectra
+        values, impedance values, arrays containing pre-selection information 
+        (pre_sel_matEx and pre_sel_matEy) for all time windows at all target 
+        frequencies. The discarded time windows will have value '0' and selected 
+        windows will have value '1' in the pre-selection arrays.
+
+    Returns
+    -------
+    TxVar : It is an array of complex which contains TipperX variance values for 
+        all target frequencies.
+    TyVar : It is an array of complex which contains TipperY variance values for 
+        all target frequencies.
+
+    """
     coh_selected_all = bandavg.get('tipp_selected')
     HzHxc = bandavg.get('HzHxc')
     HzHyc = bandavg.get('HzHyc')
@@ -74,50 +126,24 @@ def tipperVar(bandavg):
         TyVar[fnum] = T2_std ** 2
     return TxVar,TyVar
 
-# This was written for selective stacking for tipper estimates
-# It is no longer used
-def selstack(T):
-    Z = T
-    selmat = np.empty(Z.shape,dtype=int)
-    for j in range(selmat.shape[0]):
-        Z_s = Z[j,].reshape(-1,1)
-        Z_s_mean = np.mean(Z_s)
-        Z_s_std = np.std(Z_s)
-        for i in range(selmat.shape[1]):
-            if Z_s[i] >= (Z_s_mean - Z_s_std) and Z_s[i] <= (Z_s_mean + Z_s_std):
-                selmat[j,i] = 1
-            else:
-                selmat[j,i] = 0
-    return selmat
-
-# This function is no longer used
-def makeband(bandavg,i):
-    HzHxc = bandavg.get('HzHxc')[i,:].reshape(1,-1)
-    HzHyc = bandavg.get('HzHyc')[i,:].reshape(1,-1)
-    HxHxc = bandavg.get('HxHxc')[i,:].reshape(1,-1)
-    HyHyc = bandavg.get('HyHyc')[i,:].reshape(1,-1)
-    HxHyc = bandavg.get('HxHyc')[i,:].reshape(1,-1)
-    HyHxc = bandavg.get('HyHxc')[i,:].reshape(1,-1)
-    coh_selected = bandavg.get('tipp_selected')[i,:].reshape(1,-1)
-    ind_coh = np.where(coh_selected==0)[1].reshape(1,-1)
-    HzHxc = np.delete(HzHxc,ind_coh).reshape(1,-1)
-    HzHyc = np.delete(HzHyc,ind_coh).reshape(1,-1)
-    HxHxc = np.delete(HxHxc,ind_coh).reshape(1,-1)
-    HyHyc = np.delete(HyHyc,ind_coh).reshape(1,-1)
-    HxHyc = np.delete(HxHyc,ind_coh).reshape(1,-1)
-    HyHxc = np.delete(HyHxc,ind_coh).reshape(1,-1)
-    bandavg_single = {}
-    bandavg_single['HzHxc'] = HzHxc
-    bandavg_single['HzHyc'] = HzHyc
-    bandavg_single['HxHxc'] = HxHxc
-    bandavg_single['HyHyc'] = HyHyc
-    bandavg_single['HxHyc'] = HxHyc
-    bandavg_single['HyHxc'] = HyHxc
-    return bandavg_single
-
-# This function is used to select tipper data for final
-# estimation using Mahalanobis distance.
 def mcd(T,config):
+    """
+    This function is used to select tipper data for final
+    estimation using Mahalanobis distance.
+
+    Parameters
+    ----------
+    T : It is an array of complex which contains tipper values for all time windows
+        for all target frequencies.
+    config : It is a python dictionary containing processing parameters such as
+        FFT length, Parzen window radius, Mahalanobis distance threshold values.
+
+    Returns
+    -------
+    mahaWt : It is an array of float containing zeros and ones.
+    T_mcd_mean : It is an array of complex containing tipper cluster centers.
+
+    """
     import numpy as np
     mahaWt = np.ones(T.shape)
     mahal_robust = np.empty((T.shape),dtype=float)
@@ -131,8 +157,24 @@ def mcd(T,config):
             mahaWt[i,k] = mahaWt_single[k]
             mahal_robust[i,k] = mahal_single[k]
     return mahaWt, T_mcd_mean
-    #
+
 def getmahaWt(T_single,config):
+    """
+
+    Parameters
+    ----------
+    T_single : It is an array of complex containing tipper information for a 
+        target frequency.
+    config : It is a python dictionary containing processing parameters such as
+        FFT length, Parzen window radius, Mahalanobis distance threshold values.
+
+    Returns
+    -------
+    mahaWt : It is an array of float containing zeros and ones.
+    T_mean : It is an array of complex containing tipper cluster centers.
+    mahal_robust : It is an array of float containing mahalanobis distances.
+
+    """
     import numpy as np
     T_singleR = T_single.real
     T_singleI = T_single.imag

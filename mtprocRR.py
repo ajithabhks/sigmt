@@ -22,8 +22,23 @@ from tqdm import tqdm
 from scipy.signal import butter, lfilter, freqz
 #
 #
-# to read ADU07e rawdata
-def readADU07e(filename):  
+def readADU07e(filename):
+    """
+    This function is to read ADU07e raw data (.ats file)
+    It will read header information and time series data from the file.
+
+    Parameters
+    ----------
+    filename : It is string value that represent the path to the data file.
+
+    Returns
+    -------
+    header : It is a Python dictionary having header information of the time series
+        data file.
+    ts : It is a Python dictionary containing arrays which are time series data for
+        all five components (Ex, Ey, Hx, Hy, Hz).
+
+    """
     with open(filename, 'rb') as f:
         header = {}
         header['length'] = np.fromfile(f, dtype=np.int16, count=1).tolist() # Header length
@@ -88,9 +103,28 @@ def readADU07e(filename):
         ts = np.fromfile(f,dtype=np.int32, count = header['nsamples'][0])
         ts = ts * header['lsb'][0]
         return header, ts
-    
-# Function to return time series data.
+
 def ts(path):
+    """
+    Function to return time series data.
+
+    Parameters
+    ----------
+    path : It is a string value that is the path to the measurement folder.
+
+    Returns
+    -------
+    ts : It is a Python dictionary containing arrays which are time series data for
+        all five components (Ex, Ey, Hx, Hy, Hz).
+    fs : It is a float value representing the sampling frequency of the measurement.
+    sensor_no : It is a Python dictionary containing the sensor numbers of the 
+        coils used.
+    timeline : It is a list of datetime of each sample in the measurement.
+    ChoppStat: It is an integer value showing chopper status (related to induction coil).
+    loc : It is a Python dictionary containing latitude, longitude and elevation
+        details of the selected site.
+
+    """
     files = []
     # r=root, d=directories, f = files
     for r, d, f in os.walk(path):
@@ -130,20 +164,23 @@ def ts(path):
         timeline.append(start_time[x]/3600/24 + GPS_initial)
     return ts,fs[0],sensor_no,timeline,ChoppStat[0],loc
 
-# Funtion to normalize data. NOT USED!!
-def normalize(data):
-    MI = np.nanmin(data)
-    MA = np.nanmax(data)
-    for n in range(1,block+1,1):
-        data[n-1] = (data[n-1] - MI)/(MA - MI)
-    return data
-
 
 def datenum(d):
     return 366 + d.toordinal() + (d - dt.fromordinal(d.toordinal())).total_seconds()/(24*60*60)
 
-# Function to select a preferred FFT length
 def FFTLength(nofsamples):
+    """
+    Function to select a preferred FFT length.
+
+    Parameters
+    ----------
+    nofsamples : It is an integer value representing the number of samples in each measurement.
+
+    Returns
+    -------
+    WindowLength : It is an integer value representing the window length.
+
+    """
     #Based on Borah & Patro, 2015
     i = 1
     FFTs = [256]
@@ -159,25 +196,33 @@ def FFTLength(nofsamples):
     WindowLength = FFTs[-1]
     if WindowLength > 16384:
         WindowLength = 16384
-    #WindowLength = 1024
     return WindowLength
 
-# Low pass filter. NOT USED!!!
-def butter_lowpass(cutoff, fs, order=5):
-    nyq = 0.5 * fs
-    normal_cutoff = cutoff / nyq
-    b, a = butter(order, normal_cutoff, btype='low', analog=False)
-    return b, a
-
-def butter_lowpass_filter(data, cutoff, fs, order):
-    b, a = butter_lowpass(cutoff, fs, order=order)
-    y = lfilter(b, a, data)
-    return y
-
-
-# This is an important function. Here, auto and cross spectra are calculated for 
-# each target frequencies and impedance values are computed for all events.
 def bandavg(ts,procinfo,tsR,procinfoR,config):
+    """
+    This is an important function. Here, auto and cross spectra are calculated for 
+        each target frequencies and impedance values are computed for all events.
+
+    Parameters
+    ----------
+    ts : It is a Python dictionary containing arrays which are time series data for
+        all five components (Ex, Ey, Hx, Hy, Hz).
+    procinfo : It is a Python dictionary containing few information regarding the processing.
+    tsR : It is a Python dictionary containing arrays which are time series data for
+        all five components (Ex, Ey, Hx, Hy, Hz) of remote site.
+    procinfoR : It is a Python dictionary containing few information of remote site
+        regarding the processing.
+    config : It is a python dictionary containing processing parameters such as
+        FFT length, Parzen window radius, Mahalanobis distance threshold values.
+
+    Returns
+    -------
+    ftlist : It is an array containing the target frequency list.
+    bandavg : It is a python dictionary containing the auto- and cross- spectra
+        values and impedance values for all time windows at all target 
+        frequencies.
+
+    """
     WindowLength = procinfo.get('WindowLength')
     sensor_no = procinfo.get('sensor_no')
     sensor_noR = procinfo.get('sensor_no')
@@ -405,8 +450,21 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
     # plt.gca().invert_xaxis()
     return ftlist,bandavg
 
-#Return Chopper Data from MFS06e cal files
 def ChoppData(sensorno,ChoppStat,procinfo):
+    """
+    Return calibration data from MFS06e cal files.
+
+    Parameters
+    ----------
+    sensorno : It is an integer value that is the sensor number of the induction coil.
+    ChoppStat : It is an integer value showing the chopper status of the measurement.
+    procinfo : It is a Python dictionary containing few information regarding the processing.
+
+    Returns
+    -------
+    ChoppData : It is an array containing calibration information of the induction coil.
+
+    """
     a = []
     with open(procinfo.get('cal_path')+str(sensorno)+'.txt', 'r') as file_1:
         for line in file_1.readlines():
@@ -425,8 +483,24 @@ def ChoppData(sensorno,ChoppStat,procinfo):
         ChoppData = ChoppOffData
     return ChoppData
 
-# Function to perform FFT
 def dofft(dts,fs,WindowLength):
+    """
+    Function to perform FFT.
+
+    Parameters
+    ----------
+    dts : It is an array of float containing detrended time series data divided
+        into a number of windows. Number of sample in a window is the number of
+        rows and number of windows is the number of columns.
+    fs : It is an integer showing the sampling frequency of measurement.
+    WindowLength : It is an integer value representing the window length.
+
+    Returns
+    -------
+    f : It is an array of float containing frequency list after FFT.
+    xfft : It is an array of complex containing data in frequency domain.
+
+    """
     w = np.hanning(WindowLength).reshape(-1,1)
     fft_value = np.fft.fft(dts*w,WindowLength,axis=0)
     xfft = np.asarray(fft_value[0:int(WindowLength/2),:])
@@ -435,6 +509,19 @@ def dofft(dts,fs,WindowLength):
     return f,xfft
 
 def notchfil(ts,fs):
+    """
+    Function to perform notch filtering.
+
+    Parameters
+    ----------
+    ts : It is an array of float containing time series data.
+    fs : It is an integer showing the sampling frequency of measurement.
+
+    Returns
+    -------
+    ts : It is an array of float containing time series data after notch filtering.
+
+    """
     f0 = 50.0  # Frequency to be removed from signal (Hz)
     Qua = 20.0  # Quality factor
     # Design notch filter
@@ -451,8 +538,21 @@ def notchfil(ts,fs):
     ts = signal.filtfilt(b3_notch, a3_notch, ts, axis = 0)
     return ts
 
-# Parzen window 
 def parzen(f,ft,cr):
+    """
+    Function to create a parzen window
+
+    Parameters
+    ----------
+    f : It is an array of float containing frequencies.
+    ft : It is a float value that is the target frequency.
+    cr : It is a float value which is the parzen window radius.
+
+    Returns
+    -------
+    pf : It is an array of float containing the parzen window values.
+
+    """
     pf = np.empty((np.shape(f)[0],))
     pf[:] = np.nan
     fr = cr * ft
@@ -473,6 +573,21 @@ def parzen(f,ft,cr):
 
 # Calibration value
 def calibrateon(f,xfft,ChoppData,calt):
+    """
+
+    Parameters
+    ----------
+    f : It is an array of float containing frequencies.
+    xfft : It is an array of complex containing data in frequency domain.
+    ChoppData : It is an array containing calibration information (frequency, 
+        magnitude and phase) of the induction coil.
+    calt : It is an array of complex containing the calibration values of the induction coil.
+
+    Returns
+    -------
+    cal : Calibrated spectra.
+
+    """
     minfindx = np.where(f < 0.1)[0]
     cal_all_band = np.interp(f[np.max(minfindx)+1:np.shape(f)[0]],ChoppData[:,0],calt)
     thmag = np.zeros(np.shape(minfindx),)
@@ -484,15 +599,42 @@ def calibrateon(f,xfft,ChoppData,calt):
     cal_all_band = np.delete(cal_all_band,0,)
     cal = xfft/cal_all_band
     return cal
+
 def calibrateoff(f,xfft,ChoppData,calt):
+    """
+
+    Parameters
+    ----------
+    f : It is an array of float containing frequencies.
+    xfft : It is an array of complex containing data in frequency domain.
+    ChoppData : It is an array containing calibration information (frequency, 
+        magnitude and phase) of the induction coil.
+    calt : It is an array of complex containing the calibration values of the induction coil.
+
+    Returns
+    -------
+    cal : Calibrated spectra.
+
+    """
     cal_all_band = np.interp(f[0:np.shape(f)[0]],ChoppData[:,0],calt)
     xfft = np.delete(xfft,0,)
     cal_all_band = np.delete(cal_all_band,0,)
     cal = xfft/cal_all_band
     return cal
 
-# Target frequency values
 def targetfreq(fs):
+    """
+    It returns target frequencies corresponding to sampling frequency.
+
+    Parameters
+    ----------
+    fs : It is an integer showing the sampling frequency of measurement.
+
+    Returns
+    -------
+    ftlist : It is an array of float which is a list of target frequencies.
+
+    """
     if fs == 65536:
         ftlist = ( 1.44850347101214E+0004, 1.11167288155392E+0004, 8.53167852417281E+0003, 
                8.00000000000000E+0003,  5.96636034638832E+0003, 4.44968197286938E+0003, 
@@ -571,8 +713,22 @@ def targetfreq(fs):
         # ftlist = ( 7.01387158203311E+0000)
     return ftlist
 
-# Get Jackknife values
 def getjackknife(bandavg,mode):
+    """
+    To get Jackknife values
+
+    Parameters
+    ----------
+    bandavg : It is a python dictionary containing the auto- and cross- spectra
+        values and impedance values for all time windows at all target 
+        frequencies.
+    mode : It is a string which is either 'Ex' or 'Ey'.
+
+    Returns
+    -------
+    Array of complex containing Jackknife mean for all target frequencies.
+
+    """
     Z_deno = ((bandavg.get('HxHxc') * bandavg.get('HyHyc')) - 
         ( bandavg.get('HxHyc') * bandavg.get('HyHxc')))
     Zxx_num = ((bandavg.get('HyHyc') * bandavg.get('ExHxc')) - 
@@ -603,6 +759,17 @@ def getjackknife(bandavg,mode):
         return Zyx_jack,Zyy_jack
 
 def jackknife(Z):
+    """
+
+    Parameters
+    ----------
+    Z : Array of complex which are the impedance values for a target frequency.
+
+    Returns
+    -------
+    mean_jackknife : Complex value which is the Jackknife mean for a target frequency.
+
+    """
     nstacks = np.shape(Z)[0]
     for k in range(nstacks-1):
         Zminusi = np.empty((np.shape(Z)[0],),dtype=complex)
@@ -618,8 +785,28 @@ def jackknife(Z):
         del Zminusi, Zidiff
     return mean_jackknife
 
-# Computing huber estimates for Ex
 def huberEx(bandavg,Z_jackk,stacki):
+    """
+    Computing huber estimates for Ex.
+
+    Parameters
+    ----------
+    bandavg : It is a python dictionary containing the auto- and cross- spectra
+        values, impedance values, arrays containing pre-selection information 
+        (pre_sel_matEx and pre_sel_matEy) for all time windows at all target 
+        frequencies. The discarded time windows will have value '0' and selected 
+        windows will have value '1' in the pre-selection arrays.
+    Z_jackk : Array of complex containing Jackknife mean for all target frequencies.
+    stacki : It is an integer value to select all windows for a target frequency.
+
+    Returns
+    -------
+    Zxx_robust_huber : It is a complex value which is the huber mean for a target frequency.
+    Zxy_robust_huber : It is a complex value which is the huber mean for a target frequency.
+    bandavgEx_huber : It is a Python dictionary containing averaged value of auto and cross
+        spectra.
+
+    """
     Ex = bandavg.get('Ex')
     Hx = bandavg.get('Hx')
     Hy = bandavg.get('Hy')
@@ -691,8 +878,28 @@ def huberEx(bandavg,Z_jackk,stacki):
     bandavgEx_huber['huber_matrix'] = huber_matrix
     return Zxx_robust_huber, Zxy_robust_huber,bandavgEx_huber
 
-# Computing huber estimates for Ey
 def huberEy(bandavg,Z_jackk,stacki):
+    """
+    Computing huber estimates for Ey.
+
+    Parameters
+    ----------
+    bandavg : It is a python dictionary containing the auto- and cross- spectra
+        values, impedance values, arrays containing pre-selection information 
+        (pre_sel_matEx and pre_sel_matEy) for all time windows at all target 
+        frequencies. The discarded time windows will have value '0' and selected 
+        windows will have value '1' in the pre-selection arrays.
+    Z_jackk : Array of complex containing Jackknife mean for all target frequencies.
+    stacki : It is an integer value to select all windows for a target frequency.
+
+    Returns
+    -------
+    Zyy_robust_huber : It is a complex value which is the huber mean for a target frequency.
+    Zyx_robust_huber : It is a complex value which is the huber mean for a target frequency.
+    bandavgEy_huber : It is a Python dictionary containing averaged value of auto and cross
+        spectra.
+
+    """
     Ey = bandavg.get('Ey')
     Hx = bandavg.get('Hx')
     Hy = bandavg.get('Hy')
@@ -762,92 +969,47 @@ def huberEy(bandavg,Z_jackk,stacki):
     bandavgEy_huber['HyHxc'] = HyHxc_hup_avg
     bandavgEy_huber['huber_matrix'] = huber_matrix
     return Zyy_robust_huber, Zyx_robust_huber,bandavgEy_huber
+
 def huberwt(rl,km):
+    """
+
+    Parameters
+    ----------
+    rl : It is an array of float which are the residuals. Number of rows are number
+        of target frequencies and number of columns are number of time windows.
+    km : It is an array of float. Number of rows are number of target frequencies.
+
+    Returns
+    -------
+    huber_matrix : It is an array of float containing huber weights. Number of 
+    rows are number of target frequencies and number of columns are number of time windows.
+
+    """
     huber_matrix1 = (rl <= km) * 1
     huber_matrix2 = (rl > km) * 1
     huber_matrix2 = huber_matrix2 * (km/rl)
     huber_matrix = huber_matrix1 + huber_matrix2
     return huber_matrix
 
-# Computing Tukey estimates for Ex. Not used presently!!
-def tukeyEx(bandavgEx_huber):
-    huber_matrixEx = bandavgEx_huber.get('huber_matrix')
-    rxl = bandavgEx_huber.get('rxl')
-    khx = bandavgEx_huber.get('khx')
-    dTx = (np.sqrt((np.mean((huber_matrixEx * rxl) ** 2,axis=1)) / 
-    np.mean((1-(rxl/khx) ** 2) * (1-(5*(rxl/khx)**2)),axis=1))).reshape(-1,1)
-    kTx = 6 * dTx
-    tukey_matrix1 = (rxl <= kTx) * 1
-    tukey_matrix1 = tukey_matrix1 * (1-(rxl/kTx))
-    tukey_matrix2 = (rxl > kTx) * 1
-    tukey_matrix2 = tukey_matrix2 * 0
-    tukey_matrix = tukey_matrix1 + tukey_matrix2
-    HxHxc_tukey = bandavgEx_huber.get('HxHxc') * tukey_matrix
-    ExHyc_tukey = bandavgEx_huber.get('ExHyc') * tukey_matrix
-    ExHxc_tukey = bandavgEx_huber.get('ExHxc') * tukey_matrix
-    HxHyc_tukey = bandavgEx_huber.get('HxHyc') * tukey_matrix
-    HyHyc_tukey = bandavgEx_huber.get('HyHyc') * tukey_matrix
-    HyHxc_tukey = bandavgEx_huber.get('HyHxc') * tukey_matrix
-    HxHxc_tukey_avg = (np.sum(HxHxc_tukey,axis=1)/np.sum(tukey_matrix,axis=1)).reshape(-1,1)
-    ExHyc_tukey_avg = (np.sum(ExHyc_tukey,axis=1)/np.sum(tukey_matrix,axis=1)).reshape(-1,1)
-    ExHxc_tukey_avg = (np.sum(ExHxc_tukey,axis=1)/np.sum(tukey_matrix,axis=1)).reshape(-1,1)
-    HxHyc_tukey_avg = (np.sum(HxHyc_tukey,axis=1)/np.sum(tukey_matrix,axis=1)).reshape(-1,1)
-    HyHyc_tukey_avg = (np.sum(HyHyc_tukey,axis=1)/np.sum(tukey_matrix,axis=1)).reshape(-1,1)
-    HyHxc_tukey_avg = (np.sum(HyHxc_tukey,axis=1)/np.sum(tukey_matrix,axis=1)).reshape(-1,1)
-    Zxx_num = (HyHyc_tukey_avg * ExHxc_tukey_avg) - (HyHxc_tukey_avg * ExHyc_tukey_avg)
-    Zxy_num = (HxHxc_tukey_avg * ExHyc_tukey_avg) - (HxHyc_tukey_avg * ExHxc_tukey_avg)
-    Z_deno = (HxHxc_tukey_avg * HyHyc_tukey_avg) - (HxHyc_tukey_avg * HyHxc_tukey_avg)
-    Zxx_robust_tukey = -1 *(Zxx_num / Z_deno)
-    Zxy_robust_tukey = -1 *(Zxy_num / Z_deno)
-    specavgEx_tukey = {}
-    specavgEx_tukey['HxHxc'] = HxHxc_tukey_avg
-    specavgEx_tukey['ExHyc'] = ExHyc_tukey_avg
-    specavgEx_tukey['ExHxc'] = ExHxc_tukey_avg
-    specavgEx_tukey['HxHyc'] = HxHyc_tukey_avg
-    specavgEx_tukey['HyHyc'] = HyHyc_tukey_avg
-    specavgEx_tukey['HyHxc'] = HyHxc_tukey_avg
-    return Zxx_robust_tukey,Zxy_robust_tukey,tukey_matrix
-
-# Computing Tukey estimates for Ey. Not used presently!!
-def tukeyEy(bandavgEy_huber):
-    huber_matrixEy = bandavgEy_huber.get('huber_matrix')
-    ryl = bandavgEy_huber.get('ryl')
-    khy = bandavgEy_huber.get('khy')
-    dTy = (np.sqrt((np.mean((huber_matrixEy * ryl) ** 2,axis=1)) / 
-    np.mean((1-(ryl/khy) ** 2) * (1-(5*(ryl/khy)**2)),axis=1))).reshape(-1,1)
-    kTy = 6 * dTy
-    tukey_matrix1 = (ryl <= kTy) * 1
-    tukey_matrix1 = tukey_matrix1 * (1-(ryl/kTy))
-    tukey_matrix2 = (ryl > kTy) * 1
-    tukey_matrix2 = tukey_matrix2 * 0
-    tukey_matrix = tukey_matrix1 + tukey_matrix2
-    HxHxc_tukey = bandavgEy_huber.get('HxHxc') * tukey_matrix
-    EyHyc_tukey = bandavgEy_huber.get('EyHyc') * tukey_matrix
-    EyHxc_tukey = bandavgEy_huber.get('EyHxc') * tukey_matrix
-    HxHyc_tukey = bandavgEy_huber.get('HxHyc') * tukey_matrix
-    HyHyc_tukey = bandavgEy_huber.get('HyHyc') * tukey_matrix
-    HyHxc_tukey = bandavgEy_huber.get('HyHxc') * tukey_matrix
-    HxHxc_tukey_avg = (np.sum(HxHxc_tukey,axis=1)/np.sum(tukey_matrix,axis=1)).reshape(-1,1)
-    EyHyc_tukey_avg = (np.sum(EyHyc_tukey,axis=1)/np.sum(tukey_matrix,axis=1)).reshape(-1,1)
-    EyHxc_tukey_avg = (np.sum(EyHxc_tukey,axis=1)/np.sum(tukey_matrix,axis=1)).reshape(-1,1)
-    HxHyc_tukey_avg = (np.sum(HxHyc_tukey,axis=1)/np.sum(tukey_matrix,axis=1)).reshape(-1,1)
-    HyHyc_tukey_avg = (np.sum(HyHyc_tukey,axis=1)/np.sum(tukey_matrix,axis=1)).reshape(-1,1)
-    HyHxc_tukey_avg = (np.sum(HyHxc_tukey,axis=1)/np.sum(tukey_matrix,axis=1)).reshape(-1,1)
-    Zyy_num = (HxHxc_tukey_avg * EyHyc_tukey_avg) - (HxHyc_tukey_avg * EyHxc_tukey_avg)
-    Zyx_num = (HyHyc_tukey_avg * EyHxc_tukey_avg) - (HyHxc_tukey_avg * EyHyc_tukey_avg)
-    Z_deno = (HxHxc_tukey_avg * HyHyc_tukey_avg) - (HxHyc_tukey_avg * HyHxc_tukey_avg)
-    Zyy_robust_tukey = -1 * (Zyy_num / Z_deno)
-    Zyx_robust_tukey = -1 * (Zyx_num / Z_deno)
-    specavgEy_tukey = {}
-    specavgEy_tukey['HxHxc'] = HxHxc_tukey_avg
-    specavgEy_tukey['EyHyc'] = EyHyc_tukey_avg
-    specavgEy_tukey['EyHxc'] = EyHxc_tukey_avg
-    specavgEy_tukey['HxHyc'] = HxHyc_tukey_avg
-    specavgEy_tukey['HyHyc'] = HyHyc_tukey_avg
-    specavgEy_tukey['HyHxc'] = HyHxc_tukey_avg
-    return Zyy_robust_tukey,Zyx_robust_tukey,tukey_matrix
 
 def perform_robust(ftlist,bandavg):
+    """
+
+    Parameters
+    ----------
+    ftlist : It is an array of float which is a list of target frequencies.
+    bandavg : It is a python dictionary containing the auto- and cross- spectra
+        values, impedance values, arrays containing pre-selection information 
+        (pre_sel_matEx and pre_sel_matEy) for all time windows at all target 
+        frequencies. The discarded time windows will have value '0' and selected 
+        windows will have value '1' in the pre-selection arrays.
+
+    Returns
+    -------
+    Z_huber : It is a Python dictionary containing huber estimates for all target
+        frequencies.
+
+    """
     Zxx_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
     Zxy_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
     Zyx_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
@@ -878,7 +1040,6 @@ def perform_robust(ftlist,bandavg):
         bandavg_singleEy = makeband(bandavg,stacki,'selectedEy')
         Zxx_huber[stacki,0],Zxy_huber[stacki,0],bandavgEx_huber = huberEx(bandavg_singleEx,Z_jackk,stacki)
         Zyy_huber[stacki,0],Zyx_huber[stacki,0],bandavgEy_huber = huberEy(bandavg_singleEy,Z_jackk,stacki)
-    print('Finished.')
     Z_huber['Zxx'] = Zxx_huber
     Z_huber['Zxy'] = Zxy_huber
     Z_huber['Zyy'] = Zyy_huber
@@ -886,6 +1047,24 @@ def perform_robust(ftlist,bandavg):
     return Z_huber
 
 def makeband(bandavg,i,coh_mode):
+    """
+
+    Parameters
+    ----------
+    bandavg : It is a python dictionary containing the auto- and cross- spectra
+        values, impedance values, arrays containing pre-selection information 
+        (pre_sel_matEx and pre_sel_matEy) for all time windows at all target 
+        frequencies. The discarded time windows will have value '0' and selected 
+        windows will have value '1' in the pre-selection arrays.
+    i : It is an integer to select all windows for a target frequency.
+    coh_mode : It is a string value.
+
+    Returns
+    -------
+    bandavg_single : It is a Python dictionary containing selected auto and cross spectra
+        values for a target frequency.
+
+    """
     Ex = bandavg.get('Ex')[i,:].reshape(1,-1)
     Ey = bandavg.get('Ey')[i,:].reshape(1,-1)
     Hx = bandavg.get('Hx')[i,:].reshape(1,-1)
@@ -941,6 +1120,17 @@ def makeband(bandavg,i,coh_mode):
     
     
 def measid(siteindex):
+    """
+
+    Parameters
+    ----------
+    siteindex : It is an integer representing the serial number of selected site.
+
+    Returns
+    -------
+    measid : It is a Python dictionary containing measurement ID.
+
+    """
     measid = {}
     measid['Hx'] = 10 * siteindex + 3 + (1/1000)
     measid['Hy'] = 10 * siteindex + 4 + (1/1000)
@@ -950,6 +1140,21 @@ def measid(siteindex):
     return measid
 
 def cleanSpec(bandavg):
+    """
+
+    Parameters
+    ----------
+    bandavg : It is a python dictionary containing the auto- and cross- spectra
+        values, impedance values, arrays containing pre-selection information 
+        (pre_sel_matEx and pre_sel_matEy) for all time windows at all target 
+        frequencies. The discarded time windows will have value '0' and selected 
+        windows will have value '1' in the pre-selection arrays.
+
+    Returns
+    -------
+    spmat : It is an array of float containing zeros and ones.
+
+    """
     HxHxc = bandavg.get('HxHxc')
     HyHyc = bandavg.get('HyHyc')
     HxHxc_real = HxHxc.real

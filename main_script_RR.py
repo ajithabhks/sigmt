@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jan  6 12:27:42 2021
-
 @author: AJITHABH K. S.
 Last modified: 31-10-2022
 
@@ -138,10 +137,6 @@ print('--------------------')
 ftlist,bandavg = mtprocRR.bandavg(ts,procinfo,tsR,procinfoR,config)
 #
 #==================== Band averaging finished ====================
-timer_end = time.time()
-print('\nElapsed time: ' + str(timer_end - timer_start)+'s')
-del timer_start, timer_end
-print('Finished.')
 #########
 spmat = mtprocRR.cleanSpec(bandavg)
 #
@@ -227,3 +222,7 @@ Zvar['yx'],Zvar['yy'],cohEy = var.ZEyvar(Z_huber,bandavg)
 #
 ### Plotting figures ###
 plotting.plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy)
+timer_end = time.time()
+print('\nElapsed time: ' + str(timer_end - timer_start)+'s')
+del timer_start, timer_end
+print('Finished.')

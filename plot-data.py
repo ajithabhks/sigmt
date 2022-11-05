@@ -14,7 +14,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import matplotlib as mpl
 # mpl.rcParams['pdf.fonttype'] = 3
-path = 'D:/NGRI/PROCESSING FOLDER/AMT/A6DAY/bands/all.txt'
+path = 'D:/NGRI/PROCESSING FOLDER/AMT/TK4PON/bands/all.txt'
 data = pd.read_csv(path,delimiter = "\t")
 data = data.to_numpy()
 ftlist = data[:,0]
@@ -63,7 +63,7 @@ plt.xticks([10000,1000,100,10,1,0.1,0.01,0.001])
 ax = plt.gca()
 ax.set_box_aspect(0.5)
 plt.grid(which='both',linestyle='-.', linewidth=0.4)
-# plt.title('A6-NIGHT')
+plt.title('TK4 POWER ON')
 plt.subplot(212)
 plt.scatter(ftlist,phase_xy,c='r',s=10)
 plt.scatter(ftlist,phase_yx,c='b',s=10)
