@@ -3,6 +3,7 @@
 Created on Fri May 29 16:37:20 2020
 
 @author: AJITHABH K. S.
+Dr. Manoj Nair helped with equations of variance and fisher distribution.
 Last modified: 21-07-2022
 
 This module is used to compute variances.
