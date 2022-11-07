@@ -49,8 +49,6 @@ sites, selectedsite, measid, all_meas, select_meas, proc_path = mtproc.makeprocp
 # #========= Selection of remote site and setting a path ==
 sites, selectedsiteR, measidR, all_measR, select_measR, proc_pathR = mtproc.makeprocpath(project_path)
 # #========= Remote site is selected and path is created ==
-#
-timer_start = time.time()
 #-------- Time series reading starts ------------------
 #
 #
@@ -221,7 +219,4 @@ Zvar['yx'],Zvar['yy'],cohEy = var.ZEyvar(Z_huber,bandavg)
 #
 ### Plotting figures ###
 plotting.plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy)
-timer_end = time.time()
-print('\nElapsed time: ' + str(timer_end - timer_start)+'s')
-del timer_start, timer_end
 print('Finished.')

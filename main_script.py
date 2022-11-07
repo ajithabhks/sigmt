@@ -48,8 +48,6 @@ sites, selectedsite, measid, all_meas, select_meas, \
     proc_path = mtproc.makeprocpath(project_path)
 #
 #========= Site is selected and path is created =========
-timer_start = time.time()
-#
 #========= Time series reading starts =========
 procinfo = {}
 ts, procinfo['fs'], procinfo['sensor_no'], timeline, \
@@ -190,7 +188,4 @@ Zvar['yx'],Zvar['yy'],cohEy = var.ZEyvar(Z_huber,bandavg)
 #
 ### Plotting figures ###
 plotting.plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy)
-timer_end = time.time()
-print('\nElapsed time: ' + str(timer_end - timer_start)+'s')
-del timer_start, timer_end
 print('Finished.')
