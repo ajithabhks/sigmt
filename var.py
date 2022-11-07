@@ -3,10 +3,9 @@
 Created on Fri May 29 16:37:20 2020
 
 @author: AJITHABH K. S.
-Dr. Manoj Nair helped with equations of variance and fisher distribution.
 Last modified: 21-07-2022
 
-This module is used to computer variances.
+This module is used to compute variances.
 The function ZExvar will compute variance for Ex component
 and
 The function ZEyvar will compute variance for Ey component

@@ -6,7 +6,6 @@ Created on Tue Sep 22 15:38:58 2020
 Last modified: 27-07-2022
 
 This module deals with the calculation for tipper estimation.
-More details of each functions are given as comments below.
 """
 
 import numpy as np

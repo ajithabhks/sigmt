@@ -6,23 +6,7 @@ Last modified: 13-07-2022
 
 This module contains functions to calculate Mahalanobis distance (MD) for every
 time windows for all target frequencies. It is also used to select time windows/events within
-a MD threshold.
-
-Input files are impedance values and a matrix contains pre-selection information.
-The discarded time windows will have value '0' and selected windows will have value
-'1' in the pre-selection matrix.
-
-MD will be calculated for every selected time windows/events.
-An MD value of 10 will be assigned for the discarded time windows.
-
-The output of the module consists of a matrix contains selected events details (mahaWt).
-The value of '1' is given for the events falls within the MD threshold and '0' for others.
-The MD thresholds can be set in the 'config.py' file.
-
-Other outputs are:-
-Z1_mcd_mean: Robust cluster center
-Z2_mcd_mean: Robust cluster center
-mahal_robust: MD values for all events
+the MD threshold.
 
 """
 

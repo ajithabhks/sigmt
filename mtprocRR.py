@@ -8,7 +8,7 @@ Last modified: 31-10-2022
 This is the main module of this package, especially written for remote reference.
 
 It consists of functions to read time series data, detrending, calibration,
-computation of fourier transform, calculation of impedances, etc.
+computation of fourier transform, calculation of impedance, etc.
 
 Purpose of each functions are given as comments.
 """

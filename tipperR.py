@@ -11,8 +11,6 @@ when remote reference is used.
 The separate script for remote reference is created because
 magnetic field values from remote site is not used for tipper
 calculation.
-
-More details of each functions are given as comments below.
 """
 
 import numpy as np

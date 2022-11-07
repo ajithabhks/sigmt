@@ -8,7 +8,7 @@ Last modified: 21-07-2022
 This script can be used to arrange the impedance values, tipper and variances
 in text file to as in EDI file.
 
-See user manual for more detailed explanation
+See user manual for more detailed explanation.
 
 Give path of text file in 'txtfilename' variable.
 

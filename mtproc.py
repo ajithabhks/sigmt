@@ -8,7 +8,7 @@ Last modified: 31-10-2022
 This is the main module of this package.
 
 It consists of functions to read time series data, detrending, calibration,
-computation of fourier transform, calculation of impedances, etc.
+computation of fourier transform, calculation of impedance, etc.
 
 """
 import os, re

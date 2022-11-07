@@ -12,12 +12,11 @@ CSIR - National Geophysical Research Institute, Hyderabad, India.
 ##########
 
 This code controls all operations in this package.
-This code calls functions in other modules for different operations.
 
 Give the path of the folder where your sites are kept in the
 'project_path' variable.
 
-Then input such as site name and measurements will be asked in the console.
+Then inputs such as site name and measurements will be asked in the console.
 
 In case decimation is required, make 'dflag = 1' and give decimation sequence 
 in 'decimate' variable.

@@ -12,12 +12,11 @@ CSIR - National Geophysical Research Institute, Hyderabad, India.
 ##########
 
 This code controls remote reference method in MT data processing.
-This code calls functions in other modules for different operations.
 
 Give the path of the folder where your sites are kept in the
 'project_path' variable.
 
-Then input such as site name and measurements will be asked in the console.
+Then inputs such as site name and measurements will be asked in the console.
 First, the details of the local site will be asked. Then, the details of the 
 remote site need to be entered.
 
