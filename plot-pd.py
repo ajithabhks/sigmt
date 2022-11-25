@@ -10,7 +10,7 @@ for all the time windows for all target frequencies.
 
 X axis: Time window/Event
 Y axis (Subplot 1): Magnetic polarization direction (alphaH)
-Y axis (Subplot 2): Magnetic polarization direction (alphaE)
+Y axis (Subplot 2): Electric polarization direction (alphaE)
 
 Number of figures generated will be equal to the number
 of target frequencies. First figure will represent values
