@@ -856,8 +856,11 @@ def huberEx(bandavg,Z_jackk,stacki):
     Zxx_robust_huber = -1 * (Zxx_new / Z_deno_new)
     Zxy_robust_huber = -1 * (Zxy_new / Z_deno_new)
     for i in range(4):
-        dhx = (np.sqrt((nstacks/(np.sum((huber_matrix==1)*1,axis=1) ** 2)) 
-                   *(np.sum(huber_matrix * (rxl ** 2),axis=1)))).reshape(-1,1)
+        Lc = np.sum((huber_matrix==1)*1,axis=1)
+        for kk in range(np.size(Lc)):
+            if Lc[kk] == 0:
+                Lc[kk] = 1
+        dhx = (np.sqrt((nstacks/(Lc ** 2))*(np.sum(huber_matrix * (rxl ** 2),axis=1)))).reshape(-1,1)
         khx = 1.5 * dhx
         Ex_hup = Ex * huber_matrix
         Hx_hup = Hx * huber_matrix
@@ -950,8 +953,11 @@ def huberEy(bandavg,Z_jackk,stacki):
     Zyy_robust_huber = -1 * (Zyy_new / Z_deno_new)
     Zyx_robust_huber = -1 * (Zyx_new / Z_deno_new)
     for i in range(4):
-        dhy = (np.sqrt((nstacks/(np.sum((huber_matrix==1)*1,axis=1) ** 2)) 
-                   *(np.sum(huber_matrix * (ryl ** 2),axis=1)))).reshape(-1,1)
+        Lc = np.sum((huber_matrix==1)*1,axis=1)
+        for kk in range(np.size(Lc)):
+            if Lc[kk] == 0:
+                Lc[kk] = 1
+        dhy = (np.sqrt((nstacks/(Lc ** 2))*(np.sum(huber_matrix * (ryl ** 2),axis=1)))).reshape(-1,1)
         khy = 1.5 * dhy
         Ey_hup = Ey * huber_matrix
         Hx_hup = Hx * huber_matrix
