@@ -37,10 +37,7 @@ import time
 import math
 #
 config = config.configuration()
-## Provide path to folder where calibration files are kept
-cal_path = 'D:/Pyth/SigMT/calfiles/'
 ## Provide project path where sites are kept
-# project_path = 'D:/NGRI/FIELD RAW DATA/LU_DATA_MT/'
 project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
 # #
 # #========= Selection of site and setting a path =========
@@ -81,7 +78,6 @@ print('--------------------')
 procinfo['meas'] = all_meas[select_meas]
 procinfo['proc_path'] = proc_path
 procinfo['selectedsite'] = selectedsite
-procinfo['cal_path'] = cal_path
 del all_meas, select_meas, selectedsite
 del proc_path, project_path, sites
 print('Unused variables deleted.')

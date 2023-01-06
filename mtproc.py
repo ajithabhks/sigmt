@@ -11,7 +11,7 @@ It consists of functions to read time series data, detrending, calibration,
 computation of fourier transform, calculation of impedance, etc.
 
 """
-import os, re
+import os
 from scipy import signal
 from scipy.fft import fft
 import numpy as np
@@ -262,14 +262,14 @@ def bandavg(ts,procinfo,config):
 
     """
     WindowLength = procinfo.get('WindowLength')
-    sensor_no = procinfo.get('sensor_no')
     overlap = procinfo.get('overlap')
     ChoppStat = procinfo.get('ChoppStat')
     fs = procinfo.get('fs')
     notch = procinfo.get('notch')
-    ChoppDataHx = ChoppData(sensor_no.get('Hx')[0],ChoppStat,procinfo)
-    ChoppDataHy = ChoppData(sensor_no.get('Hy')[0],ChoppStat,procinfo)
-    ChoppDataHz = ChoppData(sensor_no.get('Hz')[0],ChoppStat,procinfo)
+    CalDataHx, CalDataHy, CalDataHz = getcalibrationdata(procinfo)
+    ChoppDataHx = CalDataHx.get(str(ChoppStat))
+    ChoppDataHy = CalDataHy.get(str(ChoppStat))
+    ChoppDataHz = CalDataHz.get(str(ChoppStat))
     cal = {}
     # Make calibration values
     magnitude = ChoppDataHx[:,0] * ChoppDataHx[:,1]
@@ -445,39 +445,154 @@ def bandavg(ts,procinfo,config):
     # plt.gca().invert_xaxis()
     return ftlist,bandavg
 
-
-def ChoppData(sensorno,ChoppStat,procinfo):
+def getcalibrationdata(procinfo):
     """
-    Return calibration data from MFS06e cal files.
-    
+    Function to read calibration data from XML file
+
     Parameters
     ----------
-    sensorno : It is an integer value that is the sensor number of the induction coil.
-    ChoppStat : It is an integer value showing the chopper status of the measurement.
-    procinfo : It is a Python dictionary containing few information regarding the processing.
+    procinfo : This dictionary is required to get the path of processing 
+                folder
 
     Returns
     -------
-    ChoppData : It is an array containing calibration information of the induction coil.
+    CalDataHx : Calibaration data for Hx
+    CalDataHy : Calibaration data for Hy
+    CalDataHz : Calibaration data for Hz
 
     """
-    a = []
-    with open(procinfo.get('cal_path')+str(sensorno)+'.txt', 'r') as file_1:
-        for line in file_1.readlines():
-            if re.match(r'([+-]?[\d.]+(?:e-?\d+)?){3}', line): 
-                line = line.strip()
-                a.append([float(x) for x in line.split("  ")[0:3]])
-                # print(line)
-        a = np.asarray(a)
-        bb = a[:,0]
-        np.where(bb == 1)[0][1]
-        ChoppOnData = a[0:np.where(bb == 1)[0][1],:]
-        ChoppOffData = a[np.where(bb == 1)[0][1]:np.shape(a)[0],:]
-    if ChoppStat == 1:
-        ChoppData = ChoppOnData
-    elif ChoppStat == 0:
-        ChoppData = ChoppOffData
-    return ChoppData
+    import xml.etree.ElementTree as ET
+    
+    xmlfiles = []
+    for zz in os.listdir(procinfo['proc_path']):
+        if zz.endswith(".xml"):
+            xmlfiles.append(zz)
+    file = procinfo['proc_path']+'/'+xmlfiles[0]
+    mytree = ET.parse(file)
+    root = mytree.getroot()
+    calsensors = (root[2])
+    Hx = calsensors[2]
+    Hy = calsensors[3]
+    Hz = calsensors[4]
+    
+    CalDataHx = {}
+    freq = []
+    for x in Hx.findall(".//caldata[@chopper='on']/c1"):
+        freq.append(float(x.text))
+    
+    mag = []
+    for x in Hx.findall(".//caldata[@chopper='on']/c2"):
+        mag.append(float(x.text))
+    
+    phase = []
+    for x in Hx.findall(".//caldata[@chopper='on']/c3"):
+        phase.append(float(x.text))
+    
+    freq = np.asarray(freq).reshape(-1,1)
+    mag = np.asarray(mag).reshape(-1,1)
+    phase = np.asarray(phase).reshape(-1,1)
+    dataON = np.concatenate((freq, mag, phase),axis=1)
+    
+    CalDataHx['1'] = dataON
+    
+    freq = []
+    for x in Hx.findall(".//caldata[@chopper='off']/c1"):
+        freq.append(float(x.text))
+    
+    mag = []
+    for x in Hx.findall(".//caldata[@chopper='off']/c2"):
+        mag.append(float(x.text))
+    
+    phase = []
+    for x in Hx.findall(".//caldata[@chopper='off']/c3"):
+        phase.append(float(x.text))
+    
+    freq = np.asarray(freq).reshape(-1,1)
+    mag = np.asarray(mag).reshape(-1,1)
+    phase = np.asarray(phase).reshape(-1,1)
+    dataOFF = np.concatenate((freq, mag, phase),axis=1)
+    
+    CalDataHx['0'] = dataOFF
+    
+    CalDataHy = {}
+    freq = []
+    for x in Hy.findall(".//caldata[@chopper='on']/c1"):
+        freq.append(float(x.text))
+    
+    mag = []
+    for x in Hy.findall(".//caldata[@chopper='on']/c2"):
+        mag.append(float(x.text))
+    
+    phase = []
+    for x in Hy.findall(".//caldata[@chopper='on']/c3"):
+        phase.append(float(x.text))
+    
+    freq = np.asarray(freq).reshape(-1,1)
+    mag = np.asarray(mag).reshape(-1,1)
+    phase = np.asarray(phase).reshape(-1,1)
+    dataON = np.concatenate((freq, mag, phase),axis=1)
+    
+    CalDataHy['1'] = dataON
+    
+    freq = []
+    for x in Hy.findall(".//caldata[@chopper='off']/c1"):
+        freq.append(float(x.text))
+    
+    mag = []
+    for x in Hy.findall(".//caldata[@chopper='off']/c2"):
+        mag.append(float(x.text))
+    
+    phase = []
+    for x in Hy.findall(".//caldata[@chopper='off']/c3"):
+        phase.append(float(x.text))
+    
+    freq = np.asarray(freq).reshape(-1,1)
+    mag = np.asarray(mag).reshape(-1,1)
+    phase = np.asarray(phase).reshape(-1,1)
+    dataOFF = np.concatenate((freq, mag, phase),axis=1)
+    
+    CalDataHy['0'] = dataOFF
+    
+    CalDataHz = {}
+    freq = []
+    for x in Hz.findall(".//caldata[@chopper='on']/c1"):
+        freq.append(float(x.text))
+    
+    mag = []
+    for x in Hz.findall(".//caldata[@chopper='on']/c2"):
+        mag.append(float(x.text))
+    
+    phase = []
+    for x in Hz.findall(".//caldata[@chopper='on']/c3"):
+        phase.append(float(x.text))
+    
+    freq = np.asarray(freq).reshape(-1,1)
+    mag = np.asarray(mag).reshape(-1,1)
+    phase = np.asarray(phase).reshape(-1,1)
+    dataON = np.concatenate((freq, mag, phase),axis=1)
+    
+    CalDataHz['1'] = dataON
+    
+    freq = []
+    for x in Hz.findall(".//caldata[@chopper='off']/c1"):
+        freq.append(float(x.text))
+    
+    mag = []
+    for x in Hz.findall(".//caldata[@chopper='off']/c2"):
+        mag.append(float(x.text))
+    
+    phase = []
+    for x in Hz.findall(".//caldata[@chopper='off']/c3"):
+        phase.append(float(x.text))
+    
+    freq = np.asarray(freq).reshape(-1,1)
+    mag = np.asarray(mag).reshape(-1,1)
+    phase = np.asarray(phase).reshape(-1,1)
+    dataOFF = np.concatenate((freq, mag, phase),axis=1)
+    
+    CalDataHz['0'] = dataOFF
+    
+    return CalDataHx, CalDataHy, CalDataHz
  
 def dofft(dts,fs,WindowLength):
     """

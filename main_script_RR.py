@@ -38,8 +38,6 @@ import os
 import time
 import math
 config = config.configuration()
-## Provide path to folder where calibration files are kept
-cal_path = 'D:/Pyth/SigMT/calfiles/'
 # define project path where sites are kept
 project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
 # #
@@ -109,8 +107,8 @@ print('Length of time series = ' + str(procinfo.get('nofs')))
 print('--------------------')
 procinfo['meas'] = all_meas[select_meas]
 procinfo['proc_path'] = proc_path
+procinfoR['proc_path'] = proc_pathR
 procinfo['selectedsite'] = selectedsite
-procinfo['cal_path'] = cal_path
 del all_meas, select_meas, selectedsite
 del all_measR, select_measR, selectedsiteR, proc_pathR
 del proc_path, project_path, sites
