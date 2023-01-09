@@ -3,7 +3,7 @@
 Created on Mon May  4 17:25:49 2020
 
 @author: AJITHABH K. S.
-Last modified: 06-01-2023
+Last modified: 09-01-2023
 
 This is the main module of this package, especially written for remote reference.
 
@@ -1145,7 +1145,7 @@ def perform_robust(ftlist,bandavg):
         Zyx_jackk[stacki,0],Zyy_jackk[stacki,0] = (getjackknife(bandavg_singleEy,'Ey'))
         # Tx_jackk[stacki,0],Ty_jackk[stacki,0] = (tipper.getjackknife(bandavgT_single))
     print('Finished.')
-    Z_jackk = {'Zxx': Zxy_jackk}
+    Z_jackk = {'Zxx': Zxx_jackk}
     Z_jackk['Zxy'] = Zxy_jackk
     Z_jackk['Zyx'] = Zyx_jackk
     Z_jackk['Zyy'] = Zyy_jackk

@@ -3,7 +3,7 @@
 Created on Mon May  4 17:25:49 2020
 
 @author: AJITHABH K. S.
-Last modified: 06-01-2023
+Last modified: 09-01-2023
 
 This is the main module of this package.
 
@@ -1162,7 +1162,7 @@ def perform_robust(ftlist,bandavg):
         Zxx_jackk[stacki,0],Zxy_jackk[stacki,0] = (getjackknife(bandavg_singleEx,'Ex'))
         Zyx_jackk[stacki,0],Zyy_jackk[stacki,0] = (getjackknife(bandavg_singleEy,'Ey'))
     print('Finished.')
-    Z_jackk = {'Zxx': Zxy_jackk}
+    Z_jackk = {'Zxx': Zxx_jackk}
     Z_jackk['Zxy'] = Zxy_jackk
     Z_jackk['Zyx'] = Zyx_jackk
     Z_jackk['Zyy'] = Zyy_jackk
