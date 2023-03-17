@@ -3,7 +3,7 @@
 Created on Mon May  4 17:25:49 2020
 
 @author: AJITHABH K. S.
-Last modified: 09-01-2023
+Last modified: 17-03-2023
 
 This is the main module of this package.
 
@@ -172,6 +172,7 @@ def ts(path):
             if '.ats' in file:
                 files.append(os.path.join(r, file))
     del r,d,f,file,path
+    files = sorted(files)
     [headerEx,tsEx] = readADU07e(files[0])
     [headerEy,tsEy] = readADU07e(files[1])
     [headerHx,tsHx] = readADU07e(files[2])
