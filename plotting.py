@@ -3,7 +3,7 @@
 Created on Sun Jul 24 13:36:21 2022
 
 @author: AJITHABH K. S.
-Last modified: 09-01-2023
+Last modified: 20-03-2023
 
 This module plots four figures after the processing is completed.
 
@@ -48,6 +48,12 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     err_ryx = (0.4/ftlist) * ((abs(Z_huber.get('Zyx')))) * Zvar.get('yx')
     err_pxy = np.degrees((Zvar.get('xy')) / abs(Z_huber.get('Zxy')))
     err_pyx = np.degrees((Zvar.get('yx')) / abs(Z_huber.get('Zyx')))
+    #
+    ftlist = ftlist.reshape((-1,))
+    rho_xy = rho_xy.reshape((-1,))
+    rho_yx = rho_yx.reshape((-1,))
+    phase_xy = phase_xy.reshape((-1,))
+    phase_yx = phase_yx.reshape((-1,))
     err_rxy = err_rxy.reshape((-1,))
     err_ryx = err_ryx.reshape((-1,))
     err_pxy = err_pxy.reshape((-1,))
@@ -59,8 +65,8 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     plt.subplot(211)
     plt.scatter(ftlist,rho_xy,c='r',s=10,label='XY')
     plt.scatter(ftlist,rho_yx,c='b',s=10,label='YX')
-    plt.errorbar(ftlist,rho_xy,err_rxy,ecolor='r',fmt="none")
-    plt.errorbar(ftlist,rho_yx,err_ryx,ecolor='b',fmt="none")
+    plt.errorbar(ftlist,rho_xy,yerr=err_rxy,ecolor='r',fmt="none")
+    plt.errorbar(ftlist,rho_yx,yerr=err_ryx,ecolor='b',fmt="none")
     plt.xscale('log')
     plt.yscale('log')
     plt.xlim((10000, 0.001)) 
@@ -74,8 +80,8 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     plt.subplot(212)
     plt.scatter(ftlist,phase_xy,c='r',s=10)
     plt.scatter(ftlist,phase_yx,c='b',s=10)
-    plt.errorbar(ftlist,phase_xy,err_pxy,ecolor='r',fmt="none")
-    plt.errorbar(ftlist,phase_yx,err_pyx,ecolor='b',fmt="none")
+    plt.errorbar(ftlist,phase_xy,yerr=err_pxy,ecolor='r',fmt="none")
+    plt.errorbar(ftlist,phase_yx,yerr=err_pyx,ecolor='b',fmt="none")
     plt.xscale('log')
     plt.xlim((10000, 0.001))
     plt.ylim((0, 90))
