@@ -39,7 +39,7 @@ import time
 import math
 config = config.configuration()
 # define project path where sites are kept
-project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
+project_path = 'D:/NGRI/FIELD RAW DATA/CK/'
 # #
 # #========= Selection of site and setting a path =========
 sites, selectedsite, measid, all_meas, select_meas, proc_path = mtproc.makeprocpath(project_path)
@@ -136,9 +136,6 @@ ftlist,bandavg = mtprocRR.bandavg(ts,procinfo,tsR,procinfoR,config)
 spmat = mtprocRR.cleanSpec(bandavg)
 #
 #====Data selection tools section. Coherency threshold & Polarization direction
-cohMatrixEx = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
-cohMatrixEy = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
-pdmat = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
 # Calculation of coherency values for all time windows
 AllcohEx = data_sel.cohEx(bandavg)
 AllcohEy = data_sel.cohEy(bandavg)
@@ -146,41 +143,23 @@ AllcohEy = data_sel.cohEy(bandavg)
 alpha_degH,alpha_degE = data_sel.pdvalues(bandavg)
 #
 #====== Coherency threshold ======
-ctflag = 0
-if ctflag == 1:
-    CohThre = [0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9]
-    for i in range(np.shape(AllcohEx)[0]):
-        for j in range(np.shape(AllcohEx)[1]):
-            if AllcohEx[i,j] < CohThre[i]:
-                cohMatrixEx[i,j] = 0
-            else:
-                cohMatrixEx[i,j] = 1
-            if AllcohEy[i,j] < CohThre[i]:
-                cohMatrixEy[i,j] = 0
-            else:
-                cohMatrixEy[i,j] = 1
+ctflag = 0 # Give '1' to perform coherency threshold based selection
+minpercent = 20 # Minimum percentage of windows required
+CohThre = 0.9 # Coherency Threshold value Range: (0,1)
+[cohMatrixEx, cohMatrixEy] = data_sel.performct(ctflag,CohThre,minpercent,ftlist,bandavg,AllcohEx,AllcohEy)
 #
 #====== Polarization direction ======
-pdflag = 0
-if pdflag == 1:
-    pdlim = [-10,10]
-    alpha = alpha_degE #Use either alpha_degE or alpha_degH
-    for i in range(np.shape(pdmat)[0]):
-        for j in range(np.shape(pdmat)[1]):
-            if alpha[i,j] > pdlim[0] and alpha[i,j] < pdlim[1]:
-                pdmat[i,j] = 0
-            else:
-                pdmat[i,j] = 1
-#            
-pdflag = 0
-if pdflag == 1:
-    timewindow_limits = [300,400]
-    for i in range(np.shape(pdmat)[0]):
-        for j in range(np.shape(pdmat)[1]):
-            if j > timewindow_limits[0] and j < timewindow_limits[1]:
-                pdmat[i,j] = 0
-            else:
-                pdmat[i,j] = 1
+pdflag = 0 # Give '1' to perform polarization direction based selection
+pdlim = [-10,10] # Ploarization direction limit
+alpha = alpha_degE # Use either alpha_degE (electric field) or alpha_degH (magnetic field)
+pdmat = data_sel.performpd(pdflag,pdlim,alpha,bandavg)
+
+# This can be used to mask time windows based on the polarization directions
+mwflag = 0 # Give '1' to perform mask windows
+timewindow_limits = [0,40] #Time window limits
+mwmat = data_sel.performmw(mwflag,timewindow_limits,bandavg)
+
+#====End of data selection tools section
 #
 bandavg['cohMatrixEx'] = cohMatrixEx
 bandavg['cohMatrixEy'] = cohMatrixEy

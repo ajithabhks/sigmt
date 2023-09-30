@@ -131,3 +131,60 @@ def pdvalues(bandavg):
     alphaE = np.arctan(2*np.real(ExEyc)/(ExExc-EyEyc))
     alpha_degE = np.degrees(np.real(alphaE))
     return alpha_degH,alpha_degE
+
+def performct(ctflag,CohThre,minpercent,ftlist,bandavg,AllcohEx,AllcohEy):
+    if ctflag == 1:
+        cohMatrixEx = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
+        cohMatrixEy = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
+        CohThreEx = np.empty(np.size(ftlist),dtype=float)
+        CohThreEy = np.empty(np.size(ftlist),dtype=float)
+        CohThreEx[:] = CohThre
+        CohThreEy[:] = CohThre
+        minpercent = minpercent
+        minwins = int(np.ceil(np.shape(AllcohEx)[1] * (minpercent/100)))
+        for i in range(np.shape(AllcohEx)[0]):
+            while (np.sum(AllcohEx[i,:]>=CohThreEx[i]) < minwins):
+                CohThreEx[i] = CohThreEx[i] - 0.01
+        for i in range(np.shape(AllcohEx)[0]):
+            while (np.sum(AllcohEy[i,:]>=CohThreEy[i]) < minwins):
+                CohThreEy[i] = CohThreEy[i] - 0.01
+        for i in range(np.shape(AllcohEx)[0]):
+            for j in range(np.shape(AllcohEx)[1]):
+                if AllcohEx[i,j] < CohThreEx[i]:
+                    cohMatrixEx[i,j] = 0
+                else:
+                    cohMatrixEx[i,j] = 1
+                if AllcohEy[i,j] < CohThreEy[i]:
+                    cohMatrixEy[i,j] = 0
+                else:
+                    cohMatrixEy[i,j] = 1
+    else:
+        cohMatrixEx = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
+        cohMatrixEy = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
+    return cohMatrixEx, cohMatrixEy
+
+def performpd(pdflag,pdlim,alpha,bandavg):
+    if pdflag == 1:
+        pdmat = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
+        for i in range(np.shape(pdmat)[0]):
+            for j in range(np.shape(pdmat)[1]):
+                if alpha[i,j] > pdlim[0] and alpha[i,j] < pdlim[1]:
+                    pdmat[i,j] = 0
+                else:
+                    pdmat[i,j] = 1
+    else:
+        pdmat = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
+    return pdmat
+
+def performmw(mwflag,timewindow_limits,bandavg):
+    if mwflag == 1:
+        mwmat = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
+        for i in range(np.shape(mwmat)[0]):
+            for j in range(np.shape(mwmat)[1]):
+                if j > timewindow_limits[0] and j < timewindow_limits[1]:
+                    mwmat[i,j] = 0
+                else:
+                    mwmat[i,j] = 1
+    else:
+        mwmat = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
+    return mwmat
