@@ -18,25 +18,45 @@ Join it with 'write2edi-data.py' output to get a final EDI file.
 import pandas as pd
 
 lat = loc.get('lat')
-lat_d = np.floor(lat)
-lat_m2 = (lat - lat_d) * 60
-lat_m = np.floor(lat_m2)
-lat_s = lat_m2 - lat_m
-del lat_m2
-lat_s = lat_s * 60
+if lat>0:
+    lat_d = np.floor(lat)
+    lat_m2 = (lat - lat_d) * 60
+    lat_m = np.floor(lat_m2)
+    lat_s = lat_m2 - lat_m
+    del lat_m2
+    lat_s = lat_s * 60
+else:
+    lat = -1 * lat
+    lat_d = np.floor(lat)
+    lat_m2 = (lat - lat_d) * 60
+    lat_m = np.floor(lat_m2)
+    lat_s = lat_m2 - lat_m
+    del lat_m2
+    lat_s = lat_s * 60
+    lat_s = -1 * lat_s
 lon = loc.get('lon')
-lon_d = np.floor(lon)
-lon_m2 = (lon - lon_d) * 60
-lon_m = np.floor(lon_m2)
-lon_s = lon_m2 - lon_m
-del lon_m2
-lon_s = lon_s * 60
+if lon>0:
+    lon_d = np.floor(lon)
+    lon_m2 = (lon - lon_d) * 60
+    lon_m = np.floor(lon_m2)
+    lon_s = lon_m2 - lon_m
+    del lon_m2
+    lon_s = lon_s * 60
+else:
+    lon = -1 * lon
+    lon_d = np.floor(lon)
+    lon_m2 = (lon - lon_d) * 60
+    lon_m = np.floor(lon_m2)
+    lon_s = lon_m2 - lon_m
+    del lon_m2
+    lon_s = lon_s * 60
+    lon_d = -1 * lon_d
 
 from datetime import date
 today = date.today()
 d1 = today.strftime("%m/%d/%Y")
 
-f = open("D:/NGRI/PROCESSING FOLDER/AMT/TK4PON/TK4PON-HEADER.edi", "x")
+f = open("D:/NGRI/PROCESSING FOLDER/CK/CK09/CK09-HEADER.edi", "x")
 #===== Header =====
 f.write(">HEAD\n")
 f.write("  DATAID=" + procinfo.get('selectedsite'))
