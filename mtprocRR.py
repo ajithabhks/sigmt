@@ -350,16 +350,16 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
             calHx[:,stack] = calibrateon(f,xfftHx[:,stack],ChoppDataHx,calt_Hx)
             calHy[:,stack] = calibrateon(f,xfftHy[:,stack],ChoppDataHy,calt_Hy)
             calHz[:,stack] = calibrateon(f,xfftHz[:,stack],ChoppDataHz,calt_Hz)
-            calRx[:,stack] = calibrateon(f,xfftRx[:,stack],ChoppDataHz,calt_Rx)
-            calRy[:,stack] = calibrateon(f,xfftRy[:,stack],ChoppDataHz,calt_Ry)
+            calRx[:,stack] = calibrateon(f,xfftRx[:,stack],ChoppDataRx,calt_Rx)
+            calRy[:,stack] = calibrateon(f,xfftRy[:,stack],ChoppDataRy,calt_Ry)
             f = np.delete(f,0,)        
         elif ChoppStat == 0:
             f = fqs[:,0]
             calHx[:,stack] = calibrateoff(f,xfftHx[:,stack],ChoppDataHx,calt_Hx)
             calHy[:,stack] = calibrateoff(f,xfftHy[:,stack],ChoppDataHy,calt_Hy)
             calHz[:,stack] = calibrateoff(f,xfftHz[:,stack],ChoppDataHz,calt_Hz)
-            calRx[:,stack] = calibrateon(f,xfftRx[:,stack],ChoppDataHz,calt_Rx)
-            calRy[:,stack] = calibrateon(f,xfftRy[:,stack],ChoppDataHz,calt_Ry)
+            calRx[:,stack] = calibrateon(f,xfftRx[:,stack],ChoppDataRx,calt_Rx)
+            calRy[:,stack] = calibrateon(f,xfftRy[:,stack],ChoppDataRy,calt_Ry)
             f = np.delete(f,0,)
     print("Done!")
     #
