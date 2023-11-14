@@ -3,7 +3,7 @@
 Created on Mon May  4 17:25:49 2020
 
 @author: AJITHABH K. S.
-Last modified: 30-05-2023
+Last modified: 13-11-2023
 
 This is the main module of this package, especially written for remote reference.
 
@@ -308,13 +308,13 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
         s2[stack+1] = int(s2[stack]+(WindowLength/2))
     if notch == 1:
         print("Applying notch filter...")
-        tsEx = notchfil(tsEx,fs)
-        tsEy = notchfil(tsEy,fs)
-        tsHx = notchfil(tsHx,fs)
-        tsHy = notchfil(tsHy,fs)
-        tsHz = notchfil(tsHz,fs)
-        tsRx = notchfil(tsRx,fs)
-        tsRy = notchfil(tsRy,fs)
+        tsEx = notchfil(tsEx,fs,procinfo.get('notch_freqs'))
+        tsEy = notchfil(tsEy,fs,procinfo.get('notch_freqs'))
+        tsHx = notchfil(tsHx,fs,procinfo.get('notch_freqs'))
+        tsHy = notchfil(tsHy,fs,procinfo.get('notch_freqs'))
+        tsHz = notchfil(tsHz,fs,procinfo.get('notch_freqs'))
+        tsRx = notchfil(tsRx,fs,procinfo.get('notch_freqs'))
+        tsRy = notchfil(tsRy,fs,procinfo.get('notch_freqs'))
         print("Done!")
     print("\nApplying detrend...")
     dtsEx = signal.detrend(tsEx,axis= 0)
@@ -625,7 +625,7 @@ def dofft(dts,fs,WindowLength):
     f =  np.asarray(fline * fs/(WindowLength)).T
     return f,xfft
 
-def notchfil(ts,fs):
+def notchfil(ts,fs,notch_freqs):
     """
     Function to perform notch filtering.
 
@@ -639,20 +639,9 @@ def notchfil(ts,fs):
     ts : It is an array of float containing time series data after notch filtering.
 
     """
-    f0 = 50.0  # Frequency to be removed from signal (Hz)
-    Qua = 20.0  # Quality factor
-    # Design notch filter
-    b_notch, a_notch = signal.iirnotch(f0, Qua, fs)
-    f1 = 150.0  # Frequency to be removed from signal (Hz)
-    # Design notch filter
-    b2_notch, a2_notch = signal.iirnotch(f1, Qua, fs)
-    f2 = 100.0  # Frequency to be removed from signal (Hz)
-    # Design notch filter
-    b3_notch, a3_notch = signal.iirnotch(f2, Qua, fs)
-    #
-    ts = signal.filtfilt(b_notch, a_notch, ts, axis = 0)
-    ts = signal.filtfilt(b2_notch, a2_notch, ts, axis = 0)
-    ts = signal.filtfilt(b3_notch, a3_notch, ts, axis = 0)
+    for f0 in notch_freqs:
+        b_notch, a_notch = signal.butter(2, [f0-5, f0+5], btype='bandstop', fs=fs)
+        ts = signal.filtfilt(b_notch, a_notch, ts, axis = 0)
     return ts
 
 def parzen(f,ft,cr):

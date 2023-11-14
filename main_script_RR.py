@@ -2,7 +2,7 @@
 """
 Created on Wed Jan  6 12:27:42 2021
 @author: AJITHABH K. S.
-Last modified: 30-09-2023
+Last modified: 14-11-2023
 
 ##########
 Program: SigMT
@@ -39,7 +39,7 @@ import time
 import math
 config = config.configuration()
 # define project path where sites are kept
-project_path = 'D:/NGRI/FIELD RAW DATA/CK/'
+project_path = 'D:/NGRI/FIELD RAW DATA/demo/'
 # #
 # #========= Selection of site and setting a path =========
 sites, selectedsite, measid, all_meas, select_meas, proc_path = mtproc.makeprocpath(project_path)
@@ -96,6 +96,7 @@ if dflag == 1:
 # No need to edit
 procinfo['nofs'] = len(ts['tsEx'])
 procinfo['notch'] = 0 # Notch flag 1 - On, 0 - Off
+procinfo['notch_freqs'] = [50,100] # Provide frequencies to be filtered seperted by a comma, Eg:[50, 100]
 print('--------------------')
 #print('\nSaved time series after trend & bias removal.')
 print('MT site: ' + selectedsite)

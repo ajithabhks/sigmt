@@ -2,7 +2,7 @@
 """
 Created on Mon May  4 16:49:35 2020
 @author: AJITHABH K. S.
-Last modified: 30-09-2023
+Last modified: 14-11-2023
 
 ##########
 Program: SigMT
@@ -65,6 +65,7 @@ if dflag == 1:
 # No need to edit
 procinfo['nofs'] = len(ts['tsEx'])
 procinfo['notch'] = 0 # Notch flag 1 - On, 0 - Off
+procinfo['notch_freqs'] = [50,100] # Provide frequencies to be filtered seperted by a comma, Eg:[50, 100]
 print('--------------------')
 print('MT site: ' + selectedsite)
 print('Measurement directory: ' + all_meas[select_meas])
@@ -85,7 +86,7 @@ if config.get('FFT_Length') == 0:
     procinfo['WindowLength'] = mtproc.FFTLength(procinfo.get('nofs'))
 else:
     procinfo['WindowLength'] = config.get('FFT_Length')
-procinfo['overlap'] = 50 #Input in percentage %
+procinfo['overlap'] = 50 # Input in percentage %
 print('\nWindow Length selected: '+ str(procinfo.get('WindowLength')))
 procinfo['nstacks'] = math.floor(procinfo.get('nofs')/procinfo.get('WindowLength'))
 procinfo['nstacks'] = (procinfo.get('nstacks') * 2) - 1
