@@ -3,7 +3,7 @@
 Created on Mon Jan 11 10:37:43 2021
 
 @author: AJITHABH K. S.
-Last modified: 21-07-2022
+Last modified: 13-11-2023
 
 This script can be used to create EDI header information.
 
@@ -92,40 +92,24 @@ f.write("\n  REFLONG=" + str(round(lon_d)) + ":" + str(round(lon_m)) + ":" + str
 f.write("\n  REFELEV="+ str(loc.get('elev')))
 
 #===== EMEAS & HMEAS section =====
-f.write("\n\n>EMEAS  ID="+str(measid.get('Ex'))+"  CHTYPE=EX  X=-4.000000000E+01")
-f.write("\n  Y=0.000000000E+00  Z=0.000000000E+00")
-f.write("\n  ACQCHAN=\"ADU07/EFP06 /0/\"  GAIN=1  MEASDATE=" + pd.to_datetime(timeline[0]-719529,unit='D').strftime("%m/%d/%Y"))
-f.write("\n  X2=4.000000000E+01  Y2=0.000000000E+00  Z2=0.000000000E+00")
-f.write("\n>EMEAS  ID="+str(measid.get('Ey'))+"  CHTYPE=EY  X=0.000000000E+00")
-f.write("\n  Y=0.000000000E+00  Z=0.000000000E+00")
-f.write("\n  ACQCHAN=\"ADU07/EFP06 /0/\"  GAIN=1  MEASDATE=" + pd.to_datetime(timeline[0]-719529,unit='D').strftime("%m/%d/%Y"))
-f.write("\n  X2=4.000000000E+01  Y2=0.000000000E+00  Z2=0.000000000E+00")
-
-f.write("\n>HMEAS  ID="+str(measid.get('Hx'))+"  CHTYPE=HX  X=0.000000000E+00")
-f.write("\n  Y=0.000000000E+00  Z=0.000000000E+00")
-f.write("\n  ACQCHAN=\"ADU07/MFS06 /0/\"  GAIN=1  MEASDATE=" + pd.to_datetime(timeline[0]-719529,unit='D').strftime("%m/%d/%Y"))
-f.write("\n  AZM=0.000000000E+00  DIP=0.000000000E+00")
-f.write("\n  SENSOR=MFS06 /0")
-f.write("\n>HMEAS  ID="+str(measid.get('Hy'))+"  CHTYPE=HY  X=0.000000000E+00")
-f.write("\n  Y=0.000000000E+00  Z=0.000000000E+00")
-f.write("\n  ACQCHAN=\"ADU07/MFS06 /0/\"  GAIN=1  MEASDATE=" + pd.to_datetime(timeline[0]-719529,unit='D').strftime("%m/%d/%Y"))
-f.write("\n  AZM=9.000000000E+01  DIP=0.000000000E+00")
-f.write("\n  SENSOR=MFS06 /0")
-f.write("\n>HMEAS  ID="+str(measid.get('Hz'))+"  CHTYPE=HZ  X=0.000000000E+00")
-f.write("\n  Y=0.000000000E+00  Z=0.000000000E+00")
-f.write("\n  ACQCHAN=\"ADU07/MFS06 /0/\"  GAIN=1  MEASDATE=" + pd.to_datetime(timeline[0]-719529,unit='D').strftime("%m/%d/%Y"))
-f.write("\n  AZM=0.000000000E+00  DIP=0.000000000E+00")
-f.write("\n  SENSOR=MFS06 /0")
-
+f.write("\n\n>EMEAS  ID="+str(measid.get('Ex'))+" CHTYPE=EX X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
+f.write("\n>EMEAS  ID="+str(measid.get('Ey'))+" CHTYPE=EY X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
+f.write("\n>HMEAS  ID="+str(measid.get('Hx'))+" CHTYPE=HX X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
+f.write("\n>HMEAS  ID="+str(measid.get('Hy'))+" CHTYPE=HY X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
+f.write("\n>HMEAS  ID="+str(measid.get('Hz'))+" CHTYPE=HZ X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
+if 'measidR' in locals():
+    f.write("\n>HMEAS ID="+str(measidR.get('Hx'))+" CHTYPE=HX X=0.000000e+00 Y=0.000000e+00 Z=0.000000e+00 X2=0.000000e+00 Y2=0.000000e+00 Z2=0.000000e+00")
+    f.write("\n>HMEAS ID="+str(measidR.get('Hy'))+" CHTYPE=HY X=0.000000e+00 Y=0.000000e+00 Z=0.000000e+00 X2=0.000000e+00 Y2=0.000000e+00 Z2=0.000000e+00")
+    
 #===== MTSECT section =====
 f.write("\n\n>=MTSECT\n")
 f.write("  SECTID=" + procinfo.get('selectedsite'))
 f.write("\n  NFREQ=" + str(np.size(cohEx)))
+f.write("\n  EX=" + str(measid.get('Ex')))
+f.write("\n  EY=" + str(measid.get('Ey')))
 f.write("\n  HX=" + str(measid.get('Hx')))
 f.write("\n  HY=" + str(measid.get('Hy')))
 f.write("\n  HZ=" + str(measid.get('Hz')))
-f.write("\n  EX=" + str(measid.get('Ex')))
-f.write("\n  EY=" + str(measid.get('Ey')))
 if 'measidR' in locals():
     f.write("\n  RX=" + str(measidR.get('Hx')))
     f.write("\n  RY=" + str(measidR.get('Hy')))
