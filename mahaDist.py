@@ -106,6 +106,6 @@ def getmahaWt(Z1_single,Z2_single,config):
     for k in range(nozeromat.shape[0] + zeromat.shape[0]):
         if (mahaWt_temp[k] <= config.get('MD_threshold_impedance')): # MD threshold
             mahaWt[k] = 1
-    Z1_mean = np.complex(robust_cov.location_[0],robust_cov.location_[1])
-    Z2_mean = np.complex(robust_cov.location_[2],robust_cov.location_[3])
+    Z1_mean = complex(robust_cov.location_[0],robust_cov.location_[1])
+    Z2_mean = complex(robust_cov.location_[2],robust_cov.location_[3])
     return mahaWt, Z1_mean, Z2_mean, mahaWt_temp

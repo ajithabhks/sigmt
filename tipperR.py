@@ -193,5 +193,5 @@ def getmahaWt(T_single,config):
         if (mahal_robust[k] <= config.get('MD_threshold_tipper')):
             mahaWt[k] = 1.0
     #out_mahal = np.where(mahal_robust_cov > 1.5)
-    T_mean = np.complex(robust_cov.location_[0],robust_cov.location_[1])
+    T_mean = complex(robust_cov.location_[0],robust_cov.location_[1])
     return mahaWt, T_mean, mahal_robust
