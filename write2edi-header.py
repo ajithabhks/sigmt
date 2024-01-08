@@ -2,8 +2,7 @@
 """
 Created on Mon Jan 11 10:37:43 2021
 
-@author: AJITHABH K. S.
-Last modified: 13-11-2023
+@author: ajithabh
 
 This script can be used to create EDI header information.
 
@@ -56,12 +55,12 @@ from datetime import date
 today = date.today()
 d1 = today.strftime("%m/%d/%Y")
 
-f = open("D:/NGRI/PROCESSING FOLDER/CK/CK09/CK09-HEADER.edi", "x")
+f = open("D:/NGRI/PROCESSING FOLDER/KL/KL33A/KL33A-HEADER.edi", "x")
 #===== Header =====
 f.write(">HEAD\n")
 f.write("  DATAID=" + procinfo.get('selectedsite'))
 f.write("\n  ACQBY=" + "\"\"")
-f.write("\n  FILEBY=" + "\"\"")
+f.write("\n  FILEBY=" + "\"SigMT\"")
 f.write("\n  ACQDATE=" + pd.to_datetime(timeline[0]-719529,unit='D').strftime("%m/%d/%Y"))
 f.write("\n  FILEDATE=" + d1)
 f.write("\n  PROSPECT=" + procinfo.get('selectedsite'))
@@ -69,7 +68,7 @@ f.write("\n  LAT=" + str(round(lat_d)) + ":" + str(round(lat_m)) + ":" + str(rou
 f.write("\n  LONG=" + str(round(lon_d)) + ":" + str(round(lon_m)) + ":" + str(round(lon_s,2)))
 f.write("\n  ELEV=" + str(loc.get('elev')))
 f.write("\n  STDVERS= \"SEG 1.0\"")
-f.write("\n  PROGVERS= ")
+f.write("\n  PROGVERS= v1.1.0")
 f.write("\n  PROGDATE= ")
 f.write("\n  MAXSECT=999")
 f.write("\n  EMPTY=1.0E32")
@@ -92,27 +91,27 @@ f.write("\n  REFLONG=" + str(round(lon_d)) + ":" + str(round(lon_m)) + ":" + str
 f.write("\n  REFELEV="+ str(loc.get('elev')))
 
 #===== EMEAS & HMEAS section =====
-f.write("\n\n>EMEAS  ID="+str(measid.get('Ex'))+" CHTYPE=EX X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
-f.write("\n>EMEAS  ID="+str(measid.get('Ey'))+" CHTYPE=EY X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
-f.write("\n>HMEAS  ID="+str(measid.get('Hx'))+" CHTYPE=HX X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
-f.write("\n>HMEAS  ID="+str(measid.get('Hy'))+" CHTYPE=HY X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
-f.write("\n>HMEAS  ID="+str(measid.get('Hz'))+" CHTYPE=HZ X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
+f.write("\n\n>EMEAS ID="+"101.001"+" CHTYPE=EX X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
+f.write("\n>EMEAS ID="+"102.001"+" CHTYPE=EY X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
+f.write("\n>HMEAS ID="+"103.001"+" CHTYPE=HX X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
+f.write("\n>HMEAS ID="+"104.001"+" CHTYPE=HY X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
+f.write("\n>HMEAS ID="+"105.001"+" CHTYPE=HZ X=0.000000E+00 Y=0.000000E+00 Z=0.000000E+00 X2=0.000000E+00 Y2=0.000000E+00 Z2=0.000000E+00")
 if 'measidR' in locals():
-    f.write("\n>HMEAS ID="+str(measidR.get('Hx'))+" CHTYPE=HX X=0.000000e+00 Y=0.000000e+00 Z=0.000000e+00 X2=0.000000e+00 Y2=0.000000e+00 Z2=0.000000e+00")
-    f.write("\n>HMEAS ID="+str(measidR.get('Hy'))+" CHTYPE=HY X=0.000000e+00 Y=0.000000e+00 Z=0.000000e+00 X2=0.000000e+00 Y2=0.000000e+00 Z2=0.000000e+00")
+    f.write("\n>HMEAS ID="+"106.001"+" CHTYPE=HX X=0.000000e+00 Y=0.000000e+00 Z=0.000000e+00 X2=0.000000e+00 Y2=0.000000e+00 Z2=0.000000e+00")
+    f.write("\n>HMEAS ID="+"107.001"+" CHTYPE=HY X=0.000000e+00 Y=0.000000e+00 Z=0.000000e+00 X2=0.000000e+00 Y2=0.000000e+00 Z2=0.000000e+00")
     
 #===== MTSECT section =====
 f.write("\n\n>=MTSECT\n")
 f.write("  SECTID=" + procinfo.get('selectedsite'))
 f.write("\n  NFREQ=" + str(np.size(cohEx)))
-f.write("\n  EX=" + str(measid.get('Ex')))
-f.write("\n  EY=" + str(measid.get('Ey')))
-f.write("\n  HX=" + str(measid.get('Hx')))
-f.write("\n  HY=" + str(measid.get('Hy')))
-f.write("\n  HZ=" + str(measid.get('Hz')))
+f.write("\n  EX=" + "101.001")
+f.write("\n  EY=" + "102.001")
+f.write("\n  HX=" + "103.001")
+f.write("\n  HY=" + "104.001")
+f.write("\n  HZ=" + "105.001")
 if 'measidR' in locals():
-    f.write("\n  RX=" + str(measidR.get('Hx')))
-    f.write("\n  RY=" + str(measidR.get('Hy')))
+    f.write("\n  RX=" + "106.001")
+    f.write("\n  RY=" + "107.001")
 
 
 f.close()

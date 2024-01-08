@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jan 20 12:41:28 2021
-@author: AJITHABH K. S.
-Last modified: 13-07-2022
+@author: ajithabh
 
 This module contains functions to calculate Mahalanobis distance (MD) for every
 time windows for all target frequencies. It is also used to select time windows/events within
@@ -38,7 +37,6 @@ def mcd(bandavg,mode,config):
     if (mode == 'Ex'):
         Z1 = bandavg.get('Zxx_single') * bandavg.get('pre_sel_matEx')
         Z2 = bandavg.get('Zxy_single') * bandavg.get('pre_sel_matEx')
-        # coh_select = bandavg.get('coh_selectedEx')
     elif (mode == 'Ey'):
         Z1 = bandavg.get('Zyx_single') * bandavg.get('pre_sel_matEy')
         Z2 = bandavg.get('Zyy_single') * bandavg.get('pre_sel_matEy')

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar 21 17:41:03 2022
-@author: AJITHABH K. S.
-Last modified: 21-07-2022
+@author: ajithabh
 
 This script can be used to plot apparent resistivity and phase value
 from the text file created after processing of the data.
@@ -10,11 +9,9 @@ from the text file created after processing of the data.
 #
 import pandas as pd
 import numpy as np
-# from matplotlib import rc
 from matplotlib import pyplot as plt
 import matplotlib as mpl
-# mpl.rcParams['pdf.fonttype'] = 3
-path = 'D:/NGRI/PROCESSING FOLDER/AMT/TK4PON/bands/all.txt'
+path = 'D:/NGRI/PROCESSING FOLDER/KL/KL33A/bands/all.txt'
 data = pd.read_csv(path,delimiter = "\t")
 data = data.to_numpy()
 ftlist = data[:,0]
@@ -63,7 +60,7 @@ plt.xticks([10000,1000,100,10,1,0.1,0.01,0.001])
 ax = plt.gca()
 ax.set_box_aspect(0.5)
 plt.grid(which='both',linestyle='-.', linewidth=0.4)
-plt.title('TK4 POWER ON')
+plt.title('Site')
 plt.subplot(212)
 plt.scatter(ftlist,phase_xy,c='r',s=10)
 plt.scatter(ftlist,phase_yx,c='b',s=10)

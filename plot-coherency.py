@@ -2,8 +2,7 @@
 """
 Created on Thu Aug 20 15:52:42 2020
 
-@author: AJITHABH K. S.
-Last modified: 21-07-2022
+@author: ajithabh
 
 This script can be used to plot coherency values
 for all the time windows for all target frequencies.
@@ -26,7 +25,6 @@ Z_all = bandavg.get('Zxy_single')
 """
 
 import matplotlib
-#matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 cdict = {'red': ((0.0, 0.0, 0.0),
                  (0.1, 0.5, 0.5),
@@ -75,7 +73,4 @@ for fnum in range(np.size(ftlist)):
     sc = plt.scatter(Z_real,Z_imag,c=cc,cmap=my_cmap)
     plt.colorbar(sc)
     plt.clim(0,1) 
-    # plt.scatter(Z_huber[fnum].real,Z_huber[fnum].imag,c='black',marker=(5, 1))
-    plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+
-              ' ('+str(procinfo.get('fs'))+' Hz) f='+ str(round(ftlist[fnum][0],2)) +' Hz')
-    # plt.savefig('C:/Users/Ajithabh/Desktop/myImagePDF.eps', format='eps', dpi=1200)
+    plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+' ('+str(procinfo.get('fs'))+' Hz) f='+ str(round(ftlist[fnum][0],2)) +' Hz')

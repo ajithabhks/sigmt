@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon May  4 16:49:35 2020
-@author: AJITHABH K. S.
-Last modified: 14-11-2023
+@author: ajithabh
 
 ##########
 Program: SigMT

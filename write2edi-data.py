@@ -2,8 +2,7 @@
 """
 Created on Wed Jan 13 15:47:38 2021
 
-@author: AJITHABH K. S.
-Last modified: 14-06-2023
+@author: ajithabh
 
 This script can be used to arrange the impedance values, tipper and variances
 in text file to as in EDI file.
@@ -19,8 +18,8 @@ Give path and EDI name to be created in the variable 'f'.
 import pandas as pd
 import numpy as np
 
-txtfilename = 'D:/NGRI/PROCESSING FOLDER/AD/AD19/bands/all.txt'
-f = open("D:/NGRI/PROCESSING FOLDER/AD/AD19/AD19-DATA.edi", "x")
+txtfilename = 'D:/NGRI/PROCESSING FOLDER/KL/KL33A/bands/all.txt'
+f = open("D:/NGRI/PROCESSING FOLDER/KL/KL33A/AD19-DATA.edi", "x")
 
 data = pd.read_csv(txtfilename, sep='\t', lineterminator='\n')
 data = np.asarray(data)

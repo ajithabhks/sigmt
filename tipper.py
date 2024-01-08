@@ -2,8 +2,7 @@
 """
 Created on Tue Sep 22 15:38:58 2020
 
-@author: AJITHABH K. S.
-Last modified: 27-07-2022
+@author: ajithabh
 
 This module deals with the calculation for tipper estimation.
 """
@@ -186,6 +185,5 @@ def getmahaWt(T_single,config):
     for k in range(mahal_robust.shape[0]):
         if (mahal_robust[k] <= config.get('MD_threshold_tipper')):
             mahaWt[k] = 1.0
-    #out_mahal = np.where(mahal_robust_cov > 1.5)
     T_mean = complex(robust_cov.location_[0],robust_cov.location_[1])
     return mahaWt, T_mean, mahal_robust

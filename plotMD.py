@@ -2,8 +2,7 @@
 """
 Created on Thu Jan 21 14:14:08 2021
 
-@author: AJITHABH K. S.
-Last modified: 21-07-2022
+@author: ajithabh
 
 This script can be used to see the Mahalanobis distance (MD) for
 all time windows/events for all target frequencies.
@@ -43,7 +42,6 @@ def reverse_colourmap(cmap, name = 'my_cmap_r'):
 ### Ploting of Mahalanobis distance
 import matplotlib
 import numpy as np
-#matplotlib.use('TkAgg')
 from matplotlib import pyplot as plt
 cdict = {'red': ((0.0, 0.0, 0.0),
                  (0.1, 0.5, 0.5),

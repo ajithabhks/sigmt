@@ -2,8 +2,7 @@
 """
 Created on Sun Jul 24 13:36:21 2022
 
-@author: AJITHABH K. S.
-Last modified: 20-03-2023
+@author: ajithabh
 
 This module plots four figures after the processing is completed.
 
@@ -128,18 +127,3 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Tipper Phase')
     plt.grid(which='both',linestyle='-.', linewidth=0.4)
-    #----------
-    # plt.figure()
-    # plt.subplot(211)
-    # plt.scatter(ftlist,Tx.real,c='r')
-    # plt.scatter(ftlist,Ty.real,c='b')
-    # plt.xscale('log')
-    # plt.xlim((10000, 0.001))
-    # plt.grid(which='both',linestyle='-.', linewidth=0.4)
-    # plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+' ('+str(procinfo.get('fs'))+' Hz)')
-    # plt.subplot(212)
-    # plt.scatter(ftlist,Tx.imag,c='r')
-    # plt.scatter(ftlist,Ty.imag,c='b')
-    # plt.xscale('log')
-    # plt.xlim((10000, 0.001))
-    # plt.grid(which='both',linestyle='-.', linewidth=0.4)

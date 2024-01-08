@@ -1,6 +1,5 @@
 """
-@author: AJITHABH K. S.
-Last modified: 30-09-2023
+@author: ajithabh
 
 This module contains functions to perform calculations for
 different data selection methods.

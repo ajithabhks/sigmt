@@ -2,8 +2,7 @@
 """
 Created on Tue Aug 18 14:38:27 2020
 
-@author: AJITHABH K. S.
-Last modified: 21-07-2022
+@author: ajithabh
 
 This script can be used to plot polarization directions
 for all the time windows for all target frequencies.
@@ -21,6 +20,7 @@ frequencies.
 """
 
 import matplotlib
+from matplotlib import pyplot as plt
 cdict = {'red': ((0.0, 0.0, 0.0),
                  (0.1, 0.5, 0.5),
                  (0.2, 0.0, 0.0),
@@ -76,8 +76,8 @@ for fnum in range(np.size(ftlist)):
     directionE = directionE.reshape(-1,1)
     #Event counter    
     b = b.reshape(-1,1)
-    plt.figure(num=fnum,figsize=(6,12))
-    plt.subplot(411)
+    plt.figure(num=fnum)
+    plt.subplot(211)
     plt.scatter(b,directionH)
     plt.ylim(-90, 90)
     plt.ylabel(r'$\alpha_H$ (deg.)')
@@ -85,7 +85,7 @@ for fnum in range(np.size(ftlist)):
     plt.yticks(yticks,**afont,fontsize=12)
     plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+
               ' ('+str(procinfo.get('fs'))+' Hz) f='+ str(round(ftlist[fnum][0],2)) +' Hz')
-    plt.subplot(412)
+    plt.subplot(212)
     plt.scatter(b,directionE)
     plt.ylim(-90, 90)
     plt.ylabel(r'$\alpha_E$ (deg.)')

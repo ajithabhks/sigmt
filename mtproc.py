@@ -2,8 +2,7 @@
 """
 Created on Mon May  4 17:25:49 2020
 
-@author: AJITHABH K. S.
-Last modified: 13-11-2023
+@author: ajithabh
 
 This is the main module of this package.
 
@@ -667,9 +666,6 @@ def parzen(f,ft,cr):
             pf[i] = (np.sin(u)/u) ** 4
         elif (cond > fr) or (cond == fr):
             pf[i] = 0
-    # plt.plot(f,pf)
-    # plt.xscale('log')
-    # plt.gca().invert_xaxis()
     return pf
 
 # Calibration value
@@ -761,8 +757,6 @@ def targetfreq(fs):
                   1.69082761484340E+0001, 1.26101085422250E+0001, 9.40455644624802E+0000,
                   7.01387158203311E+0000, 5.23091066021279E+0000, 3.90118724232419E+0000,
                   2.90948610830488E+0000)
-    # elif fs == 256:
-    # elif fs == 128:
     elif fs == 32:
         ftlist = ( 7.01387158203311E+0000, 5.23091066021279E+0000, 3.90118724232419E+0000,
                 2.90948610830488E+0000, 2.16988031811974E+0000, 1.61828598580477E+0000,
@@ -827,16 +821,6 @@ def targetfreq(fs):
                   5.230910660E+00,  3.901187242E+00,  2.909486108E+00,
                   2.169880318E+00, 1.618285985E+00,  1.206909666E+00,
                   9.001072472E-01,  6.712955234E-01)
-    # else:
-    #     with open('ADU-07.flst') as f:
-    #         lines = f.readlines()
-    #     fup = (fs/8)/(np.sqrt(2 ** (1-1)))
-    #     lines[min(range(len(lines)), key = lambda i: abs(lines[i]-fup))]
-    #     index = np.argmin(np.abs(np.array(arr)-fup))
-    #     flist = [0,0,0,0,0,0,0,0,]
-    #     for i in range(10):
-    #         flist[i] = (fs/8)/(np.sqrt(2 ** (i-1)))
-    #     flist = tuple(flist)
     return ftlist
 
 def getjackknife(bandavg,mode):
@@ -1178,10 +1162,6 @@ def perform_robust(ftlist,bandavg):
     Z_huber['Zyx'] = Zyx_huber
     return Z_huber
 
-# This function is used to make an array with only selected
-# time windows for a particular target frequency. Because
-# final estimates are computed individually for each target
-# frequency.
 def makeband(bandavg,i,coh_mode):
     """
 

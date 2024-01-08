@@ -2,9 +2,8 @@
 """
 Created on Fri May 29 16:37:20 2020
 
-@author: AJITHABH K. S.
+@author: ajithabh
 Dr. Manoj Nair helped with equations of variance and fisher distribution.
-Last modified: 21-07-2022
 
 This module is used to compute variances.
 The function ZExvar will compute variance for Ex component
@@ -57,7 +56,6 @@ def ZExvar(Z_huber,bandavg):
     Zxx = Z_huber.get('Zxx')
     Zxy = Z_huber.get('Zxy')
     ZpZ = Zxx * np.conj(ExHxc) + Zxy * np.conj(ExHyc)
-        # ZpZ = a*HxEx + b*HyEx
     ZpX = Zxx * HxHxc + Zxy * HyHxc
     ZpY = Zxx * HxHyc + Zxy * HyHyc
     ZpZp = Zxx * np.conj(ZpX) + Zxy * np.conj(ZpY)
@@ -72,7 +70,6 @@ def ZExvar(Z_huber,bandavg):
     for i in range(cohEx.shape[0]):
         if cohEx[i,0] > 1.0:
             cohEx[i,0] = 1/cohEx[i,0]
-        # cohEx[i,0] = 1.0
     cohEx = cohEx ** 2
     fis = fisher(bandavg.get('dof'))
     d = (4/bandavg.get('dof')) * fis * (1.0 - cohEx) * ExExc
@@ -99,6 +96,8 @@ def ZExvar(Z_huber,bandavg):
             db[i,0] = 100
     ZxxVar = np.sqrt(np.real(da))
     ZxyVar = np.sqrt(np.real(db))
+    ZxxVar = ZxxVar/2
+    ZxyVar = ZxyVar/2
     cohEx = np.sqrt(cohEx)
     return ZxxVar,ZxyVar,cohEx
 
@@ -141,7 +140,6 @@ def ZEyvar(Z_huber,bandavg):
     Zyy = Z_huber.get('Zyy')
     Zyx = Z_huber.get('Zyx')
     ZpZ = Zyx * np.conj(EyHxc) + Zyy * np.conj(EyHyc)
-        # ZpZ = a*HxEx + b*HyEx
     ZpX = Zyx * HxHxc + Zyy * HyHxc
     ZpY = Zyx * HxHyc + Zyy * HyHyc
     ZpZp = Zyx * np.conj(ZpX) + Zyy * np.conj(ZpY)
@@ -156,7 +154,6 @@ def ZEyvar(Z_huber,bandavg):
     for i in range(cohEy.shape[0]):
         if cohEy[i,0] > 1.0:
             cohEy[i,0] = 1/cohEy[i,0]
-        # cohEy[i,0] = 1.0
     cohEy = cohEy ** 2
     fis = fisher(bandavg.get('dof'))
     d = (4/bandavg.get('dof')) * fis * (1.0 - cohEy) * EyEyc
@@ -183,6 +180,8 @@ def ZEyvar(Z_huber,bandavg):
             db[i,0] = 100
     ZyxVar = np.sqrt(np.real(da))
     ZyyVar = np.sqrt(np.real(db))
+    ZyxVar = ZyxVar/2
+    ZyyVar = ZyyVar/2
     cohEy = np.sqrt(cohEy)
     return ZyxVar,ZyyVar,cohEy
 

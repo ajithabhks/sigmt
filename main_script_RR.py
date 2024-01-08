@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jan  6 12:27:42 2021
-@author: AJITHABH K. S.
-Last modified: 14-11-2023
+@author: ajithabh
 
 ##########
 Program: SigMT
@@ -30,7 +29,7 @@ Make 'pdflag =1' to enable polarization direction based data selection.
 Read user manual for more details about the data selection
 """
 # Importing necessary modules
-import mtprocRR, var, data_sel, tipperR, mahaDist, mtproc, config, plotting
+import mtprocRR, var, data_sel, tipper, mahaDist, mtproc, config, plotting
 from matplotlib import pyplot as plt
 from scipy import signal
 import numpy as np
@@ -170,19 +169,18 @@ bandavg['mdmatrixEx'],bandavg['Zxx_mcd'],bandavg['Zxy_mcd'],bandavg['mahal_robus
 bandavg['mdmatrixEy'],bandavg['Zyx_mcd'],bandavg['Zyy_mcd'],bandavg['mahal_robustEy'] = mahaDist.mcd(bandavg,'Ey',config)
 bandavg['selectedEx'] = bandavg.get('mdmatrixEx') * spmat
 bandavg['selectedEy'] = bandavg.get('mdmatrixEy') * spmat
-#bandavg['tipp_selected'] = cohMatrixEx * cohMatrixEy * selmatTx * selmatTy
 
 # bandavg['coh_selected'] = selmatEx * selmatEy
 bandavg['avgt'] = np.sum((bandavg.get('selectedEx'))!=0,axis=1)
 del cohMatrixEx,cohMatrixEy
 #
 #=========== Tipper estimation ===================================
-[TxAll, TyAll] = tipperR.tippall(bandavg)
-mahaWtTx, Tx_mcd_mean = tipperR.mcd(TxAll,config)
-mahaWtTy, Ty_mcd_mean = tipperR.mcd(TyAll,config)
+[TxAll, TyAll] = tipper.tippall(bandavg)
+mahaWtTx, Tx_mcd_mean = tipper.mcd(TxAll,config)
+mahaWtTy, Ty_mcd_mean = tipper.mcd(TyAll,config)
 bandavg['tipp_selected'] = mahaWtTx * mahaWtTy
-[Tx, Ty] = tipperR.tipper(bandavg)
-[TxVar, TyVar] = tipperR.tipperVar(bandavg)
+[Tx, Ty] = tipper.tipper(bandavg)
+[TxVar, TyVar] = tipper.tipperVar(bandavg)
 #=========== Tipper estimation DONE===============================
 #==================== Robust estimation begins ===================
 #

@@ -2,8 +2,7 @@
 """
 Created on Mon May  4 17:25:49 2020
 
-@author: AJITHABH K. S.
-Last modified: 13-11-2023
+@author: ajithabh
 
 This is the main module of this package, especially written for remote reference.
 
@@ -280,10 +279,6 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
     ExEyc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
     HzHxc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
     HzHyc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    tHxHxc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    tHyHyc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    tHxHyc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    tHyHxc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
     s1 = np.empty(procinfo.get('nstacks')+1,dtype=int)
     s2 = np.empty(procinfo.get('nstacks')+1,dtype=int)
     s1[0] = 0
@@ -381,9 +376,7 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
         dof[i,0] = (2*2*np.sum(pf!=0))-4
         for stack in (range(procinfo.get('nstacks'))):
             Ex[i,stack] = np.sum((calEx[:,stack]) * pf) / np.sum(pf)
-            # Ex[i,stack] = np.sum((calEx * np.conj(calEx)) * pf) / np.sum(pf)
             Ey[i,stack] = np.sum((calEy[:,stack]) * pf) / np.sum(pf)
-            # Ey[i,stack] = np.sum((calEy * np.conj(calEy)) * pf) / np.sum(pf)
             Hx[i,stack] = np.sum((calHx[:,stack]) * pf) / np.sum(pf)
             Hy[i,stack] = np.sum((calHy[:,stack]) * pf) / np.sum(pf)
             Hz[i,stack] = np.sum((calHz[:,stack]) * pf) / np.sum(pf)
@@ -400,12 +393,8 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
             ExExc[i,stack] = np.sum((calEx[:,stack] * np.conj(calEx[:,stack])) * pf) / np.sum(pf)
             EyEyc[i,stack] = np.sum((calEy[:,stack] * np.conj(calEy[:,stack])) * pf) / np.sum(pf)
             ExEyc[i,stack] = np.sum((calEx[:,stack] * np.conj(calEy[:,stack])) * pf) / np.sum(pf)
-            HzHxc[i,stack] = np.sum((calHz[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
-            HzHyc[i,stack] = np.sum((calHz[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
-            tHxHxc[i,stack] = np.sum((calHx[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
-            tHyHyc[i,stack] = np.sum((calHy[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
-            tHxHyc[i,stack] = np.sum((calHx[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
-            tHyHxc[i,stack] = np.sum((calHy[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
+            HzHxc[i,stack] = np.sum((calHz[:,stack] * np.conj(calRx[:,stack])) * pf) / np.sum(pf)
+            HzHyc[i,stack] = np.sum((calHz[:,stack] * np.conj(calRy[:,stack])) * pf) / np.sum(pf)
             avgf[i,0] = np.sum(pf!=0)
     Zyy_num = (HxRxc * EyRyc) - (HxRyc * EyRxc)
     Zyx_num = (HyRyc * EyRxc) - (HyRxc * EyRyc)
@@ -437,18 +426,10 @@ def bandavg(ts,procinfo,tsR,procinfoR,config):
     bandavg['ExEyc'] = ExEyc
     bandavg['HzHxc'] = HzHxc
     bandavg['HzHyc'] = HzHyc
-    bandavg['tHxHxc'] = tHxHxc
-    bandavg['tHyHyc'] = tHyHyc
-    bandavg['tHxHxc'] = tHxHxc
-    bandavg['tHxHyc'] = tHxHyc
-    bandavg['tHyHxc'] = tHyHxc
     bandavg['Zxx_single'] = Zxx_single
     bandavg['Zxy_single'] = Zxy_single
     bandavg['Zyy_single'] = Zyy_single
     bandavg['Zyx_single'] = Zyx_single
-    # plt.plot(f,abs(b))
-    # plt.xscale('log')
-    # plt.gca().invert_xaxis()
     return ftlist,bandavg
 
 def getcalibrationdata(procinfo):
@@ -672,9 +653,6 @@ def parzen(f,ft,cr):
             pf[i] = (np.sin(u)/u) ** 4
         elif (cond > fr) or (cond == fr):
             pf[i] = 0
-    # plt.plot(f,pf)
-    # plt.xscale('log')
-    # plt.gca().invert_xaxis()
     return pf
 
 # Calibration value
@@ -753,7 +731,6 @@ def targetfreq(fs):
                     1.31753719283206E+0002, 9.82612707775626E+0001, 7.32827686941220E+0001,
                     5.46539256512696E+0001, 4.07606268475239E+0001, 3.03990734646247E+0001,
                     2.26714783107853E+0001)
-        # ftlist = (5.46539256512696E+0001)
     elif fs == 1024:
         ftlist = ( 2.36877547809548E+0002, 1.76662101025074E+0002, 1.31753719283206E+0002,
                   9.82612707775626E+0001,  7.32827686941220E+0001, 5.46539256512696E+0001,
@@ -766,8 +743,6 @@ def targetfreq(fs):
                   1.69082761484340E+0001, 1.26101085422250E+0001, 9.40455644624802E+0000,
                   7.01387158203311E+0000, 5.23091066021279E+0000, 3.90118724232419E+0000,
                   2.90948610830488E+0000)
-    # elif fs == 256:
-    # elif fs == 128:
     elif fs == 32:
         ftlist = ( 7.01387158203311E+0000, 5.23091066021279E+0000, 3.90118724232419E+0000,
                 2.90948610830488E+0000, 2.16988031811974E+0000, 1.61828598580477E+0000,
@@ -1145,10 +1120,8 @@ def perform_robust(ftlist,bandavg):
         print('\nComputing Jackknife estimate....ft = ' + str(ftlist[stacki,0]))
         bandavg_singleEx = makeband(bandavg,stacki,'selectedEx')
         bandavg_singleEy = makeband(bandavg,stacki,'selectedEy')
-        # bandavgT_single = tipper.makeband(bandavg,stacki)
         Zxx_jackk[stacki,0],Zxy_jackk[stacki,0] = (getjackknife(bandavg_singleEx,'Ex'))
         Zyx_jackk[stacki,0],Zyy_jackk[stacki,0] = (getjackknife(bandavg_singleEy,'Ey'))
-        # Tx_jackk[stacki,0],Ty_jackk[stacki,0] = (tipper.getjackknife(bandavgT_single))
     print('Finished.')
     Z_jackk = {'Zxx': Zxx_jackk}
     Z_jackk['Zxy'] = Zxy_jackk
