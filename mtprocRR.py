@@ -281,7 +281,7 @@ def bandavg(ts, procinfo, tsR, procinfoR, config):
     notch = procinfo.get('notch')
     if config.get('parzen_radius') == 0:
         if fs >= 1000:
-            cr = 0.05
+            cr = 0.25
         elif (fs < 1000):
             cr = 0.25
         if fs == 512:
