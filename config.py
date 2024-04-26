@@ -8,6 +8,7 @@ This is the configuration file to change FFT Length, Parzen Radius,
 Mahalanobis Distance (MD) threshold for impedance and tipper calculations.
 """
 
+
 def configuration():
     config = {}
     config['FFT_Length'] = 0

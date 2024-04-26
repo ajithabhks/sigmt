@@ -19,11 +19,13 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 #
 #
-def readADU07e(filename):  
+
+
+def readADU07e(filename):
     """
     This function is to read ADU07e raw data (.ats file)
     It will read header information and time series data from the file.
-    
+
     Parameters
     ----------
     filename : It is string value that represent the path to the data file.
@@ -38,72 +40,118 @@ def readADU07e(filename):
     """
     with open(filename, 'rb') as f:
         header = {}
-        header['length'] = np.fromfile(f, dtype=np.int16, count=1).tolist() # Header length
-        header['ver'] = np.fromfile(f, dtype=np.int16, count=1).tolist() # Header version
-        header['nsamples'] = np.fromfile(f, dtype=np.int32, count=1).tolist() # Number of samples
-        header['sfreq'] = np.fromfile(f, dtype=np.float32, count=1).tolist() # sampling frequency, Hz
-        header['start'] = np.fromfile(f,dtype=np.int32, count=1).tolist() # Start time, seconds since 1970
-        header['lsb'] = np.fromfile(f,dtype=np.double, count = 1).tolist() # LSB-Value
-        header['iGMTOffset'] = np.fromfile(f,dtype=np.int32, count = 1).tolist()
-        header['rOrigSampleFreq'] = np.fromfile(f,dtype=np.float32, count = 1).tolist()
-        header['adu06'] = np.fromfile(f,dtype=np.int16, count = 1).tolist() # ADU serial number
-        header['adu06ADB'] = np.fromfile(f,dtype=np.int16, count = 1).tolist() # ADU serial number
-        header['ch_no'] = np.fromfile(f,dtype=np.int8, count = 1).tolist() # Channel number
-        header['bychopper'] =  np.fromfile(f,dtype=np.int8, count = 1).tolist() # Chopper
-        header['ch_type']  = np.fromfile(f,dtype=np.int8, count = 2).tolist() #channel type (Hx,Hy,...)
+        header['length'] = np.fromfile(
+            f, dtype=np.int16, count=1).tolist()  # Header length
+        header['ver'] = np.fromfile(
+            f, dtype=np.int16, count=1).tolist()  # Header version
+        header['nsamples'] = np.fromfile(
+            f, dtype=np.int32, count=1).tolist()  # Number of samples
+        header['sfreq'] = np.fromfile(
+            f, dtype=np.float32, count=1).tolist()  # sampling frequency, Hz
+        # Start time, seconds since 1970
+        header['start'] = np.fromfile(f, dtype=np.int32, count=1).tolist()
+        header['lsb'] = np.fromfile(
+            f, dtype=np.double, count=1).tolist()  # LSB-Value
+        header['iGMTOffset'] = np.fromfile(f, dtype=np.int32, count=1).tolist()
+        header['rOrigSampleFreq'] = np.fromfile(
+            f, dtype=np.float32, count=1).tolist()
+        header['adu06'] = np.fromfile(
+            f, dtype=np.int16, count=1).tolist()  # ADU serial number
+        header['adu06ADB'] = np.fromfile(
+            f, dtype=np.int16, count=1).tolist()  # ADU serial number
+        header['ch_no'] = np.fromfile(
+            f, dtype=np.int8, count=1).tolist()  # Channel number
+        header['bychopper'] = np.fromfile(
+            f, dtype=np.int8, count=1).tolist()  # Chopper
+        header['ch_type'] = np.fromfile(
+            f, dtype=np.int8, count=2).tolist()  # channel type (Hx,Hy,...)
         header['ch_type'] = ''.join([chr(item) for item in header['ch_type']])
-        header['sensor'] = np.fromfile(f,dtype=np.int8, count = 6).tolist()
+        header['sensor'] = np.fromfile(f, dtype=np.int8, count=6).tolist()
         header['sensor'] = ''.join([chr(item) for item in header['sensor']])
-        header['sensor_no'] = np.fromfile(f,dtype=np.int16, count = 1).tolist()  # Sensor serial number
-        header['x1'] = np.fromfile(f,dtype=np.float32, count = 1).tolist()  #   x1 coordinate of 1. Dipole (m)
-        header['y1'] = np.fromfile(f,dtype=np.float32, count = 1).tolist()  #   y1 coordinate of 1. Dipole (m)
-        header['z1'] = np.fromfile(f,dtype=np.float32, count = 1).tolist()  #   z1 coordinate of 1. Dipole (m)
-        header['x2'] = np.fromfile(f,dtype=np.float32, count = 1).tolist()  #   x2 coordinate of 1. Dipole (m)
-        header['y2'] = np.fromfile(f,dtype=np.float32, count = 1).tolist()  #   y2 coordinate of 1. Dipole (m)
-        header['z2'] = np.fromfile(f,dtype=np.float32, count = 1).tolist()  #   z2 coordinate of 1. Dipole (m)
-        header['dipol_length'] =  np.fromfile(f,dtype=np.float32, count = 1).tolist()
-        header['dipol_angle'] =  np.fromfile(f,dtype=np.float32, count = 1).tolist()
-        header['rProbeRes'] =  np.fromfile(f,dtype=np.float32, count = 1).tolist()
-        header['rDCOffset'] =  np.fromfile(f,dtype=np.float32, count = 1).tolist()
-        header['rPreGain'] =  np.fromfile(f,dtype=np.float32, count = 1).tolist()
-        header['rPostGain'] =  np.fromfile(f,dtype=np.float32, count = 1).tolist()
-        header['lat'] = np.fromfile(f,dtype=np.int32, count = 1).tolist()
-        header['lon'] = np.fromfile(f,dtype=np.int32, count = 1).tolist()
-        header['elev'] = np.fromfile(f,dtype=np.int32, count = 1).tolist()
-        header['byLatLongType']  = np.fromfile(f,dtype=np.int8, count = 1).tolist()
-        header['byLatLongType'] = ''.join([chr(item) for item in header['byLatLongType']])
-        header['byAddCoordType']  = np.fromfile(f,dtype=np.int8, count = 1).tolist()
-        header['byAddCoordType'] = ''.join([chr(item) for item in header['byAddCoordType']])
-        header['siRefMedian'] = np.fromfile(f,dtype=np.int16, count = 1).tolist()
-        header['dblNorthing'] = np.fromfile(f,dtype=np.float64, count = 1).tolist()
-        header['dblEasting'] = np.fromfile(f,dtype=np.float64, count = 1).tolist()
-        header['byGPSStat'] = np.fromfile(f,dtype=np.int8, count = 1).tolist()
-        header['byGPSStat'] = ''.join([chr(item) for item in header['byGPSStat']])
-        header['byGPSAccuracy'] = np.fromfile(f,dtype=np.int8, count = 1).tolist()
-        header['byGPSAccuracy'] = ''.join([chr(item) for item in header['byGPSAccuracy']])
-        header['iUTCOffset'] = np.fromfile(f,dtype=np.int16, count = 1).tolist()
-        header['achSystemType'] = np.fromfile(f,dtype=np.int8, count = 12).tolist()
-        header['achSystemType'] = ''.join([chr(item) for item in header['achSystemType']])
-        header['achSurveyHeaderName'] = np.fromfile(f,dtype=np.int8, count = 12).tolist()
-        header['achSurveyHeaderName'] = ''.join([chr(item) for item in header['achSurveyHeaderName']])
-        header['achMeasType'] = np.fromfile(f,dtype=np.int8, count = 4).tolist()
-        header['achMeasType'] = ''.join([chr(item) for item in header['achMeasType']])
-        header['DCOffsetCorrValue'] = np.fromfile(f,dtype=np.float64, count = 1).tolist()
-        header['DCOffsetCorrOn'] = np.fromfile(f,dtype=np.int8, count = 1).tolist()
-        header['InputDivOn'] = np.fromfile(f,dtype=np.int8, count = 1).tolist()
-        header['bit_indicator'] = np.fromfile(f,dtype=np.int16, count = 1).tolist()
-        header['achSelfTestResult'] = np.fromfile(f,dtype=np.int8, count = 2).tolist()
-        header['achSelfTestResult'] = ''.join([chr(item) for item in header['achSelfTestResult']])
-        header['numslice'] = np.fromfile(f,dtype=np.uint16, count = 1).tolist()
-        header['siCalFreqs'] = np.fromfile(f,dtype=np.uint16, count = 1).tolist()
+        header['sensor_no'] = np.fromfile(
+            f, dtype=np.int16, count=1).tolist()  # Sensor serial number
+        # x1 coordinate of 1. Dipole (m)
+        header['x1'] = np.fromfile(f, dtype=np.float32, count=1).tolist()
+        # y1 coordinate of 1. Dipole (m)
+        header['y1'] = np.fromfile(f, dtype=np.float32, count=1).tolist()
+        # z1 coordinate of 1. Dipole (m)
+        header['z1'] = np.fromfile(f, dtype=np.float32, count=1).tolist()
+        # x2 coordinate of 1. Dipole (m)
+        header['x2'] = np.fromfile(f, dtype=np.float32, count=1).tolist()
+        # y2 coordinate of 1. Dipole (m)
+        header['y2'] = np.fromfile(f, dtype=np.float32, count=1).tolist()
+        # z2 coordinate of 1. Dipole (m)
+        header['z2'] = np.fromfile(f, dtype=np.float32, count=1).tolist()
+        header['dipol_length'] = np.fromfile(
+            f, dtype=np.float32, count=1).tolist()
+        header['dipol_angle'] = np.fromfile(
+            f, dtype=np.float32, count=1).tolist()
+        header['rProbeRes'] = np.fromfile(
+            f, dtype=np.float32, count=1).tolist()
+        header['rDCOffset'] = np.fromfile(
+            f, dtype=np.float32, count=1).tolist()
+        header['rPreGain'] = np.fromfile(f, dtype=np.float32, count=1).tolist()
+        header['rPostGain'] = np.fromfile(
+            f, dtype=np.float32, count=1).tolist()
+        header['lat'] = np.fromfile(f, dtype=np.int32, count=1).tolist()
+        header['lon'] = np.fromfile(f, dtype=np.int32, count=1).tolist()
+        header['elev'] = np.fromfile(f, dtype=np.int32, count=1).tolist()
+        header['byLatLongType'] = np.fromfile(
+            f, dtype=np.int8, count=1).tolist()
+        header['byLatLongType'] = ''.join(
+            [chr(item) for item in header['byLatLongType']])
+        header['byAddCoordType'] = np.fromfile(
+            f, dtype=np.int8, count=1).tolist()
+        header['byAddCoordType'] = ''.join(
+            [chr(item) for item in header['byAddCoordType']])
+        header['siRefMedian'] = np.fromfile(
+            f, dtype=np.int16, count=1).tolist()
+        header['dblNorthing'] = np.fromfile(
+            f, dtype=np.float64, count=1).tolist()
+        header['dblEasting'] = np.fromfile(
+            f, dtype=np.float64, count=1).tolist()
+        header['byGPSStat'] = np.fromfile(f, dtype=np.int8, count=1).tolist()
+        header['byGPSStat'] = ''.join([chr(item)
+                                      for item in header['byGPSStat']])
+        header['byGPSAccuracy'] = np.fromfile(
+            f, dtype=np.int8, count=1).tolist()
+        header['byGPSAccuracy'] = ''.join(
+            [chr(item) for item in header['byGPSAccuracy']])
+        header['iUTCOffset'] = np.fromfile(f, dtype=np.int16, count=1).tolist()
+        header['achSystemType'] = np.fromfile(
+            f, dtype=np.int8, count=12).tolist()
+        header['achSystemType'] = ''.join(
+            [chr(item) for item in header['achSystemType']])
+        header['achSurveyHeaderName'] = np.fromfile(
+            f, dtype=np.int8, count=12).tolist()
+        header['achSurveyHeaderName'] = ''.join(
+            [chr(item) for item in header['achSurveyHeaderName']])
+        header['achMeasType'] = np.fromfile(f, dtype=np.int8, count=4).tolist()
+        header['achMeasType'] = ''.join(
+            [chr(item) for item in header['achMeasType']])
+        header['DCOffsetCorrValue'] = np.fromfile(
+            f, dtype=np.float64, count=1).tolist()
+        header['DCOffsetCorrOn'] = np.fromfile(
+            f, dtype=np.int8, count=1).tolist()
+        header['InputDivOn'] = np.fromfile(f, dtype=np.int8, count=1).tolist()
+        header['bit_indicator'] = np.fromfile(
+            f, dtype=np.int16, count=1).tolist()
+        header['achSelfTestResult'] = np.fromfile(
+            f, dtype=np.int8, count=2).tolist()
+        header['achSelfTestResult'] = ''.join(
+            [chr(item) for item in header['achSelfTestResult']])
+        header['numslice'] = np.fromfile(f, dtype=np.uint16, count=1).tolist()
+        header['siCalFreqs'] = np.fromfile(
+            f, dtype=np.uint16, count=1).tolist()
         f.seek(header['length'][0])
-        ts = np.fromfile(f,dtype=np.int32, count = header['nsamples'][0])
+        ts = np.fromfile(f, dtype=np.int32, count=header['nsamples'][0])
         ts = ts * header['lsb'][0]
         return header, ts
 
+
 def makeprocpath(project_path):
     """
-    
+
     Parameters
     ----------
     project_path : It is a string that is the path to the folder where all MT 
@@ -122,7 +170,7 @@ def makeprocpath(project_path):
     proc_path : It is a string value that is the path to the measurement folder.
 
     """
-    #========= Selection of site and setting a path =========
+    # ========= Selection of site and setting a path =========
     # No need to edit
     os.chdir(project_path)
     sites = [d for d in os.listdir('.') if os.path.isdir(d)]
@@ -137,7 +185,7 @@ def makeprocpath(project_path):
     all_meas = [d for d in os.listdir('.') if os.path.isdir(d)]
     for i in range(len(all_meas)):
         '\n'
-        print ([list((i, all_meas[i]))]) 
+        print([list((i, all_meas[i]))])
     select_meas = input("Select measurement: ")
     select_meas = int(select_meas)
     proc_path = project_path+selectedsite+'/'+all_meas[select_meas]
@@ -147,7 +195,7 @@ def makeprocpath(project_path):
 def ts(path):
     """
     Function to return time series data.
-    
+
     Parameters
     ----------
     path : It is a string value that is the path to the measurement folder.
@@ -170,14 +218,14 @@ def ts(path):
         for file in f:
             if '.ats' in file:
                 files.append(os.path.join(r, file))
-    del r,d,f,file,path
+    del r, d, f, file, path
     files = sorted(files)
-    [headerEx,tsEx] = readADU07e(files[0])
-    [headerEy,tsEy] = readADU07e(files[1])
-    [headerHx,tsHx] = readADU07e(files[2])
-    [headerHy,tsHy] = readADU07e(files[3])
-    [headerHz,tsHz] = readADU07e(files[4])
-    dipoleNS = abs(headerEx.get('x2')[0]) + abs(headerEx.get('x1')[0]) 
+    [headerEx, tsEx] = readADU07e(files[0])
+    [headerEy, tsEy] = readADU07e(files[1])
+    [headerHx, tsHx] = readADU07e(files[2])
+    [headerHy, tsHy] = readADU07e(files[3])
+    [headerHz, tsHz] = readADU07e(files[4])
+    dipoleNS = abs(headerEx.get('x2')[0]) + abs(headerEx.get('x1')[0])
     dipoleEW = abs(headerEy.get('y2')[0]) + abs(headerEy.get('y1')[0])
     ts = {}
     ts['tsEx'] = tsEx/(1*dipoleNS/1000)
@@ -194,15 +242,15 @@ def ts(path):
     loc['lat'] = headerEx.get('lat')[0]/1000/60/60
     loc['lon'] = headerEx.get('lon')[0]/1000/60/60
     loc['elev'] = headerEx.get('elev')[0]/100
-    #Timeline
+    # Timeline
     start_time = [headerEx.get('start')[0]]
-    d = dt.strptime('1970-1-1 00:00','%Y-%m-%d %H:%M')
+    d = dt.strptime('1970-1-1 00:00', '%Y-%m-%d %H:%M')
     GPS_initial = datenum(d)
     timeline = [start_time[0]/3600/24 + GPS_initial]
-    for x in range(1,np.shape(ts.get('tsEx'))[0]):
+    for x in range(1, np.shape(ts.get('tsEx'))[0]):
         start_time.append(start_time[x-1] + 1/fs[0])
         timeline.append(start_time[x]/3600/24 + GPS_initial)
-    return ts,fs[0],sensor_no,timeline,ChoppStat[0],loc
+    return ts, fs[0], sensor_no, timeline, ChoppStat[0], loc
 
 
 def datenum(d):
@@ -212,7 +260,7 @@ def datenum(d):
 def FFTLength(nofsamples):
     """
     Function to select a preferred FFT length.
-    
+
     Parameters
     ----------
     nofsamples : It is an integer value representing the number of samples in each measurement.
@@ -222,11 +270,11 @@ def FFTLength(nofsamples):
     WindowLength : It is an integer value representing the window length.
 
     """
-    #Based on Borah & Patro, 2015
+    # Based on Borah & Patro, 2015
     i = 1
     FFTs = [256]
     cFFT = 256 * (2 ** i)
-    term = nofsamples / (20*i);
+    term = nofsamples / (20*i)
     FFTs.append(cFFT)
     while cFFT <= term:
         i = i + 1
@@ -240,11 +288,12 @@ def FFTLength(nofsamples):
     # WindowLength = 256
     return WindowLength
 
-def bandavg(ts,procinfo,config):
+
+def bandavg(ts, procinfo, config):
     """
     This is an important function. Here, auto and cross spectra are calculated for 
         each target frequencies and impedance values are computed for all events.
-    
+
     Parameters
     ----------
     ts : It is a Python dictionary containing arrays which are time series data for
@@ -266,114 +315,9 @@ def bandavg(ts,procinfo,config):
     ChoppStat = procinfo.get('ChoppStat')
     fs = procinfo.get('fs')
     notch = procinfo.get('notch')
-    CalDataHx, CalDataHy, CalDataHz = getcalibrationdata(procinfo)
-    ChoppDataHx = CalDataHx.get(str(ChoppStat))
-    ChoppDataHy = CalDataHy.get(str(ChoppStat))
-    ChoppDataHz = CalDataHz.get(str(ChoppStat))
-    cal = {}
-    # Make calibration values
-    magnitude = ChoppDataHx[:,0] * ChoppDataHx[:,1]
-    phase = np.radians(ChoppDataHx[:,2])
-    calt_Hx = (magnitude * np.cos(phase) + (1j * magnitude * np.sin(phase))) * 1000
-    magnitude = ChoppDataHy[:,0] * ChoppDataHy[:,1]
-    phase = np.radians(ChoppDataHy[:,2])
-    calt_Hy = (magnitude * np.cos(phase) + (1j * magnitude * np.sin(phase))) * 1000
-    magnitude = ChoppDataHz[:,0] * ChoppDataHz[:,1]
-    phase = np.radians(ChoppDataHz[:,2])
-    calt_Hz = (magnitude * np.cos(phase) + (1j * magnitude * np.sin(phase))) * 1000
-    del magnitude, phase
-    ftlist = targetfreq(fs) # get frequency list
-    ftlist = np.asarray(ftlist)
-    ftlist = ftlist.reshape(-1, 1)
-    # Get time series / prob loop here later
-    # ExHxc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')))
-    dof = np.empty((np.shape(ftlist)[0],1),dtype=int)
-    avgf = np.empty((np.shape(ftlist)[0],1),dtype=int)
-    Ex = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    Ey = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    Hx = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    Hy = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    Hz = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    ExHxc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    ExHyc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    EyHxc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    EyHyc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    HxHxc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    HxHyc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    HyHxc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    HyHyc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    ExExc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    EyEyc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    ExEyc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    HzHxc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    HzHyc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')),dtype=complex)
-    #for i in (range(np.shape(ftlist)[0])):
-    s1 = np.empty(procinfo.get('nstacks')+1,dtype=int)
-    s2 = np.empty(procinfo.get('nstacks')+1,dtype=int)
-    s1[0] = 0
-    s2[0] = WindowLength
-    tsEx = np.empty((WindowLength,procinfo.get('nstacks')),dtype=float)
-    tsEy = np.empty((WindowLength,procinfo.get('nstacks')),dtype=float)
-    tsHx = np.empty((WindowLength,procinfo.get('nstacks')),dtype=float)
-    tsHy = np.empty((WindowLength,procinfo.get('nstacks')),dtype=float)
-    tsHz = np.empty((WindowLength,procinfo.get('nstacks')),dtype=float)
-    for stack in (range(procinfo.get('nstacks'))):
-        #tsEx[:,stack] = ts.get('tsEx')[s1[0]:s2[0]]
-        tsEx[:,stack] = ts.get('tsEx')[s1[stack]:s2[stack]]
-        tsEy[:,stack] = ts.get('tsEy')[s1[stack]:s2[stack]]
-        tsHx[:,stack] = ts.get('tsHx')[s1[stack]:s2[stack]]
-        tsHy[:,stack] = ts.get('tsHy')[s1[stack]:s2[stack]]
-        tsHz[:,stack] = ts.get('tsHz')[s1[stack]:s2[stack]]
-        s1[stack+1] = int(s2[stack]-(WindowLength/2))
-        s2[stack+1] = int(s2[stack]+(WindowLength/2))
-    if notch == 1:
-        print("Applying notch filter...")
-        tsEx = notchfil(tsEx,fs,procinfo.get('notch_freqs'))
-        tsEy = notchfil(tsEy,fs,procinfo.get('notch_freqs'))
-        tsHx = notchfil(tsHx,fs,procinfo.get('notch_freqs'))
-        tsHy = notchfil(tsHy,fs,procinfo.get('notch_freqs'))
-        tsHz = notchfil(tsHz,fs,procinfo.get('notch_freqs'))
-        print("Done!")
-    print("\nApplying detrend...")
-    dtsEx = signal.detrend(tsEx,axis= 0)
-    dtsEy = signal.detrend(tsEy,axis= 0)
-    dtsHx = signal.detrend(tsHx,axis= 0)
-    dtsHy = signal.detrend(tsHy,axis= 0)
-    dtsHz = signal.detrend(tsHz,axis= 0)
-    print("Done!")
-    #
-    print("\nComputing FFT...")
-    fqs,xfftEx = dofft(dtsEx,fs,WindowLength)
-    fqs,xfftEy = dofft(dtsEy,fs,WindowLength)
-    fqs,xfftHx = dofft(dtsHx,fs,WindowLength)
-    fqs,xfftHy = dofft(dtsHy,fs,WindowLength)
-    fqs,xfftHz = dofft(dtsHz,fs,WindowLength)
-    print("Done!")
-    calEx = np.delete(xfftEx, 0, 0)
-    calEy = np.delete(xfftEy, 0, 0)
-    calHx = np.empty(calEx.shape,dtype=complex)
-    calHy = np.empty(calEx.shape,dtype=complex)
-    calHz = np.empty(calEx.shape,dtype=complex)
-    print('\nCalibrating...')
-    for stack in range(procinfo.get('nstacks')):
-        if ChoppStat == 1:
-            f = fqs[:,0]
-            # do Calibration
-            calHx[:,stack] = calibrateon(f,xfftHx[:,stack],ChoppDataHx,calt_Hx)
-            calHy[:,stack] = calibrateon(f,xfftHy[:,stack],ChoppDataHy,calt_Hy)
-            calHz[:,stack] = calibrateon(f,xfftHz[:,stack],ChoppDataHz,calt_Hz)
-            f = np.delete(f,0,)        
-        elif ChoppStat == 0:
-            f = fqs[:,0]
-            calHx[:,stack] = calibrateoff(f,xfftHx[:,stack],ChoppDataHx,calt_Hx)
-            calHy[:,stack] = calibrateoff(f,xfftHy[:,stack],ChoppDataHy,calt_Hy)
-            calHz[:,stack] = calibrateoff(f,xfftHz[:,stack],ChoppDataHz,calt_Hz)
-            f = np.delete(f,0,)
-    print("Done!")
-    print('\nBand averaging over target frequencies:')
     if config.get('parzen_radius') == 0:
         if fs >= 1000:
-            cr = 0.05
+            cr = 0.25
         elif (fs < 1000):
             cr = 0.25
         if fs == 512:
@@ -382,30 +326,175 @@ def bandavg(ts,procinfo,config):
             cr = 0.4
     else:
         cr = config.get('parzen_radius')
+    CalDataHx, CalDataHy, CalDataHz = getcalibrationdata(procinfo)
+    ChoppDataHx = CalDataHx.get(str(ChoppStat))
+    ChoppDataHy = CalDataHy.get(str(ChoppStat))
+    ChoppDataHz = CalDataHz.get(str(ChoppStat))
+    cal = {}
+    # Make calibration values
+    magnitude = ChoppDataHx[:, 0] * ChoppDataHx[:, 1]
+    phase = np.radians(ChoppDataHx[:, 2])
+    calt_Hx = (magnitude * np.cos(phase) +
+               (1j * magnitude * np.sin(phase))) * 1000
+    magnitude = ChoppDataHy[:, 0] * ChoppDataHy[:, 1]
+    phase = np.radians(ChoppDataHy[:, 2])
+    calt_Hy = (magnitude * np.cos(phase) +
+               (1j * magnitude * np.sin(phase))) * 1000
+    magnitude = ChoppDataHz[:, 0] * ChoppDataHz[:, 1]
+    phase = np.radians(ChoppDataHz[:, 2])
+    calt_Hz = (magnitude * np.cos(phase) +
+               (1j * magnitude * np.sin(phase))) * 1000
+    del magnitude, phase
+    ftlist = targetfreq(fs, cr, WindowLength)
+    ftlist = ftlist.reshape(-1, 1)
+    # Get time series / prob loop here later
+    # ExHxc = np.empty((np.shape(ftlist)[0],procinfo.get('nstacks')))
+    dof = np.empty((np.shape(ftlist)[0], 1), dtype=int)
+    avgf = np.empty((np.shape(ftlist)[0], 1), dtype=int)
+    Ex = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    Ey = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    Hx = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    Hy = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    Hz = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    ExHxc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    ExHyc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    EyHxc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    EyHyc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    HxHxc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    HxHyc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    HyHxc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    HyHyc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    ExExc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    EyEyc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    ExEyc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    HzHxc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    HzHyc = np.empty(
+        (np.shape(ftlist)[0], procinfo.get('nstacks')), dtype=complex)
+    # for i in (range(np.shape(ftlist)[0])):
+    s1 = np.empty(procinfo.get('nstacks')+1, dtype=int)
+    s2 = np.empty(procinfo.get('nstacks')+1, dtype=int)
+    s1[0] = 0
+    s2[0] = WindowLength
+    tsEx = np.empty((WindowLength, procinfo.get('nstacks')), dtype=float)
+    tsEy = np.empty((WindowLength, procinfo.get('nstacks')), dtype=float)
+    tsHx = np.empty((WindowLength, procinfo.get('nstacks')), dtype=float)
+    tsHy = np.empty((WindowLength, procinfo.get('nstacks')), dtype=float)
+    tsHz = np.empty((WindowLength, procinfo.get('nstacks')), dtype=float)
+    for stack in (range(procinfo.get('nstacks'))):
+        # tsEx[:,stack] = ts.get('tsEx')[s1[0]:s2[0]]
+        tsEx[:, stack] = ts.get('tsEx')[s1[stack]:s2[stack]]
+        tsEy[:, stack] = ts.get('tsEy')[s1[stack]:s2[stack]]
+        tsHx[:, stack] = ts.get('tsHx')[s1[stack]:s2[stack]]
+        tsHy[:, stack] = ts.get('tsHy')[s1[stack]:s2[stack]]
+        tsHz[:, stack] = ts.get('tsHz')[s1[stack]:s2[stack]]
+        s1[stack+1] = int(s2[stack]-(WindowLength/2))
+        s2[stack+1] = int(s2[stack]+(WindowLength/2))
+    if notch == 1:
+        print("Applying notch filter...")
+        tsEx = notchfil(tsEx, fs, procinfo.get('notch_freqs'))
+        tsEy = notchfil(tsEy, fs, procinfo.get('notch_freqs'))
+        tsHx = notchfil(tsHx, fs, procinfo.get('notch_freqs'))
+        tsHy = notchfil(tsHy, fs, procinfo.get('notch_freqs'))
+        tsHz = notchfil(tsHz, fs, procinfo.get('notch_freqs'))
+        print("Done!")
+    print("\nApplying detrend...")
+    dtsEx = signal.detrend(tsEx, axis=0)
+    dtsEy = signal.detrend(tsEy, axis=0)
+    dtsHx = signal.detrend(tsHx, axis=0)
+    dtsHy = signal.detrend(tsHy, axis=0)
+    dtsHz = signal.detrend(tsHz, axis=0)
+    print("Done!")
+    #
+    print("\nComputing FFT...")
+    fqs, xfftEx = dofft(dtsEx, fs, WindowLength)
+    fqs, xfftEy = dofft(dtsEy, fs, WindowLength)
+    fqs, xfftHx = dofft(dtsHx, fs, WindowLength)
+    fqs, xfftHy = dofft(dtsHy, fs, WindowLength)
+    fqs, xfftHz = dofft(dtsHz, fs, WindowLength)
+    print("Done!")
+    calEx = np.delete(xfftEx, 0, 0)
+    calEy = np.delete(xfftEy, 0, 0)
+    calHx = np.empty(calEx.shape, dtype=complex)
+    calHy = np.empty(calEx.shape, dtype=complex)
+    calHz = np.empty(calEx.shape, dtype=complex)
+    print('\nCalibrating...')
+    for stack in range(procinfo.get('nstacks')):
+        if ChoppStat == 1:
+            f = fqs[:, 0]
+            # do Calibration
+            calHx[:, stack] = calibrateon(
+                f, xfftHx[:, stack], ChoppDataHx, calt_Hx)
+            calHy[:, stack] = calibrateon(
+                f, xfftHy[:, stack], ChoppDataHy, calt_Hy)
+            calHz[:, stack] = calibrateon(
+                f, xfftHz[:, stack], ChoppDataHz, calt_Hz)
+            f = np.delete(f, 0,)
+        elif ChoppStat == 0:
+            f = fqs[:, 0]
+            calHx[:, stack] = calibrateoff(
+                f, xfftHx[:, stack], ChoppDataHx, calt_Hx)
+            calHy[:, stack] = calibrateoff(
+                f, xfftHy[:, stack], ChoppDataHy, calt_Hy)
+            calHz[:, stack] = calibrateoff(
+                f, xfftHz[:, stack], ChoppDataHz, calt_Hz)
+            f = np.delete(f, 0,)
+    print("Done!")
+    print('\nBand averaging over target frequencies:')
+
     for i in tqdm(range(np.shape(ftlist)[0])):
         ft = ftlist[i]
-        pf = parzen(f,ft,cr)
-        dof[i,0] = (2*2*np.sum(pf!=0))-4
+        pf = parzen(f, ft, cr)
+        dof[i, 0] = (2*2*np.sum(pf != 0))-4
         for stack in (range(procinfo.get('nstacks'))):
-            Ex[i,stack] = np.sum((calEx[:,stack]) * pf) / np.sum(pf)
-            Ey[i,stack] = np.sum((calEy[:,stack]) * pf) / np.sum(pf)
-            Hx[i,stack] = np.sum((calHx[:,stack]) * pf) / np.sum(pf)
-            Hy[i,stack] = np.sum((calHy[:,stack]) * pf) / np.sum(pf)
-            Hz[i,stack] = np.sum((calHz[:,stack]) * pf) / np.sum(pf)
-            ExHxc[i,stack] = np.sum((calEx[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
-            ExHyc[i,stack] = np.sum((calEx[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
-            EyHxc[i,stack] = np.sum((calEy[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
-            EyHyc[i,stack] = np.sum((calEy[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
-            HxHxc[i,stack] = np.sum((calHx[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
-            HxHyc[i,stack] = np.sum((calHx[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
-            HyHxc[i,stack] = np.sum((calHy[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
-            HyHyc[i,stack] = np.sum((calHy[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
-            ExExc[i,stack] = np.sum((calEx[:,stack] * np.conj(calEx[:,stack])) * pf) / np.sum(pf)
-            EyEyc[i,stack] = np.sum((calEy[:,stack] * np.conj(calEy[:,stack])) * pf) / np.sum(pf)
-            ExEyc[i,stack] = np.sum((calEx[:,stack] * np.conj(calEy[:,stack])) * pf) / np.sum(pf)
-            HzHxc[i,stack] = np.sum((calHz[:,stack] * np.conj(calHx[:,stack])) * pf) / np.sum(pf)
-            HzHyc[i,stack] = np.sum((calHz[:,stack] * np.conj(calHy[:,stack])) * pf) / np.sum(pf)
-            avgf[i,0] = np.sum(pf!=0)
+            Ex[i, stack] = np.sum((calEx[:, stack]) * pf) / np.sum(pf)
+            Ey[i, stack] = np.sum((calEy[:, stack]) * pf) / np.sum(pf)
+            Hx[i, stack] = np.sum((calHx[:, stack]) * pf) / np.sum(pf)
+            Hy[i, stack] = np.sum((calHy[:, stack]) * pf) / np.sum(pf)
+            Hz[i, stack] = np.sum((calHz[:, stack]) * pf) / np.sum(pf)
+            ExHxc[i, stack] = np.sum(
+                (calEx[:, stack] * np.conj(calHx[:, stack])) * pf) / np.sum(pf)
+            ExHyc[i, stack] = np.sum(
+                (calEx[:, stack] * np.conj(calHy[:, stack])) * pf) / np.sum(pf)
+            EyHxc[i, stack] = np.sum(
+                (calEy[:, stack] * np.conj(calHx[:, stack])) * pf) / np.sum(pf)
+            EyHyc[i, stack] = np.sum(
+                (calEy[:, stack] * np.conj(calHy[:, stack])) * pf) / np.sum(pf)
+            HxHxc[i, stack] = np.sum(
+                (calHx[:, stack] * np.conj(calHx[:, stack])) * pf) / np.sum(pf)
+            HxHyc[i, stack] = np.sum(
+                (calHx[:, stack] * np.conj(calHy[:, stack])) * pf) / np.sum(pf)
+            HyHxc[i, stack] = np.sum(
+                (calHy[:, stack] * np.conj(calHx[:, stack])) * pf) / np.sum(pf)
+            HyHyc[i, stack] = np.sum(
+                (calHy[:, stack] * np.conj(calHy[:, stack])) * pf) / np.sum(pf)
+            ExExc[i, stack] = np.sum(
+                (calEx[:, stack] * np.conj(calEx[:, stack])) * pf) / np.sum(pf)
+            EyEyc[i, stack] = np.sum(
+                (calEy[:, stack] * np.conj(calEy[:, stack])) * pf) / np.sum(pf)
+            ExEyc[i, stack] = np.sum(
+                (calEx[:, stack] * np.conj(calEy[:, stack])) * pf) / np.sum(pf)
+            HzHxc[i, stack] = np.sum(
+                (calHz[:, stack] * np.conj(calHx[:, stack])) * pf) / np.sum(pf)
+            HzHyc[i, stack] = np.sum(
+                (calHz[:, stack] * np.conj(calHy[:, stack])) * pf) / np.sum(pf)
+            avgf[i, 0] = np.sum(pf != 0)
     Zyy_num = (HxHxc * EyHyc) - (HxHyc * EyHxc)
     Zyx_num = (HyHyc * EyHxc) - (HyHxc * EyHyc)
     Z_deno = (HxHxc * HyHyc) - (HxHyc * HyHxc)
@@ -443,7 +532,8 @@ def bandavg(ts,procinfo,config):
     # plt.plot(f,abs(b))
     # plt.xscale('log')
     # plt.gca().invert_xaxis()
-    return ftlist,bandavg
+    return ftlist, bandavg
+
 
 def getcalibrationdata(procinfo):
     """
@@ -462,7 +552,7 @@ def getcalibrationdata(procinfo):
 
     """
     import xml.etree.ElementTree as ET
-    
+
     xmlfiles = []
     for zz in os.listdir(procinfo['proc_path']):
         if zz.endswith(".xml"):
@@ -474,127 +564,128 @@ def getcalibrationdata(procinfo):
     Hx = calsensors[2]
     Hy = calsensors[3]
     Hz = calsensors[4]
-    
+
     CalDataHx = {}
     freq = []
     for x in Hx.findall(".//caldata[@chopper='on']/c1"):
         freq.append(float(x.text))
-    
+
     mag = []
     for x in Hx.findall(".//caldata[@chopper='on']/c2"):
         mag.append(float(x.text))
-    
+
     phase = []
     for x in Hx.findall(".//caldata[@chopper='on']/c3"):
         phase.append(float(x.text))
-    
-    freq = np.asarray(freq).reshape(-1,1)
-    mag = np.asarray(mag).reshape(-1,1)
-    phase = np.asarray(phase).reshape(-1,1)
-    dataON = np.concatenate((freq, mag, phase),axis=1)
-    
+
+    freq = np.asarray(freq).reshape(-1, 1)
+    mag = np.asarray(mag).reshape(-1, 1)
+    phase = np.asarray(phase).reshape(-1, 1)
+    dataON = np.concatenate((freq, mag, phase), axis=1)
+
     CalDataHx['1'] = dataON
-    
+
     freq = []
     for x in Hx.findall(".//caldata[@chopper='off']/c1"):
         freq.append(float(x.text))
-    
+
     mag = []
     for x in Hx.findall(".//caldata[@chopper='off']/c2"):
         mag.append(float(x.text))
-    
+
     phase = []
     for x in Hx.findall(".//caldata[@chopper='off']/c3"):
         phase.append(float(x.text))
-    
-    freq = np.asarray(freq).reshape(-1,1)
-    mag = np.asarray(mag).reshape(-1,1)
-    phase = np.asarray(phase).reshape(-1,1)
-    dataOFF = np.concatenate((freq, mag, phase),axis=1)
-    
+
+    freq = np.asarray(freq).reshape(-1, 1)
+    mag = np.asarray(mag).reshape(-1, 1)
+    phase = np.asarray(phase).reshape(-1, 1)
+    dataOFF = np.concatenate((freq, mag, phase), axis=1)
+
     CalDataHx['0'] = dataOFF
-    
+
     CalDataHy = {}
     freq = []
     for x in Hy.findall(".//caldata[@chopper='on']/c1"):
         freq.append(float(x.text))
-    
+
     mag = []
     for x in Hy.findall(".//caldata[@chopper='on']/c2"):
         mag.append(float(x.text))
-    
+
     phase = []
     for x in Hy.findall(".//caldata[@chopper='on']/c3"):
         phase.append(float(x.text))
-    
-    freq = np.asarray(freq).reshape(-1,1)
-    mag = np.asarray(mag).reshape(-1,1)
-    phase = np.asarray(phase).reshape(-1,1)
-    dataON = np.concatenate((freq, mag, phase),axis=1)
-    
+
+    freq = np.asarray(freq).reshape(-1, 1)
+    mag = np.asarray(mag).reshape(-1, 1)
+    phase = np.asarray(phase).reshape(-1, 1)
+    dataON = np.concatenate((freq, mag, phase), axis=1)
+
     CalDataHy['1'] = dataON
-    
+
     freq = []
     for x in Hy.findall(".//caldata[@chopper='off']/c1"):
         freq.append(float(x.text))
-    
+
     mag = []
     for x in Hy.findall(".//caldata[@chopper='off']/c2"):
         mag.append(float(x.text))
-    
+
     phase = []
     for x in Hy.findall(".//caldata[@chopper='off']/c3"):
         phase.append(float(x.text))
-    
-    freq = np.asarray(freq).reshape(-1,1)
-    mag = np.asarray(mag).reshape(-1,1)
-    phase = np.asarray(phase).reshape(-1,1)
-    dataOFF = np.concatenate((freq, mag, phase),axis=1)
-    
+
+    freq = np.asarray(freq).reshape(-1, 1)
+    mag = np.asarray(mag).reshape(-1, 1)
+    phase = np.asarray(phase).reshape(-1, 1)
+    dataOFF = np.concatenate((freq, mag, phase), axis=1)
+
     CalDataHy['0'] = dataOFF
-    
+
     CalDataHz = {}
     freq = []
     for x in Hz.findall(".//caldata[@chopper='on']/c1"):
         freq.append(float(x.text))
-    
+
     mag = []
     for x in Hz.findall(".//caldata[@chopper='on']/c2"):
         mag.append(float(x.text))
-    
+
     phase = []
     for x in Hz.findall(".//caldata[@chopper='on']/c3"):
         phase.append(float(x.text))
-    
-    freq = np.asarray(freq).reshape(-1,1)
-    mag = np.asarray(mag).reshape(-1,1)
-    phase = np.asarray(phase).reshape(-1,1)
-    dataON = np.concatenate((freq, mag, phase),axis=1)
-    
+
+    freq = np.asarray(freq).reshape(-1, 1)
+    mag = np.asarray(mag).reshape(-1, 1)
+    phase = np.asarray(phase).reshape(-1, 1)
+    dataON = np.concatenate((freq, mag, phase), axis=1)
+
     CalDataHz['1'] = dataON
-    
+
     freq = []
     for x in Hz.findall(".//caldata[@chopper='off']/c1"):
         freq.append(float(x.text))
-    
+
     mag = []
     for x in Hz.findall(".//caldata[@chopper='off']/c2"):
         mag.append(float(x.text))
-    
+
     phase = []
     for x in Hz.findall(".//caldata[@chopper='off']/c3"):
         phase.append(float(x.text))
-    
-    freq = np.asarray(freq).reshape(-1,1)
-    mag = np.asarray(mag).reshape(-1,1)
-    phase = np.asarray(phase).reshape(-1,1)
-    dataOFF = np.concatenate((freq, mag, phase),axis=1)
-    
+
+    freq = np.asarray(freq).reshape(-1, 1)
+    mag = np.asarray(mag).reshape(-1, 1)
+    phase = np.asarray(phase).reshape(-1, 1)
+    dataOFF = np.concatenate((freq, mag, phase), axis=1)
+
     CalDataHz['0'] = dataOFF
-    
+
     return CalDataHx, CalDataHy, CalDataHz
- 
-def dofft(dts,fs,WindowLength):
+
+
+def dofft(dts, fs, WindowLength):
     """
     Function to perform FFT.
 
@@ -612,14 +703,16 @@ def dofft(dts,fs,WindowLength):
     xfft : It is an array of complex containing data in frequency domain.
 
     """
-    w = np.hanning(WindowLength).reshape(-1,1)
-    fft_value = np.fft.fft(dts*w,WindowLength,axis=0)
-    xfft = np.asarray(fft_value[0:int(WindowLength/2),:])
-    fline = np.asarray([np.linspace(0, int(WindowLength/2), num=int(WindowLength/2),dtype=int)])
-    f =  np.asarray(fline * fs/(WindowLength)).T
-    return f,xfft
+    w = np.hanning(WindowLength).reshape(-1, 1)
+    fft_value = np.fft.fft(dts*w, WindowLength, axis=0)
+    xfft = np.asarray(fft_value[0:int(WindowLength/2), :])
+    fline = np.asarray(
+        [np.linspace(0, int(WindowLength/2), num=int(WindowLength/2), dtype=int)])
+    f = np.asarray(fline * fs/(WindowLength)).T
+    return f, xfft
 
-def notchfil(ts,fs,notch_freqs):
+
+def notchfil(ts, fs, notch_freqs):
     """
     Function to perform notch filtering.
 
@@ -634,11 +727,13 @@ def notchfil(ts,fs,notch_freqs):
 
     """
     for f0 in notch_freqs:
-        b_notch, a_notch = signal.butter(2, [f0-5, f0+5], btype='bandstop', fs=fs)
-        ts = signal.filtfilt(b_notch, a_notch, ts, axis = 0)
+        b_notch, a_notch = signal.butter(
+            2, [f0-5, f0+5], btype='bandstop', fs=fs)
+        ts = signal.filtfilt(b_notch, a_notch, ts, axis=0)
     return ts
 
-def parzen(f,ft,cr):
+
+def parzen(f, ft, cr):
     """
     Function to create a parzen window
 
@@ -669,7 +764,9 @@ def parzen(f,ft,cr):
     return pf
 
 # Calibration value
-def calibrateon(f,xfft,ChoppData,calt):
+
+
+def calibrateon(f, xfft, ChoppData, calt):
     """
 
     Parameters
@@ -686,18 +783,20 @@ def calibrateon(f,xfft,ChoppData,calt):
 
     """
     minfindx = np.where(f < 0.1)[0]
-    cal_all_band = np.interp(f[np.max(minfindx)+1:np.shape(f)[0]],ChoppData[:,0],calt)
+    cal_all_band = np.interp(
+        f[np.max(minfindx)+1:np.shape(f)[0]], ChoppData[:, 0], calt)
     thmag = np.zeros(np.shape(minfindx),)
     thmag[:,] = 0.2 * f[0:np.max(minfindx)+1]
-    thph = np.arctan2(4.0,f[0:np.max(minfindx)+1])
+    thph = np.arctan2(4.0, f[0:np.max(minfindx)+1])
     th_band = (thmag * np.cos(thph) + (1j * thmag * np.sin(thph))) * 1000
-    cal_all_band = np.concatenate((th_band,cal_all_band))
-    xfft = np.delete(xfft,0,)
-    cal_all_band = np.delete(cal_all_band,0,)
+    cal_all_band = np.concatenate((th_band, cal_all_band))
+    xfft = np.delete(xfft, 0,)
+    cal_all_band = np.delete(cal_all_band, 0,)
     cal = xfft/cal_all_band
     return cal
 
-def calibrateoff(f,xfft,ChoppData,calt):
+
+def calibrateoff(f, xfft, ChoppData, calt):
     """
 
     Parameters
@@ -713,117 +812,64 @@ def calibrateoff(f,xfft,ChoppData,calt):
     cal : Calibrated spectra.
 
     """
-    cal_all_band = np.interp(f[0:np.shape(f)[0]],ChoppData[:,0],calt)
-    xfft = np.delete(xfft,0,)
-    cal_all_band = np.delete(cal_all_band,0,)
+    cal_all_band = np.interp(f[0:np.shape(f)[0]], ChoppData[:, 0], calt)
+    xfft = np.delete(xfft, 0,)
+    cal_all_band = np.delete(cal_all_band, 0,)
     cal = xfft/cal_all_band
     return cal
 
-def targetfreq(fs):
+
+def targetfreq(fs, cr, fftlength):
     """
     It returns target frequencies corresponding to sampling frequency.
 
     Parameters
     ----------
     fs : It is an integer showing the sampling frequency of measurement.
+    cr : Parzen window radius
+    fftlength: FFT length
 
     Returns
     -------
-    ftlist : It is an array of float which is a list of target frequencies.
+    ftlist : It is an array of float (shape: n,) which is a list of target frequencies.
 
     """
-    if fs == 65536:
-        ftlist = ( 1.44850347101214E+0004, 1.11167288155392E+0004, 8.53167852417281E+0003, 
-               8.00000000000000E+0003,  5.96636034638832E+0003, 4.44968197286938E+0003, 
-               3.31855075962085E+0003,  2.47495870745984E+0003, 1.84581193639211E+0003, 
-               1.37659739302252E+0003,  1.02665951233389E+0003, 7.65677575453908E+0002, 
-               5.71038540538369E+0002, 4.25877713065949E+0002)
-    elif fs == 4096:
-        ftlist = ( 7.65677575453908E+0002, 5.71038540538369E+0002, 4.25877713065949E+0002,
-                    3.17617487455902E+0002, 2.36877547809548E+0002, 1.76662101025074E+0002,
-                    1.31753719283206E+0002, 9.82612707775626E+0001, 7.32827686941220E+0001,
-                    5.46539256512696E+0001, 4.07606268475239E+0001, 3.03990734646247E+0001,
-                    2.26714783107853E+0001)
-        # ftlist = (5.46539256512696E+0001)
-    elif fs == 1024:
-        ftlist = ( 2.36877547809548E+0002, 1.76662101025074E+0002, 1.31753719283206E+0002,
-                  9.82612707775626E+0001,  7.32827686941220E+0001, 5.46539256512696E+0001,
-                  4.07606268475239E+0001,  3.03990734646247E+0001, 2.26714783107853E+0001,
-                  1.69082761484340E+0001, 1.26101085422250E+0001, 9.40455644624802E+0000,
-                  7.01387158203311E+0000, 5.23091066021279E+0000)
-    elif fs == 512:
-        ftlist = ( 9.82612707775626E+0001, 7.32827686941220E+0001, 5.46539256512696E+0001,
-                  4.07606268475239E+0001, 3.03990734646247E+0001, 2.26714783107853E+0001,
-                  1.69082761484340E+0001, 1.26101085422250E+0001, 9.40455644624802E+0000,
-                  7.01387158203311E+0000, 5.23091066021279E+0000, 3.90118724232419E+0000,
-                  2.90948610830488E+0000)
-    elif fs == 32:
-        ftlist = ( 7.01387158203311E+0000, 5.23091066021279E+0000, 3.90118724232419E+0000,
-                2.90948610830488E+0000, 2.16988031811974E+0000, 1.61828598580477E+0000,
-                1.20690966685269E+0000, 9.00107247247826E-0001, 6.71295523434523E-0001,
-                5.00648873965966E-0001, 3.73381448636813E-0001, 2.78466033652964E-0001, 
-                2.07678587625385E-0001)
-    elif fs == 1:
-        ftlist =  (2.076785876E-01,  1.548856612E-01,  1.155129584E-01,  8.614899184E-02,
-                   6.424949109E-02, 4.791695199E-02,  3.573622528E-02,  2.665189968E-02,
-                   1.987685468E-02,  1.482405969E-02,  1.105571024E-02,  8.245293899E-03,
-                   6.149299321E-03)
-    elif fs==8:
-         ftlist = (1.61828598580477E+0000, 1.20690966685269E+0000, 9.00107247247826E-0001,
-                   6.71295523434523E-0001, 5.00648873965966E-0001, 3.73381448636813E-0001,
-                   2.78466033652964E-0001, 2.07678587625385E-0001, 1.54885661250254E-0001,
-                   1.15512958438456E-0001, 8.61489918401509E-0002, 6.42494910995510E-0002,
-                   4.79169519964988E-0002)
-    elif fs==4:
-        ftlist = ( 3.73381448636813E-0001, 2.78466033652964E-0001, 2.07678587625385E-0001,
-                   1.54885661250254E-0001, 1.15512958438456E-0001, 8.61489918401509E-0002,
-                   6.42494910995510E-0002, 4.79169519964988E-0002, 3.57362252889629E-0002,
-                   2.66518996867085E-0002, 1.98768546808371E-0002, 1.48240596973337E-0002,
-                   1.10557102438331E-0002)
-    elif fs==2:
-        ftlist = ( 3.73381448636813E-0001, 2.78466033652964E-0001, 2.07678587625385E-0001,
-                   1.54885661250254E-0001, 1.15512958438456E-0001, 8.61489918401509E-0002,
-                   6.42494910995510E-0002, 4.79169519964988E-0002, 3.57362252889629E-0002,
-                   2.66518996867085E-0002, 1.98768546808371E-0002, 1.48240596973337E-0002,
-                   1.10557102438331E-0002)
-    elif fs==0.5:
-         ftlist = (1.15512958438456E-0001, 8.61489918401509E-0002, 6.42494910995510E-0002,
-                   4.79169519964988E-0002, 3.57362252889629E-0002, 2.66518996867085E-0002,
-                   1.98768546808371E-0002, 1.48240596973337E-0002, 1.10557102438331E-0002,
-                   8.24529389999566E-0003, 6.14929932115646E-0003, 4.58611695347757E-0003,
-                   3.42030329189097E-0003, 2.55084524166997E-0003,)
-    elif fs==0.125: # [8,8,4] 8s
-         ftlist = (2.66518996867085E-0002, 1.98768546808371E-0002, 1.48240596973337E-0002,
-                   1.10557102438331E-0002, 8.24529389999566E-0003, 6.14929932115646E-0003,
-                   4.58611695347757E-0003, 3.42030329189097E-0003, 2.55084524166997E-0003,
-                   1.90240773745913E-0003, 1.41880626092981E-0003, 1.05813867680238E-0003,
-                   7.89154580281698E-0004)
-    elif fs==0.03125: # [8,8,4,4] 32s
-        ftlist = ( 6.14929932115646E-0003, 4.58611695347757E-0003, 3.42030329189097E-0003,
-                   2.55084524166997E-0003, 1.90240773745913E-0003, 1.41880626092981E-0003,
-                   1.05813867680238E-0003, 7.89154580281698E-0004, 5.88547574370430E-0004,
-                   4.38935863710846E-0004)
-    elif fs==32768:
-        ftlist = ( 8.00000000000000E+0003, 5.96636034638832E+0003, 4.44968197286938E+0003,
-         3.31855075962085E+0003, 2.47495870745984E+0003, 1.84581193639211E+0003,
-         1.37659739302252E+0003, 1.02665951233389E+0003, 7.65677575453908E+0002,
-         5.71038540538369E+0002, 4.25877713065949E+0002, 3.17617487455902E+0002,
-         2.36877547809548E+0002)
-    elif fs==16384:
-        ftlist = ( 3.318550759E+03,  2.474958707E+03,  1.845811936E+03,
-                  1.376597393E+03,  1.026659512E+03, 7.656775754E+02,
-                  5.710385405E+02,  4.258777130E+02,  3.176174874E+02,
-                  2.368775478E+02, 1.766621010E+02,  1.317537192E+02,
-                  9.826127077E+01)
-    elif fs==128:
-        ftlist = ( 3.039907346E+01,  2.267147831E+01,  1.690827614E+01,
-                  1.261010854E+01,  9.404556446E+00, 7.013871582E+00,
-                  5.230910660E+00,  3.901187242E+00,  2.909486108E+00,
-                  2.169880318E+00, 1.618285985E+00,  1.206909666E+00,
-                  9.001072472E-01,  6.712955234E-01)
+    start_period = -5
+    stop_period = 5
+    periods_per_decade = 12
+    ftable = np.logspace(start_period, stop_period, int(
+        (stop_period-start_period)*periods_per_decade + 1))
+    ftable = 1/ftable
+
+    fr = cr * ftable  # bandwidth of parzen window - oneside from ft
+    totalbandwidth = fr*2  # bandwidth of parzen window - two side from ft
+    # nof spectra in parzen window for each ft
+    dof = totalbandwidth/(fs/fftlength)
+
+    maximum = fs/2
+    if maximum > 15000:
+        maximum = 15000
+    fmax = max(ftable[ftable < maximum])  # ft_max, following nyquist
+
+    fmaxindex = np.where(ftable == fmax)[0][0]  # index in ftable
+    min_required = dof[fmaxindex]*.01  # min dof required for ft_min
+
+    dofmin = min(dof[dof > min_required])  # finding in dof
+    dofminindex = np.where(dof == dofmin)[0][0]  # finding index
+
+    # fmin = ftable[dofminindex] #ft_min
+
+    while dof[dofminindex] < 10:  # Making sure, atleast 10 spectral lines are averaged
+        dofminindex = dofminindex - 1
+
+    # fmin = ftable[dofminindex] #Fixing ft_min
+
+    ftlist = ftable[fmaxindex:dofminindex+1]  # Making ftlist
+
     return ftlist
 
-def getjackknife(bandavg,mode):
+
+def getjackknife(bandavg, mode):
     """
     To get Jackknife values
 
@@ -839,39 +885,39 @@ def getjackknife(bandavg,mode):
     Array of complex containing Jackknife mean for all target frequencies.
 
     """
-    Z_deno = ((bandavg.get('HxHxc') * bandavg.get('HyHyc')) - 
-        ( bandavg.get('HxHyc') * bandavg.get('HyHxc')))
-    Zxx_num = ((bandavg.get('HyHyc') * bandavg.get('ExHxc')) - 
-    ( bandavg.get('HyHxc') * bandavg.get('ExHyc')))
-    Zxy_num = ((bandavg.get('HxHxc') * bandavg.get('ExHyc')) - 
-    (bandavg.get('HxHyc') * bandavg.get('ExHxc')))
-    Zyx_num = ((bandavg.get('HyHyc') * bandavg.get('EyHxc')) - 
-    (bandavg.get('HyHxc') * bandavg.get('EyHyc')))
-    Zyy_num = ((bandavg.get('HxHxc') * bandavg.get('EyHyc')) - 
-    (bandavg.get('HxHyc') * bandavg.get('EyHxc')))
+    Z_deno = ((bandavg.get('HxHxc') * bandavg.get('HyHyc')) -
+              (bandavg.get('HxHyc') * bandavg.get('HyHxc')))
+    Zxx_num = ((bandavg.get('HyHyc') * bandavg.get('ExHxc')) -
+               (bandavg.get('HyHxc') * bandavg.get('ExHyc')))
+    Zxy_num = ((bandavg.get('HxHxc') * bandavg.get('ExHyc')) -
+               (bandavg.get('HxHyc') * bandavg.get('ExHxc')))
+    Zyx_num = ((bandavg.get('HyHyc') * bandavg.get('EyHxc')) -
+               (bandavg.get('HyHxc') * bandavg.get('EyHyc')))
+    Zyy_num = ((bandavg.get('HxHxc') * bandavg.get('EyHyc')) -
+               (bandavg.get('HxHyc') * bandavg.get('EyHxc')))
     Zxx = -1 * (Zxx_num/Z_deno)
     Zxy = -1 * (Zxy_num/Z_deno)
     Zyx = -1 * (Zyx_num/Z_deno)
     Zyy = -1 * (Zyy_num/Z_deno)
-    Zxx_jack = np.empty((np.shape(Zxy)[0],1),dtype=complex)
-    Zxy_jack = np.empty((np.shape(Zxy)[0],1),dtype=complex)
-    Zyx_jack = np.empty((np.shape(Zxy)[0],1),dtype=complex)
-    Zyy_jack = np.empty((np.shape(Zxy)[0],1),dtype=complex)
+    Zxx_jack = np.empty((np.shape(Zxy)[0], 1), dtype=complex)
+    Zxy_jack = np.empty((np.shape(Zxy)[0], 1), dtype=complex)
+    Zyx_jack = np.empty((np.shape(Zxy)[0], 1), dtype=complex)
+    Zyy_jack = np.empty((np.shape(Zxy)[0], 1), dtype=complex)
     if (mode == 'Ex'):
         for i in range(np.shape(Zxy)[0]):
-            Zxx_jack[i,0] = jackknife(Zxx[i,:])
-            Zxy_jack[i,0] = jackknife(Zxy[i,:])
-        return Zxx_jack,Zxy_jack
+            Zxx_jack[i, 0] = jackknife(Zxx[i, :])
+            Zxy_jack[i, 0] = jackknife(Zxy[i, :])
+        return Zxx_jack, Zxy_jack
     elif (mode == 'Ey'):
         for i in range(np.shape(Zxy)[0]):
-            Zyx_jack[i,0] = jackknife(Zyx[i,:])
-            Zyy_jack[i,0] = jackknife(Zyy[i,:])
-        return Zyx_jack,Zyy_jack
-    
+            Zyx_jack[i, 0] = jackknife(Zyx[i, :])
+            Zyy_jack[i, 0] = jackknife(Zyy[i, :])
+        return Zyx_jack, Zyy_jack
+
 
 def jackknife(Z):
     """
-    
+
     Parameters
     ----------
     Z : Array of complex which are the impedance values for a target frequency.
@@ -883,20 +929,22 @@ def jackknife(Z):
     """
     nstacks = np.shape(Z)[0]
     for k in range(nstacks-1):
-        Zminusi = np.empty((np.shape(Z)[0],),dtype=complex)
-        Zidiff = np.empty((np.shape(Z)[0],),dtype=complex)
+        Zminusi = np.empty((np.shape(Z)[0],), dtype=complex)
+        Zidiff = np.empty((np.shape(Z)[0],), dtype=complex)
         for j in range(np.shape(Z)[0]):
             Zminusi[j] = (np.sum(Z)-Z[j])/(np.shape(Z)[0]-1)
         for j in range(np.shape(Z)[0]):
             Zidiff[j] = abs(Zminusi[j] - np.mean(Zminusi))
-        mean_jackknife = (np.shape(Z)[0] * np.mean(Z)) - (((np.shape(Z)[0]-1)/np.shape(Z)[0])*np.sum(Zminusi))
+        mean_jackknife = (np.shape(Z)[0] * np.mean(Z)) - \
+            (((np.shape(Z)[0]-1)/np.shape(Z)[0])*np.sum(Zminusi))
         Zvar = ((np.shape(Z)[0]-1)/(np.shape(Z)[0]) * np.sum(Zidiff ** 2))
         ind = (np.where(Zidiff == np.max(Zidiff))[0])[0]
-        Z = np.delete(Z,ind)
+        Z = np.delete(Z, ind)
         del Zminusi, Zidiff
     return mean_jackknife
-        
-def huberEx(bandavg,Z_jackk,stacki):
+
+
+def huberEx(bandavg, Z_jackk, stacki):
     """
     Computing huber estimates for Ex.
 
@@ -922,12 +970,14 @@ def huberEx(bandavg,Z_jackk,stacki):
     Hx = bandavg.get('Hx')
     Hy = bandavg.get('Hy')
     nstacks = Hx.shape[1]
-    Zxx_jackk = Z_jackk.get('Zxx')[stacki,0]
-    Zxy_jackk = Z_jackk.get('Zxy')[stacki,0]
-    rxl = abs(abs(Ex) - (abs(Zxx_jackk) * abs(Hx)) - (abs(Zxy_jackk) * abs(Hy)))
-    dmx = 1.483 * np.median(abs(rxl - np.median(rxl,axis=1).reshape(-1, 1)),axis=1).reshape(-1, 1)
+    Zxx_jackk = Z_jackk.get('Zxx')[stacki, 0]
+    Zxy_jackk = Z_jackk.get('Zxy')[stacki, 0]
+    rxl = abs(abs(Ex) - (abs(Zxx_jackk) * abs(Hx)) -
+              (abs(Zxy_jackk) * abs(Hy)))
+    dmx = 1.483 * np.median(abs(rxl - np.median(rxl,
+                            axis=1).reshape(-1, 1)), axis=1).reshape(-1, 1)
     kmx = 1.5 * dmx
-    huber_matrix = huberwt(rxl,kmx)
+    huber_matrix = huberwt(rxl, kmx)
     ExExc_hup = bandavg.get('ExExc') * huber_matrix
     HxHxc_hup = bandavg.get('HxHxc') * huber_matrix
     ExHyc_hup = bandavg.get('ExHyc') * huber_matrix
@@ -935,30 +985,40 @@ def huberEx(bandavg,Z_jackk,stacki):
     HxHyc_hup = bandavg.get('HxHyc') * huber_matrix
     HyHyc_hup = bandavg.get('HyHyc') * huber_matrix
     HyHxc_hup = bandavg.get('HyHxc') * huber_matrix
-    ExExc_hup_avg = (np.sum(ExExc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
-    HxHxc_hup_avg = (np.sum(HxHxc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
-    ExHyc_hup_avg = (np.sum(ExHyc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
-    ExHxc_hup_avg = (np.sum(ExHxc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
-    HxHyc_hup_avg = (np.sum(HxHyc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
-    HyHyc_hup_avg = (np.sum(HyHyc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
-    HyHxc_hup_avg = (np.sum(HyHxc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
+    ExExc_hup_avg = (np.sum(ExExc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
+    HxHxc_hup_avg = (np.sum(HxHxc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
+    ExHyc_hup_avg = (np.sum(ExHyc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
+    ExHxc_hup_avg = (np.sum(ExHxc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
+    HxHyc_hup_avg = (np.sum(HxHyc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
+    HyHyc_hup_avg = (np.sum(HyHyc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
+    HyHxc_hup_avg = (np.sum(HyHxc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
     Zxx_new = (HyHyc_hup_avg * ExHxc_hup_avg) - (HyHxc_hup_avg * ExHyc_hup_avg)
     Zxy_new = (HxHxc_hup_avg * ExHyc_hup_avg) - (HxHyc_hup_avg * ExHxc_hup_avg)
-    Z_deno_new = (HxHxc_hup_avg * HyHyc_hup_avg) - (HxHyc_hup_avg * HyHxc_hup_avg)
+    Z_deno_new = (HxHxc_hup_avg * HyHyc_hup_avg) - \
+        (HxHyc_hup_avg * HyHxc_hup_avg)
     Zxx_robust_huber = -1 * (Zxx_new / Z_deno_new)
     Zxy_robust_huber = -1 * (Zxy_new / Z_deno_new)
     for i in range(4):
-        Lc = np.sum((huber_matrix==1)*1,axis=1)
+        Lc = np.sum((huber_matrix == 1)*1, axis=1)
         for kk in range(np.size(Lc)):
             if Lc[kk] == 0:
                 Lc[kk] = 1
-        dhx = (np.sqrt((nstacks/(Lc ** 2))*(np.sum(huber_matrix * (rxl ** 2),axis=1)))).reshape(-1,1)
+        dhx = (np.sqrt((nstacks/(Lc ** 2)) *
+               (np.sum(huber_matrix * (rxl ** 2), axis=1)))).reshape(-1, 1)
         khx = 1.5 * dhx
         Ex_hup = Ex * huber_matrix
         Hx_hup = Hx * huber_matrix
         Hy_hup = Hy * huber_matrix
-        rxl = abs(abs(Ex_hup) - (abs(Zxx_robust_huber) * abs(Hx_hup)) - (abs(Zxy_robust_huber) * abs(Hy_hup)))
-        huber_matrix = huberwt(rxl,khx)
+        rxl = abs(abs(Ex_hup) - (abs(Zxx_robust_huber) * abs(Hx_hup)
+                                 ) - (abs(Zxy_robust_huber) * abs(Hy_hup)))
+        huber_matrix = huberwt(rxl, khx)
         ExExc_hup = ExExc_hup * huber_matrix
         HxHxc_hup = HxHxc_hup * huber_matrix
         ExHyc_hup = ExHyc_hup * huber_matrix
@@ -966,18 +1026,28 @@ def huberEx(bandavg,Z_jackk,stacki):
         HxHyc_hup = HxHyc_hup * huber_matrix
         HyHyc_hup = HyHyc_hup * huber_matrix
         HyHxc_hup = HyHxc_hup * huber_matrix
-        ExExc_hup_avg = np.sum(ExExc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        HxHxc_hup_avg = np.sum(HxHxc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        ExHyc_hup_avg = np.sum(ExHyc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        ExHxc_hup_avg = np.sum(ExHxc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        HxHyc_hup_avg = np.sum(HxHyc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        HyHyc_hup_avg = np.sum(HyHyc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        HyHxc_hup_avg = np.sum(HyHxc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        Zxx_new = (HyHyc_hup_avg * ExHxc_hup_avg) - (HyHxc_hup_avg * ExHyc_hup_avg)
-        Zxy_new = (HxHxc_hup_avg * ExHyc_hup_avg) - (HxHyc_hup_avg * ExHxc_hup_avg)
-        Z_deno_new = (HxHxc_hup_avg * HyHyc_hup_avg) - (HxHyc_hup_avg * HyHxc_hup_avg)
-        Zxx_robust_huber = -1 * (Zxx_new / Z_deno_new).reshape(-1,1)
-        Zxy_robust_huber = -1 * (Zxy_new / Z_deno_new).reshape(-1,1)
+        ExExc_hup_avg = np.sum(ExExc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        HxHxc_hup_avg = np.sum(HxHxc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        ExHyc_hup_avg = np.sum(ExHyc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        ExHxc_hup_avg = np.sum(ExHxc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        HxHyc_hup_avg = np.sum(HxHyc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        HyHyc_hup_avg = np.sum(HyHyc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        HyHxc_hup_avg = np.sum(HyHxc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        Zxx_new = (HyHyc_hup_avg * ExHxc_hup_avg) - \
+            (HyHxc_hup_avg * ExHyc_hup_avg)
+        Zxy_new = (HxHxc_hup_avg * ExHyc_hup_avg) - \
+            (HxHyc_hup_avg * ExHxc_hup_avg)
+        Z_deno_new = (HxHxc_hup_avg * HyHyc_hup_avg) - \
+            (HxHyc_hup_avg * HyHxc_hup_avg)
+        Zxx_robust_huber = -1 * (Zxx_new / Z_deno_new).reshape(-1, 1)
+        Zxy_robust_huber = -1 * (Zxy_new / Z_deno_new).reshape(-1, 1)
     bandavgEx_huber = {}
     bandavgEx_huber['rxl'] = rxl
     bandavgEx_huber['khx'] = khx
@@ -990,10 +1060,10 @@ def huberEx(bandavg,Z_jackk,stacki):
     bandavgEx_huber['HyHxc'] = HyHxc_hup_avg
     bandavgEx_huber['Ex'] = Ex_hup
     bandavgEx_huber['huber_matrix'] = huber_matrix
-    return Zxx_robust_huber, Zxy_robust_huber,bandavgEx_huber
+    return Zxx_robust_huber, Zxy_robust_huber, bandavgEx_huber
 
 
-def huberEy(bandavg,Z_jackk,stacki):
+def huberEy(bandavg, Z_jackk, stacki):
     """
     Computing huber estimates for Ey.
 
@@ -1019,12 +1089,14 @@ def huberEy(bandavg,Z_jackk,stacki):
     Hx = bandavg.get('Hx')
     Hy = bandavg.get('Hy')
     nstacks = Hx.shape[1]
-    Zyy_jackk = Z_jackk.get('Zyy')[stacki,0]
-    Zyx_jackk = Z_jackk.get('Zyx')[stacki,0]
-    ryl = abs(abs(Ey) - (abs(Zyy_jackk) * abs(Hy)) - (abs(Zyx_jackk) * abs(Hx)))
-    dmy = 1.483 * np.median(abs(ryl - np.median(ryl,axis=1).reshape(-1, 1)),axis=1).reshape(-1, 1)
+    Zyy_jackk = Z_jackk.get('Zyy')[stacki, 0]
+    Zyx_jackk = Z_jackk.get('Zyx')[stacki, 0]
+    ryl = abs(abs(Ey) - (abs(Zyy_jackk) * abs(Hy)) -
+              (abs(Zyx_jackk) * abs(Hx)))
+    dmy = 1.483 * np.median(abs(ryl - np.median(ryl,
+                            axis=1).reshape(-1, 1)), axis=1).reshape(-1, 1)
     kmy = 1.5 * dmy
-    huber_matrix = huberwt(ryl,kmy)
+    huber_matrix = huberwt(ryl, kmy)
     EyEyc_hup = bandavg.get('EyEyc') * huber_matrix
     HxHxc_hup = bandavg.get('HxHxc') * huber_matrix
     EyHyc_hup = bandavg.get('EyHyc') * huber_matrix
@@ -1032,30 +1104,40 @@ def huberEy(bandavg,Z_jackk,stacki):
     HxHyc_hup = bandavg.get('HxHyc') * huber_matrix
     HyHyc_hup = bandavg.get('HyHyc') * huber_matrix
     HyHxc_hup = bandavg.get('HyHxc') * huber_matrix
-    EyEyc_hup_avg = (np.sum(EyEyc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
-    HxHxc_hup_avg = (np.sum(HxHxc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
-    EyHyc_hup_avg = (np.sum(EyHyc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
-    EyHxc_hup_avg = (np.sum(EyHxc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
-    HxHyc_hup_avg = (np.sum(HxHyc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
-    HyHyc_hup_avg = (np.sum(HyHyc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
-    HyHxc_hup_avg = (np.sum(HyHxc_hup,axis=1)/np.sum(huber_matrix,axis=1)).reshape(-1,1)
+    EyEyc_hup_avg = (np.sum(EyEyc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
+    HxHxc_hup_avg = (np.sum(HxHxc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
+    EyHyc_hup_avg = (np.sum(EyHyc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
+    EyHxc_hup_avg = (np.sum(EyHxc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
+    HxHyc_hup_avg = (np.sum(HxHyc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
+    HyHyc_hup_avg = (np.sum(HyHyc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
+    HyHxc_hup_avg = (np.sum(HyHxc_hup, axis=1) /
+                     np.sum(huber_matrix, axis=1)).reshape(-1, 1)
     Zyy_new = (HxHxc_hup_avg * EyHyc_hup_avg) - (HxHyc_hup_avg * EyHxc_hup_avg)
     Zyx_new = (HyHyc_hup_avg * EyHxc_hup_avg) - (HyHxc_hup_avg * EyHyc_hup_avg)
-    Z_deno_new = (HxHxc_hup_avg * HyHyc_hup_avg) - (HxHyc_hup_avg * HyHxc_hup_avg)
+    Z_deno_new = (HxHxc_hup_avg * HyHyc_hup_avg) - \
+        (HxHyc_hup_avg * HyHxc_hup_avg)
     Zyy_robust_huber = -1 * (Zyy_new / Z_deno_new)
     Zyx_robust_huber = -1 * (Zyx_new / Z_deno_new)
     for i in range(4):
-        Lc = np.sum((huber_matrix==1)*1,axis=1)
+        Lc = np.sum((huber_matrix == 1)*1, axis=1)
         for kk in range(np.size(Lc)):
             if Lc[kk] == 0:
                 Lc[kk] = 1
-        dhy = (np.sqrt((nstacks/(Lc ** 2))*(np.sum(huber_matrix * (ryl ** 2),axis=1)))).reshape(-1,1)
+        dhy = (np.sqrt((nstacks/(Lc ** 2)) *
+               (np.sum(huber_matrix * (ryl ** 2), axis=1)))).reshape(-1, 1)
         khy = 1.5 * dhy
         Ey_hup = Ey * huber_matrix
         Hx_hup = Hx * huber_matrix
         Hy_hup = Hy * huber_matrix
-        ryl = abs(abs(Ey_hup) - (abs(Zyy_robust_huber) * abs(Hy_hup)) - (abs(Zyx_robust_huber) * abs(Hx_hup)))
-        huber_matrix = huberwt(ryl,khy)
+        ryl = abs(abs(Ey_hup) - (abs(Zyy_robust_huber) * abs(Hy_hup)
+                                 ) - (abs(Zyx_robust_huber) * abs(Hx_hup)))
+        huber_matrix = huberwt(ryl, khy)
         EyEyc_hup = EyEyc_hup * huber_matrix
         HxHxc_hup = HxHxc_hup * huber_matrix
         EyHyc_hup = EyHyc_hup * huber_matrix
@@ -1063,18 +1145,28 @@ def huberEy(bandavg,Z_jackk,stacki):
         HxHyc_hup = HxHyc_hup * huber_matrix
         HyHyc_hup = HyHyc_hup * huber_matrix
         HyHxc_hup = HyHxc_hup * huber_matrix
-        EyEyc_hup_avg = np.sum(EyEyc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        HxHxc_hup_avg = np.sum(HxHxc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        EyHyc_hup_avg = np.sum(EyHyc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        EyHxc_hup_avg = np.sum(EyHxc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        HxHyc_hup_avg = np.sum(HxHyc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        HyHyc_hup_avg = np.sum(HyHyc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        HyHxc_hup_avg = np.sum(HyHxc_hup,axis=1) / np.sum(huber_matrix,axis=1)
-        Zyy_new = (HxHxc_hup_avg * EyHyc_hup_avg) - (HxHyc_hup_avg * EyHxc_hup_avg)
-        Zyx_new = (HyHyc_hup_avg * EyHxc_hup_avg) - (HyHxc_hup_avg * EyHyc_hup_avg)
-        Z_deno_new = (HxHxc_hup_avg * HyHyc_hup_avg) - (HxHyc_hup_avg * HyHxc_hup_avg)
-        Zyy_robust_huber = -1 * (Zyy_new / Z_deno_new).reshape(-1,1)
-        Zyx_robust_huber = -1 * (Zyx_new / Z_deno_new).reshape(-1,1)
+        EyEyc_hup_avg = np.sum(EyEyc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        HxHxc_hup_avg = np.sum(HxHxc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        EyHyc_hup_avg = np.sum(EyHyc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        EyHxc_hup_avg = np.sum(EyHxc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        HxHyc_hup_avg = np.sum(HxHyc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        HyHyc_hup_avg = np.sum(HyHyc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        HyHxc_hup_avg = np.sum(HyHxc_hup, axis=1) / \
+            np.sum(huber_matrix, axis=1)
+        Zyy_new = (HxHxc_hup_avg * EyHyc_hup_avg) - \
+            (HxHyc_hup_avg * EyHxc_hup_avg)
+        Zyx_new = (HyHyc_hup_avg * EyHxc_hup_avg) - \
+            (HyHxc_hup_avg * EyHyc_hup_avg)
+        Z_deno_new = (HxHxc_hup_avg * HyHyc_hup_avg) - \
+            (HxHyc_hup_avg * HyHxc_hup_avg)
+        Zyy_robust_huber = -1 * (Zyy_new / Z_deno_new).reshape(-1, 1)
+        Zyx_robust_huber = -1 * (Zyx_new / Z_deno_new).reshape(-1, 1)
     bandavgEy_huber = {}
     bandavgEy_huber['ryl'] = ryl
     bandavgEy_huber['khy'] = khy
@@ -1086,9 +1178,10 @@ def huberEy(bandavg,Z_jackk,stacki):
     bandavgEy_huber['HyHyc'] = HyHyc_hup_avg
     bandavgEy_huber['HyHxc'] = HyHxc_hup_avg
     bandavgEy_huber['huber_matrix'] = huber_matrix
-    return Zyy_robust_huber, Zyx_robust_huber,bandavgEy_huber
+    return Zyy_robust_huber, Zyx_robust_huber, bandavgEy_huber
 
-def huberwt(rl,km):
+
+def huberwt(rl, km):
     """
 
     Parameters
@@ -1109,7 +1202,8 @@ def huberwt(rl,km):
     huber_matrix = huber_matrix1 + huber_matrix2
     return huber_matrix
 
-def perform_robust(ftlist,bandavg):
+
+def perform_robust(ftlist, bandavg):
     """
 
     Parameters
@@ -1128,41 +1222,47 @@ def perform_robust(ftlist,bandavg):
 
     """
     import numpy as np
-    Zxx_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-    Zxy_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-    Zyx_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-    Zyy_jackk = np.empty((np.shape(ftlist)[0],1),dtype=complex)
+    Zxx_jackk = np.empty((np.shape(ftlist)[0], 1), dtype=complex)
+    Zxy_jackk = np.empty((np.shape(ftlist)[0], 1), dtype=complex)
+    Zyx_jackk = np.empty((np.shape(ftlist)[0], 1), dtype=complex)
+    Zyy_jackk = np.empty((np.shape(ftlist)[0], 1), dtype=complex)
     for stacki in range(np.shape(ftlist)[0]):
-        print('\nComputing Jackknife estimate....ft = ' + str(ftlist[stacki,0]))
-        bandavg_singleEx = makeband(bandavg,stacki,'selectedEx')
-        bandavg_singleEy = makeband(bandavg,stacki,'selectedEy')
-        Zxx_jackk[stacki,0],Zxy_jackk[stacki,0] = (getjackknife(bandavg_singleEx,'Ex'))
-        Zyx_jackk[stacki,0],Zyy_jackk[stacki,0] = (getjackknife(bandavg_singleEy,'Ey'))
+        print('\nComputing Jackknife estimate....ft = ' +
+              str(ftlist[stacki, 0]))
+        bandavg_singleEx = makeband(bandavg, stacki, 'selectedEx')
+        bandavg_singleEy = makeband(bandavg, stacki, 'selectedEy')
+        Zxx_jackk[stacki, 0], Zxy_jackk[stacki, 0] = (
+            getjackknife(bandavg_singleEx, 'Ex'))
+        Zyx_jackk[stacki, 0], Zyy_jackk[stacki, 0] = (
+            getjackknife(bandavg_singleEy, 'Ey'))
     print('Finished.')
     Z_jackk = {'Zxx': Zxx_jackk}
     Z_jackk['Zxy'] = Zxy_jackk
     Z_jackk['Zyx'] = Zyx_jackk
     Z_jackk['Zyy'] = Zyy_jackk
-    del Zxx_jackk,Zxy_jackk,Zyx_jackk,Zyy_jackk
+    del Zxx_jackk, Zxy_jackk, Zyx_jackk, Zyy_jackk
     #
     Z_huber = {}
-    Zxx_huber = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-    Zxy_huber = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-    Zyx_huber = np.empty((np.shape(ftlist)[0],1),dtype=complex)
-    Zyy_huber = np.empty((np.shape(ftlist)[0],1),dtype=complex)
+    Zxx_huber = np.empty((np.shape(ftlist)[0], 1), dtype=complex)
+    Zxy_huber = np.empty((np.shape(ftlist)[0], 1), dtype=complex)
+    Zyx_huber = np.empty((np.shape(ftlist)[0], 1), dtype=complex)
+    Zyy_huber = np.empty((np.shape(ftlist)[0], 1), dtype=complex)
     for stacki in range(np.shape(ftlist)[0]):
-        print('\nComputing Huber estimate....ft = ' + str(ftlist[stacki,0]))
-        bandavg_singleEx = makeband(bandavg,stacki,'selectedEx')
-        bandavg_singleEy = makeband(bandavg,stacki,'selectedEy')
-        Zxx_huber[stacki,0],Zxy_huber[stacki,0],bandavgEx_huber = huberEx(bandavg_singleEx,Z_jackk,stacki)
-        Zyy_huber[stacki,0],Zyx_huber[stacki,0],bandavgEy_huber = huberEy(bandavg_singleEy,Z_jackk,stacki)
+        print('\nComputing Huber estimate....ft = ' + str(ftlist[stacki, 0]))
+        bandavg_singleEx = makeband(bandavg, stacki, 'selectedEx')
+        bandavg_singleEy = makeband(bandavg, stacki, 'selectedEy')
+        Zxx_huber[stacki, 0], Zxy_huber[stacki, 0], bandavgEx_huber = huberEx(
+            bandavg_singleEx, Z_jackk, stacki)
+        Zyy_huber[stacki, 0], Zyx_huber[stacki, 0], bandavgEy_huber = huberEy(
+            bandavg_singleEy, Z_jackk, stacki)
     Z_huber['Zxx'] = Zxx_huber
     Z_huber['Zxy'] = Zxy_huber
     Z_huber['Zyy'] = Zyy_huber
     Z_huber['Zyx'] = Zyx_huber
     return Z_huber
 
-def makeband(bandavg,i,coh_mode):
+
+def makeband(bandavg, i, coh_mode):
     """
 
     Parameters
@@ -1181,40 +1281,40 @@ def makeband(bandavg,i,coh_mode):
         values for a target frequency.
 
     """
-    Ex = bandavg.get('Ex')[i,:].reshape(1,-1)
-    Ey = bandavg.get('Ey')[i,:].reshape(1,-1)
-    Hx = bandavg.get('Hx')[i,:].reshape(1,-1)
-    Hy = bandavg.get('Hy')[i,:].reshape(1,-1)
-    Hz = bandavg.get('Hz')[i,:].reshape(1,-1)
-    ExHxc = bandavg.get('ExHxc')[i,:].reshape(1,-1)
-    ExHyc = bandavg.get('ExHyc')[i,:].reshape(1,-1)
-    EyHxc = bandavg.get('EyHxc')[i,:].reshape(1,-1)
-    EyHyc = bandavg.get('EyHyc')[i,:].reshape(1,-1)
-    HxHxc = bandavg.get('HxHxc')[i,:].reshape(1,-1)
-    HxHyc = bandavg.get('HxHyc')[i,:].reshape(1,-1)
-    HyHxc = bandavg.get('HyHxc')[i,:].reshape(1,-1)
-    HyHyc = bandavg.get('HyHyc')[i,:].reshape(1,-1)
-    ExExc = bandavg.get('ExExc')[i,:].reshape(1,-1)
-    EyEyc = bandavg.get('EyEyc')[i,:].reshape(1,-1)
-    ExEyc = bandavg.get('ExEyc')[i,:].reshape(1,-1)
-    coh_selected = bandavg.get(coh_mode)[i,:].reshape(1,-1)
-    ind_coh = np.where(coh_selected==0)[1].reshape(1,-1)
-    Ex = np.delete(Ex,ind_coh).reshape(1,-1)
-    Ey = np.delete(Ey,ind_coh).reshape(1,-1)
-    Hx = np.delete(Hx,ind_coh).reshape(1,-1)
-    Hy = np.delete(Hy,ind_coh).reshape(1,-1)
-    Hz = np.delete(Hz,ind_coh).reshape(1,-1)
-    ExHxc = np.delete(ExHxc,ind_coh).reshape(1,-1)
-    ExHyc = np.delete(ExHyc,ind_coh).reshape(1,-1)
-    EyHxc = np.delete(EyHxc,ind_coh).reshape(1,-1)
-    EyHyc = np.delete(EyHyc,ind_coh).reshape(1,-1)
-    HxHxc = np.delete(HxHxc,ind_coh).reshape(1,-1)
-    HxHyc = np.delete(HxHyc,ind_coh).reshape(1,-1)
-    HyHxc = np.delete(HyHxc,ind_coh).reshape(1,-1)
-    HyHyc = np.delete(HyHyc,ind_coh).reshape(1,-1)
-    ExExc = np.delete(ExExc,ind_coh).reshape(1,-1)
-    EyEyc = np.delete(EyEyc,ind_coh).reshape(1,-1)
-    ExEyc = np.delete(ExEyc,ind_coh).reshape(1,-1)
+    Ex = bandavg.get('Ex')[i, :].reshape(1, -1)
+    Ey = bandavg.get('Ey')[i, :].reshape(1, -1)
+    Hx = bandavg.get('Hx')[i, :].reshape(1, -1)
+    Hy = bandavg.get('Hy')[i, :].reshape(1, -1)
+    Hz = bandavg.get('Hz')[i, :].reshape(1, -1)
+    ExHxc = bandavg.get('ExHxc')[i, :].reshape(1, -1)
+    ExHyc = bandavg.get('ExHyc')[i, :].reshape(1, -1)
+    EyHxc = bandavg.get('EyHxc')[i, :].reshape(1, -1)
+    EyHyc = bandavg.get('EyHyc')[i, :].reshape(1, -1)
+    HxHxc = bandavg.get('HxHxc')[i, :].reshape(1, -1)
+    HxHyc = bandavg.get('HxHyc')[i, :].reshape(1, -1)
+    HyHxc = bandavg.get('HyHxc')[i, :].reshape(1, -1)
+    HyHyc = bandavg.get('HyHyc')[i, :].reshape(1, -1)
+    ExExc = bandavg.get('ExExc')[i, :].reshape(1, -1)
+    EyEyc = bandavg.get('EyEyc')[i, :].reshape(1, -1)
+    ExEyc = bandavg.get('ExEyc')[i, :].reshape(1, -1)
+    coh_selected = bandavg.get(coh_mode)[i, :].reshape(1, -1)
+    ind_coh = np.where(coh_selected == 0)[1].reshape(1, -1)
+    Ex = np.delete(Ex, ind_coh).reshape(1, -1)
+    Ey = np.delete(Ey, ind_coh).reshape(1, -1)
+    Hx = np.delete(Hx, ind_coh).reshape(1, -1)
+    Hy = np.delete(Hy, ind_coh).reshape(1, -1)
+    Hz = np.delete(Hz, ind_coh).reshape(1, -1)
+    ExHxc = np.delete(ExHxc, ind_coh).reshape(1, -1)
+    ExHyc = np.delete(ExHyc, ind_coh).reshape(1, -1)
+    EyHxc = np.delete(EyHxc, ind_coh).reshape(1, -1)
+    EyHyc = np.delete(EyHyc, ind_coh).reshape(1, -1)
+    HxHxc = np.delete(HxHxc, ind_coh).reshape(1, -1)
+    HxHyc = np.delete(HxHyc, ind_coh).reshape(1, -1)
+    HyHxc = np.delete(HyHxc, ind_coh).reshape(1, -1)
+    HyHyc = np.delete(HyHyc, ind_coh).reshape(1, -1)
+    ExExc = np.delete(ExExc, ind_coh).reshape(1, -1)
+    EyEyc = np.delete(EyEyc, ind_coh).reshape(1, -1)
+    ExEyc = np.delete(ExEyc, ind_coh).reshape(1, -1)
     bandavg_single = {}
     bandavg_single['Ex'] = Ex
     bandavg_single['Ey'] = Ey
@@ -1233,7 +1333,7 @@ def makeband(bandavg,i,coh_mode):
     bandavg_single['EyEyc'] = EyEyc
     bandavg_single['ExEyc'] = ExEyc
     return bandavg_single
-    
+
 
 def measid_create(siteindex):
     """
@@ -1254,7 +1354,8 @@ def measid_create(siteindex):
     measid['Ex'] = 10 * siteindex + 1 + (1/1000)
     measid['Ey'] = 10 * siteindex + 2 + (1/1000)
     return measid
-    
+
+
 def cleanSpec(bandavg):
     """
 
@@ -1279,9 +1380,9 @@ def cleanSpec(bandavg):
     spmatHy = np.ones(HyHyc.shape)
     for i in range(np.shape(HxHxc)[0]):
         for j in range(np.shape(HxHxc)[1]):
-            if((HxHxc_real[i,j] < 0) or (HxHxc_real[i,j] >= 5000)):
-                spmatHx[i,j] = 0
-            if((HyHyc_real[i,j] < 0) or (HyHyc_real[i,j] >= 5000)):
-                spmatHy[i,j] = 0
-    spmat = spmatHx * spmatHy 
+            if ((HxHxc_real[i, j] < 0) or (HxHxc_real[i, j] >= 5000)):
+                spmatHx[i, j] = 0
+            if ((HyHyc_real[i, j] < 0) or (HyHyc_real[i, j] >= 5000)):
+                spmatHy[i, j] = 0
+    spmat = spmatHx * spmatHy
     return spmat

@@ -9,9 +9,10 @@ the MD threshold.
 
 """
 
-def mcd(bandavg,mode,config):
+
+def mcd(bandavg, mode, config):
     """
-    
+
     Parameters
     ----------
     bandavg : It is a python dictionary containing the auto- and cross- spectra
@@ -41,26 +42,28 @@ def mcd(bandavg,mode,config):
         Z1 = bandavg.get('Zyx_single') * bandavg.get('pre_sel_matEy')
         Z2 = bandavg.get('Zyy_single') * bandavg.get('pre_sel_matEy')
     mahaWt = np.ones(Z1.shape)
-    mahal_robust = np.empty((Z1.shape),dtype=float)
-    Z1_mcd_mean = np.empty((Z1.shape[0],1),dtype=complex)
-    Z2_mcd_mean = np.empty((Z1.shape[0],1),dtype=complex)
+    mahal_robust = np.empty((Z1.shape), dtype=float)
+    Z1_mcd_mean = np.empty((Z1.shape[0], 1), dtype=complex)
+    Z2_mcd_mean = np.empty((Z1.shape[0], 1), dtype=complex)
     Z1 = np.transpose(Z1)
     Z2 = np.transpose(Z2)
     for i in range(Z1.shape[1]):
-        Z1_single = Z1[:,i].reshape(-1,1)
-        Z2_single = Z2[:,i].reshape(-1,1)
-        [mahaWt_single,Z1_mean,Z2_mean,mahal_single] = getmahaWt(Z1_single,Z2_single,config)
+        Z1_single = Z1[:, i].reshape(-1, 1)
+        Z2_single = Z2[:, i].reshape(-1, 1)
+        [mahaWt_single, Z1_mean, Z2_mean, mahal_single] = getmahaWt(
+            Z1_single, Z2_single, config)
         Z1_mcd_mean[i] = Z1_mean
         Z2_mcd_mean[i] = Z2_mean
         for k in range(mahaWt_single.shape[0]):
-            mahaWt[i,k] = mahaWt_single[k]
-            mahal_robust[i,k] = mahal_single[k]
+            mahaWt[i, k] = mahaWt_single[k]
+            mahal_robust[i, k] = mahal_single[k]
     return mahaWt, Z1_mcd_mean, Z2_mcd_mean, mahal_robust
     #
-    
-def getmahaWt(Z1_single,Z2_single,config):
+
+
+def getmahaWt(Z1_single, Z2_single, config):
     """
-    
+
     Parameters
     ----------
     Z1_single : It is an array containing impedance value (either Zxx or Zyx) for 
@@ -90,7 +93,7 @@ def getmahaWt(Z1_single,Z2_single,config):
     Z1_singleI = Z1_single.imag
     Z2_singleR = Z2_single.real
     Z2_singleI = Z2_single.imag
-    X = np.vstack((Z1_singleR, Z1_singleI,Z2_singleR, Z2_singleI))
+    X = np.vstack((Z1_singleR, Z1_singleI, Z2_singleR, Z2_singleI))
     X = np.transpose(X)
     from sklearn.covariance import EmpiricalCovariance, MinCovDet
     # fit a MCD robust estimator to data
@@ -100,10 +103,10 @@ def getmahaWt(Z1_single,Z2_single,config):
         mahaWt_temp[nozeromat[m]] = mahal_robust[m]
     for n in range(zeromat.shape[0]):
         mahaWt_temp[zeromat[n]] = 10
-    mahaWt = np.zeros(([nozeromat.shape[0] + zeromat.shape[0],1]),dtype=int)
+    mahaWt = np.zeros(([nozeromat.shape[0] + zeromat.shape[0], 1]), dtype=int)
     for k in range(nozeromat.shape[0] + zeromat.shape[0]):
-        if (mahaWt_temp[k] <= config.get('MD_threshold_impedance')): # MD threshold
+        if (mahaWt_temp[k] <= config.get('MD_threshold_impedance')):  # MD threshold
             mahaWt[k] = 1
-    Z1_mean = complex(robust_cov.location_[0],robust_cov.location_[1])
-    Z2_mean = complex(robust_cov.location_[2],robust_cov.location_[3])
+    Z1_mean = complex(robust_cov.location_[0], robust_cov.location_[1])
+    Z2_mean = complex(robust_cov.location_[2], robust_cov.location_[3])
     return mahaWt, Z1_mean, Z2_mean, mahaWt_temp

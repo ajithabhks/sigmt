@@ -39,7 +39,9 @@ TyI = np.imag(Ty)
 f = open('D:/NGRI/PROCESSING FOLDER/KL/KL33A/bands/2.txt', 'w')
 for i in range(ftlist.shape[0]):
     f.write("%.9E \t %.9E  \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \t %.9E \n" % (ftlist[i][0],
-    ZxxR[i][0], ZxxI[i][0], ZxyR[i][0], ZxyI[i][0],ZyxR[i][0], ZyxI[i][0],ZyyR[i][0], 
-    ZyyI[i][0], ZxxVar[i][0], ZxyVar[i][0], ZyxVar[i][0], ZyyVar[i][0],
-    TxR[i][0],TxI[i][0],TyR[i][0],TyI[i][0],TxVar[i][0],TyVar[i][0]))
+                                                                                                                                                                          ZxxR[i][0], ZxxI[i][0], ZxyR[i][0], ZxyI[i][
+                                                                                                                                                                              0], ZyxR[i][0], ZyxI[i][0], ZyyR[i][0],
+                                                                                                                                                                          ZyyI[i][0], ZxxVar[i][0], ZxyVar[i][
+                                                                                                                                                                              0], ZyxVar[i][0], ZyyVar[i][0],
+                                                                                                                                                                          TxR[i][0], TxI[i][0], TyR[i][0], TyI[i][0], TxVar[i][0], TyVar[i][0]))
 f.close()

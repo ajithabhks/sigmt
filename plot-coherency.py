@@ -33,44 +33,45 @@ cdict = {'red': ((0.0, 0.0, 0.0),
                  (0.6, 0.0, 0.0),
                  (0.8, 1.0, 1.0),
                  (1.0, 1.0, 1.0)),
-        'green':((0.0, 0.0, 0.0),
-                 (0.1, 0.0, 0.0),
-                 (0.2, 0.0, 0.0),
-                 (0.4, 1.0, 1.0),
-                 (0.6, 1.0, 1.0),
-                 (0.8, 1.0, 1.0),
-                 (1.0, 0.0, 0.0)),
-        'blue': ((0.0, 0.0, 0.0),
-                 (0.1, 0.5, 0.5),
-                 (0.2, 1.0, 1.0),
-                 (0.4, 1.0, 1.0),
-                 (0.6, 0.0, 0.0),
-                 (0.8, 0.0, 0.0),
-                 (1.0, 0.0, 0.0))}
-my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap',cdict,256)
+         'green': ((0.0, 0.0, 0.0),
+                   (0.1, 0.0, 0.0),
+                   (0.2, 0.0, 0.0),
+                   (0.4, 1.0, 1.0),
+                   (0.6, 1.0, 1.0),
+                   (0.8, 1.0, 1.0),
+                   (1.0, 0.0, 0.0)),
+         'blue': ((0.0, 0.0, 0.0),
+                  (0.1, 0.5, 0.5),
+                  (0.2, 1.0, 1.0),
+                  (0.4, 1.0, 1.0),
+                  (0.6, 0.0, 0.0),
+                  (0.8, 0.0, 0.0),
+                  (1.0, 0.0, 0.0))}
+my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap', cdict, 256)
 """
 Try 'Zxy_single', 'Zyx_single', 'Zxx_single', 'Zyy_single'
 in the below field as required
 """
 Z_all = bandavg.get('Zxy_single')
-coh_selected_all = np.ones(np.shape(bandavg.get('ExExc')),dtype=float)
+coh_selected_all = np.ones(np.shape(bandavg.get('ExExc')), dtype=float)
 for fnum in range(np.size(ftlist)):
-    Z = Z_all[fnum,:]
-    coh_selected = coh_selected_all[fnum,:].reshape(-1,1)
+    Z = Z_all[fnum, :]
+    coh_selected = coh_selected_all[fnum, :].reshape(-1, 1)
     """
     Try: cc = AllcohEx[fnum,:] to plot Ex component
     Try: cc = AllcohEy[fnum,:] to plot Ey component
     """
-    cc = AllcohEx[fnum,:]
-    cc = cc.reshape(-1,1)
-    Z = Z.reshape(-1,1)
-    ind_coh = np.where(coh_selected==0)[0].reshape(-1,1)
-    cc = np.delete(cc,ind_coh).reshape(-1,1)
-    Z = np.delete(Z,ind_coh).reshape(-1,1)
+    cc = AllcohEx[fnum, :]
+    cc = cc.reshape(-1, 1)
+    Z = Z.reshape(-1, 1)
+    ind_coh = np.where(coh_selected == 0)[0].reshape(-1, 1)
+    cc = np.delete(cc, ind_coh).reshape(-1, 1)
+    Z = np.delete(Z, ind_coh).reshape(-1, 1)
     Z_real = np.real(Z)
     Z_imag = np.imag(Z)
     plt.figure(num=fnum)
-    sc = plt.scatter(Z_real,Z_imag,c=cc,cmap=my_cmap)
+    sc = plt.scatter(Z_real, Z_imag, c=cc, cmap=my_cmap)
     plt.colorbar(sc)
-    plt.clim(0,1) 
-    plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+' ('+str(procinfo.get('fs'))+' Hz) f='+ str(round(ftlist[fnum][0],2)) +' Hz')
+    plt.clim(0, 1)
+    plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+' (' +
+              str(procinfo.get('fs'))+' Hz) f=' + str(round(ftlist[fnum][0], 2)) + ' Hz')
