@@ -11,7 +11,8 @@ This module plots four figures after the processing is completed.
 3. Tipper amplitudes and phase
 4. Tipper real and imaginary components.
 """
-  
+
+
 def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     """
 
@@ -38,8 +39,10 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     # Apparant resistivities and phase
     rho_xy = (0.2/ftlist) * ((abs(Z_huber.get('Zxy'))) ** 2)
     rho_yx = (0.2/ftlist) * ((abs(Z_huber.get('Zyx'))) ** 2)
-    phase_xy = np.degrees(np.arctan(Z_huber.get('Zxy').imag/Z_huber.get('Zxy').real))
-    phase_yx = np.degrees(np.arctan(Z_huber.get('Zyx').imag/Z_huber.get('Zyx').real))
+    phase_xy = np.degrees(
+        np.arctan(Z_huber.get('Zxy').imag/Z_huber.get('Zxy').real))
+    phase_yx = np.degrees(
+        np.arctan(Z_huber.get('Zyx').imag/Z_huber.get('Zyx').real))
     #
     #
     # Errors for app. resistivity and phase
@@ -62,68 +65,71 @@ def plotfigs(procinfo, ftlist, Z_huber, Zvar, Tx, Ty, cohEx, cohEy):
     # Plot App. res & Phase
     plt.figure()
     plt.subplot(211)
-    plt.scatter(ftlist,rho_xy,c='r',s=10,label='XY')
-    plt.scatter(ftlist,rho_yx,c='b',s=10,label='YX')
-    plt.errorbar(ftlist,rho_xy,yerr=err_rxy,ecolor='r',fmt="none")
-    plt.errorbar(ftlist,rho_yx,yerr=err_ryx,ecolor='b',fmt="none")
+    plt.scatter(ftlist, rho_xy, c='r', s=10, label='XY')
+    plt.scatter(ftlist, rho_yx, c='b', s=10, label='YX')
+    plt.errorbar(ftlist, rho_xy, yerr=err_rxy, ecolor='r', fmt="none")
+    plt.errorbar(ftlist, rho_yx, yerr=err_ryx, ecolor='b', fmt="none")
     plt.xscale('log')
     plt.yscale('log')
-    plt.xlim((10000, 0.001)) 
+    plt.xlim((10000, 0.001))
     plt.ylim(0.1, 100000)
     plt.yticks([0.1, 1, 10, 100, 1000, 10000])
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('App. Res. (Ohm.m.)')
     plt.legend()
-    plt.grid(which='both',linestyle='-.', linewidth=0.4)
-    plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+' ('+str(procinfo.get('fs'))+' Hz)')
+    plt.grid(which='both', linestyle='-.', linewidth=0.4)
+    plt.title(procinfo.get('selectedsite') + ' - ' +
+              procinfo.get('meas')+' ('+str(procinfo.get('fs'))+' Hz)')
     plt.subplot(212)
-    plt.scatter(ftlist,phase_xy,c='r',s=10)
-    plt.scatter(ftlist,phase_yx,c='b',s=10)
-    plt.errorbar(ftlist,phase_xy,yerr=err_pxy,ecolor='r',fmt="none")
-    plt.errorbar(ftlist,phase_yx,yerr=err_pyx,ecolor='b',fmt="none")
+    plt.scatter(ftlist, phase_xy, c='r', s=10)
+    plt.scatter(ftlist, phase_yx, c='b', s=10)
+    plt.errorbar(ftlist, phase_xy, yerr=err_pxy, ecolor='r', fmt="none")
+    plt.errorbar(ftlist, phase_yx, yerr=err_pyx, ecolor='b', fmt="none")
     plt.xscale('log')
     plt.xlim((10000, 0.001))
     plt.ylim((0, 90))
-    plt.yticks([0,15,30,45,60,75,90])
+    plt.yticks([0, 15, 30, 45, 60, 75, 90])
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Phase (Deg.)')
-    plt.grid(which='both',linestyle='-.', linewidth=0.4)
+    plt.grid(which='both', linestyle='-.', linewidth=0.4)
     #
     # Plot Coherency
     plt.figure()
-    plt.scatter(ftlist,cohEx,c='r',label='Ex')
-    plt.scatter(ftlist,cohEy,c='b',label='Ey')
+    plt.scatter(ftlist, cohEx, c='r', label='Ex')
+    plt.scatter(ftlist, cohEy, c='b', label='Ey')
     plt.xscale('log')
-    plt.xlim((10000, 0.001)) 
+    plt.xlim((10000, 0.001))
     plt.ylim(0, 1)
-    plt.yticks([0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
+    plt.yticks([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Predicted Coherency')
-    plt.grid(which='both',linestyle='-.', linewidth=0.4)
+    plt.grid(which='both', linestyle='-.', linewidth=0.4)
     plt.legend()
-    plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+' ('+str(procinfo.get('fs'))+' Hz)')
+    plt.title(procinfo.get('selectedsite') + ' - ' +
+              procinfo.get('meas')+' ('+str(procinfo.get('fs'))+' Hz)')
     # Plot tipper =====
     TxA = np.sqrt((np.real(Tx) ** 2) + (np.imag(Tx) ** 2))
     TyA = np.sqrt((np.real(Ty) ** 2) + (np.imag(Ty) ** 2))
-    TxP = np.degrees(np.arctan2(Tx.imag,Tx.real))
-    TyP = np.degrees(np.arctan2(Ty.imag,Ty.real))
+    TxP = np.degrees(np.arctan2(Tx.imag, Tx.real))
+    TyP = np.degrees(np.arctan2(Ty.imag, Ty.real))
     plt.figure()
     plt.subplot(211)
-    plt.scatter(ftlist,TxA,c='r',label='Tx')
-    plt.scatter(ftlist,TyA,c='b',label='Ty')
+    plt.scatter(ftlist, TxA, c='r', label='Tx')
+    plt.scatter(ftlist, TyA, c='b', label='Ty')
     plt.ylim(0, 1)
     plt.xscale('log')
     plt.xlim((10000, 0.001))
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Tipper Amplitude')
-    plt.grid(which='both',linestyle='-.', linewidth=0.4)
+    plt.grid(which='both', linestyle='-.', linewidth=0.4)
     plt.legend()
-    plt.title(procinfo.get('selectedsite') + ' - ' + procinfo.get('meas')+' ('+str(procinfo.get('fs'))+' Hz)')
+    plt.title(procinfo.get('selectedsite') + ' - ' +
+              procinfo.get('meas')+' ('+str(procinfo.get('fs'))+' Hz)')
     plt.subplot(212)
-    plt.scatter(ftlist,TxP,c='r')
-    plt.scatter(ftlist,TyP,c='b')
+    plt.scatter(ftlist, TxP, c='r')
+    plt.scatter(ftlist, TyP, c='b')
     plt.xscale('log')
     plt.xlim((10000, 0.001))
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Tipper Phase')
-    plt.grid(which='both',linestyle='-.', linewidth=0.4)
+    plt.grid(which='both', linestyle='-.', linewidth=0.4)
