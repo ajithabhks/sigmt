@@ -446,9 +446,9 @@ def bandavg(ts, procinfo, tsR, procinfoR, config):
                 f, xfftHy[:, stack], ChoppDataHy, calt_Hy)
             calHz[:, stack] = calibrateoff(
                 f, xfftHz[:, stack], ChoppDataHz, calt_Hz)
-            calRx[:, stack] = calibrateon(
+            calRx[:, stack] = calibrateoff(
                 f, xfftRx[:, stack], ChoppDataRx, calt_Rx)
-            calRy[:, stack] = calibrateon(
+            calRy[:, stack] = calibrateoff(
                 f, xfftRy[:, stack], ChoppDataRy, calt_Ry)
             f = np.delete(f, 0,)
     print("Done!")
