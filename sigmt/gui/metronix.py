@@ -134,11 +134,11 @@ class MainWindow(QMainWindow):
         # -------------------------------
         file = self.menubar.addMenu("File")
 
-        create_project_action = QAction("Create Project", self)
+        create_project_action = QAction("Create a Project", self)
         create_project_action.triggered.connect(self.create_project)
         file.addAction(create_project_action)
 
-        open_project_action = QAction("Open Project", self)
+        open_project_action = QAction("Open a Project", self)
         open_project_action.triggered.connect(self.open_project)
         file.addAction(open_project_action)
 
@@ -962,7 +962,7 @@ class MainWindow(QMainWindow):
         self.bandavg_dataset['coh_ey'] = (('time_window', 'frequency'), dataselectiontools.cohey(self.bandavg_dataset))
         if not self.project_setup['processing_mode'] == "MT Only":
             self.bandavg_dataset['coh_hz'] = (
-            ('time_window', 'frequency'), dataselectiontools.cohhz(self.bandavg_dataset))
+                ('time_window', 'frequency'), dataselectiontools.cohhz(self.bandavg_dataset))
         self.bandavg_dataset['alpha_h'], self.bandavg_dataset['alpha_e'] = dataselectiontools.pdvalues(
             self.bandavg_dataset)
         print(f'Time taken for data selection tool: ' + str(time.time() - time_dataselection))
