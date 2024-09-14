@@ -51,6 +51,7 @@ class MainWindow(QMainWindow):
         Constructor
         """
         super().__init__()
+        self.notch_status = None
         self.md_threshold_entry = None
         self.coh_plot_button = None
         self.pd_plot_button = None
@@ -248,7 +249,7 @@ class MainWindow(QMainWindow):
         section3_layout = QGridLayout()
         section3_layout.addWidget(QLabel("Notch filter:"), 0, 0)
         # ----Notch radio button layout starts----
-        self.procinfo['notch'] = 'off'
+        self.notch_status = 'off'
         notch_radio_layout = QHBoxLayout()
         self.notch_radio_off = QRadioButton("Off")
         self.notch_radio_on = QRadioButton("On")
@@ -842,18 +843,17 @@ class MainWindow(QMainWindow):
 
         :return: None
         """
-        progress_dialog = QProgressDialog("Performing Decimation...", None, 0, 1, self)
-        progress_dialog.setWindowModality(Qt.WindowModal)
-        progress_dialog.setWindowTitle("Please wait")
-        progress_dialog.show()
-        # This is important to show the progress bar and GUI not to freeze
-        qapp_instance = QApplication.instance()
-        qapp_instance.processEvents()
-
         if self.localsite is None:
             QMessageBox.warning(self, 'Warning', "Please choose local and/or remote site.")
             return
         try:
+            progress_dialog = QProgressDialog("Performing Decimation...", None, 0, 1, self)
+            progress_dialog.setWindowModality(Qt.WindowModal)
+            progress_dialog.setWindowTitle("Please wait")
+            progress_dialog.show()
+            # This is important to show the progress bar and GUI not to freeze
+            qapp_instance = QApplication.instance()
+            qapp_instance.processEvents()
             decimation_factor = int(self.decimation_list_dropdown.currentText())
             with h5py.File(self.h5file, 'r+') as f:
                 for ts in f.keys():
@@ -889,93 +889,97 @@ class MainWindow(QMainWindow):
         Handles the state change of the radio buttons and updates the notch filter status.
         """
         if self.notch_radio_off.isChecked():
-            self.procinfo['notch'] = 'off'
+            self.notch_status = 'off'
         elif self.notch_radio_on.isChecked():
-            self.procinfo['notch'] = 'on'
+            self.notch_status = 'on'
 
     def save_parameters(self) -> None:
         """
         Saves the parameters to the self.procinfo dictionary
         """
-        self.procinfo['localsite'] = self.localsite
-        self.procinfo['remotesite'] = self.remotesite
-        self.procinfo['processing_mode'] = self.project_setup['processing_mode']
-        self.procinfo['fft_length'] = int(self.fft_length_dropdown.currentText())
-        self.procinfo['parzen_radius'] = float(self.parzen_radius_entry.text())
-        self.procinfo['md_thresh'] = float(self.md_threshold_entry.text())
-        self.procinfo['notch_frequency'] = float(self.project_setup['notch_frequency'])
-        self.procinfo['preferred_cal_file'] = self.project_setup['preferred_cal_file']
-        self.procinfo['frequencies_per_decade'] = int(self.project_setup['frequencies_per_decade'])
-        first_header = next(iter(next(iter(self.header.values())).values()))
-        #
-        self.procinfo['lat'] = first_header['lat'][0] / 1000 / 60 / 60
-        self.procinfo['lon'] = first_header['lon'][0] / 1000 / 60 / 60
-        self.procinfo['elev'] = first_header['elev'][0] / 100
-        #
-        self.procinfo['start_time'] = first_header['start'][0]
-        QMessageBox.information(self, "Done", f"Parameters are saved.")
+        try:
+            if self.header is not None:
+                self.procinfo['localsite'] = self.localsite
+                self.procinfo['remotesite'] = self.remotesite
+                self.procinfo['notch'] = self.notch_status
+                self.procinfo['processing_mode'] = self.project_setup['processing_mode']
+                self.procinfo['fft_length'] = int(self.fft_length_dropdown.currentText())
+                self.procinfo['parzen_radius'] = float(self.parzen_radius_entry.text())
+                self.procinfo['md_thresh'] = float(self.md_threshold_entry.text())
+                self.procinfo['notch_frequency'] = float(self.project_setup['notch_frequency'])
+                self.procinfo['preferred_cal_file'] = self.project_setup['preferred_cal_file']
+                self.procinfo['frequencies_per_decade'] = int(self.project_setup['frequencies_per_decade'])
+                first_header = next(iter(next(iter(self.header.values())).values()))
+                #
+                self.procinfo['lat'] = first_header['lat'][0] / 1000 / 60 / 60
+                self.procinfo['lon'] = first_header['lon'][0] / 1000 / 60 / 60
+                self.procinfo['elev'] = first_header['elev'][0] / 100
+                #
+                self.procinfo['start_time'] = first_header['start'][0]
+                QMessageBox.information(self, "Done", f"Parameters are saved.")
+            else:
+                QMessageBox.critical(self, "Error", f"Please read time series first!!")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}."
+                                                "Ensure time series is read!!!")
 
     def perform_bandavg(self):
         """
         Setup the bandaveraging
         """
-        # TODO: Confirm procinfo is updated as per the values in field. Else, inform user to click save parameters.
-        datasets = []
-        bandavg_msg = {}
-        #
-        progress_dialog = QProgressDialog("Performing band averaging...", None, 0, len(self.header), self)
-        progress_dialog.setWindowModality(Qt.WindowModal)
-        progress_dialog.setWindowTitle("Please wait")
-        progress_dialog.show()
-        # This is important to show the progress bar and GUI not to freeze
-        qapp_instance = QApplication.instance()
-        qapp_instance.processEvents()
-        #
-        num = 0
-        bandavg_time = time.time()
-        for ts in self.header:
-            bandavg_msg['header'] = self.header[ts]
-            bandavg_msg['caldata'] = self.xml_caldata[ts]
-            bandavg_msg['ts'] = metronix_utils.prepare_ts_from_h5(self.h5file, ts)
-            for ts_channel in bandavg_msg['ts']:
-                bandavg_msg['ts'][ts_channel] = utils.reshape_array_with_overlap(
-                    window_length=self.procinfo['fft_length'],
-                    overlap=50,
-                    data=bandavg_msg['ts'][ts_channel])
-            bandavg = BandAvg(self.procinfo, bandavg_msg)
-            datasets.append(bandavg.bandavg_ds)
-            num += 1
-            progress_dialog.setValue(num)
-        self.bandavg_dataset = xr.concat(datasets, dim='time_window').assign_coords(
-            time_window=np.arange(len(xr.concat(datasets, dim='time_window').time_window)))
-        self.dof = bandavg.dof
-        self.avgf = bandavg.avgf
-        self.bandavg_dataset['dof'] = xr.DataArray(
-            self.dof,
-            coords={'frequency': self.bandavg_dataset.coords['frequency']},
-            dims='frequency'
-        )
-        print(f'Time taken for band averaging: ' + str(time.time() - bandavg_time))
-        # Calculating data selection parameters
-        time_dataselection = time.time()
-        self.bandavg_dataset['coh_ex'] = (('time_window', 'frequency'), dataselectiontools.cohex(self.bandavg_dataset))
-        self.bandavg_dataset['coh_ey'] = (('time_window', 'frequency'), dataselectiontools.cohey(self.bandavg_dataset))
-        if not self.project_setup['processing_mode'] == "MT Only":
-            self.bandavg_dataset['coh_hz'] = (
-                ('time_window', 'frequency'), dataselectiontools.cohhz(self.bandavg_dataset))
-        self.bandavg_dataset['alpha_h'], self.bandavg_dataset['alpha_e'] = dataselectiontools.pdvalues(
-            self.bandavg_dataset)
-        print(f'Time taken for data selection tool: ' + str(time.time() - time_dataselection))
-        qapp_instance.processEvents()
-        QMessageBox.information(self, "Done", f"Band averaging done!")
-
-        # TODO: Check following
-        """
-        in_ts = list(self.ts.keys())
-        in_header = list(self.header.keys())
-        if not set(in_ts) == set(in_header):
-            print("Error: Channels are not matching.")
-        """
+        if 'localsite' in self.procinfo and self.procinfo['localsite'] == self.localsite:
+            datasets = []
+            bandavg_msg = {}
+            #
+            progress_dialog = QProgressDialog("Performing band averaging...", None, 0, len(self.header), self)
+            progress_dialog.setWindowModality(Qt.WindowModal)
+            progress_dialog.setWindowTitle("Please wait")
+            progress_dialog.show()
+            # This is important to show the progress bar and GUI not to freeze
+            qapp_instance = QApplication.instance()
+            qapp_instance.processEvents()
+            #
+            num = 0
+            bandavg_time = time.time()
+            for ts in self.header:
+                bandavg_msg['header'] = self.header[ts]
+                bandavg_msg['caldata'] = self.xml_caldata[ts]
+                bandavg_msg['ts'] = metronix_utils.prepare_ts_from_h5(self.h5file, ts)
+                for ts_channel in bandavg_msg['ts']:
+                    bandavg_msg['ts'][ts_channel] = utils.reshape_array_with_overlap(
+                        window_length=self.procinfo['fft_length'],
+                        overlap=50,
+                        data=bandavg_msg['ts'][ts_channel])
+                bandavg = BandAvg(self.procinfo, bandavg_msg)
+                datasets.append(bandavg.bandavg_ds)
+                num += 1
+                progress_dialog.setValue(num)
+            self.bandavg_dataset = xr.concat(datasets, dim='time_window').assign_coords(
+                time_window=np.arange(len(xr.concat(datasets, dim='time_window').time_window)))
+            self.dof = bandavg.dof
+            self.avgf = bandavg.avgf
+            self.bandavg_dataset['dof'] = xr.DataArray(
+                self.dof,
+                coords={'frequency': self.bandavg_dataset.coords['frequency']},
+                dims='frequency'
+            )
+            print(f'Time taken for band averaging: ' + str(time.time() - bandavg_time))
+            # Calculating data selection parameters
+            time_dataselection = time.time()
+            self.bandavg_dataset['coh_ex'] = (
+                ('time_window', 'frequency'), dataselectiontools.cohex(self.bandavg_dataset))
+            self.bandavg_dataset['coh_ey'] = (
+                ('time_window', 'frequency'), dataselectiontools.cohey(self.bandavg_dataset))
+            if not self.project_setup['processing_mode'] == "MT Only":
+                self.bandavg_dataset['coh_hz'] = (
+                    ('time_window', 'frequency'), dataselectiontools.cohhz(self.bandavg_dataset))
+            self.bandavg_dataset['alpha_h'], self.bandavg_dataset['alpha_e'] = dataselectiontools.pdvalues(
+                self.bandavg_dataset)
+            print(f'Time taken for data selection tool: ' + str(time.time() - time_dataselection))
+            qapp_instance.processEvents()
+            QMessageBox.information(self, "Done", f"Band averaging done!")
+        else:
+            QMessageBox.critical(self, "Error", f"Please read time series again!!")
 
     def plot_coh_all(self):
         """
