@@ -1,0 +1,12 @@
+PyQt5
+numpy
+pandas
+xarray
+h5py
+scipy
+pyyaml
+sigmt
+matplotlib
+scikit-learn
+setuptools
+seaborn
