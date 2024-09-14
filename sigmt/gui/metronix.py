@@ -510,6 +510,10 @@ class MainWindow(QMainWindow):
         It displays all possible sites for local and remote reference processing.
         :return: None
         """
+        # Reseting some buttons
+        self.apply_coh_thresh_button.setText("Apply coherency threshold")
+        self.apply_pd_thresh_button.setText("Perform PD thresholding")
+        #
         if self.verify_layout_button is not None:
             self.verify_layout_button.hide()
         self.new_fs.hide()
@@ -709,6 +713,10 @@ class MainWindow(QMainWindow):
         
         :return: None
         """
+        # Reseting some buttons
+        self.apply_coh_thresh_button.setText("Apply coherency threshold")
+        self.apply_pd_thresh_button.setText("Perform PD thresholding")
+        #
         self.new_fs.hide()
         if self.processing_route is not None:
             self.sfreq_selected = self.sampling_frequency_dropdown.currentText()
@@ -843,6 +851,10 @@ class MainWindow(QMainWindow):
 
         :return: None
         """
+        # Reseting some buttons
+        self.apply_coh_thresh_button.setText("Apply coherency threshold")
+        self.apply_pd_thresh_button.setText("Perform PD thresholding")
+        #
         if self.localsite is None:
             QMessageBox.warning(self, 'Warning', "Please choose local and/or remote site.")
             return
@@ -897,6 +909,10 @@ class MainWindow(QMainWindow):
         """
         Saves the parameters to the self.procinfo dictionary
         """
+        # Reseting some buttons
+        self.apply_coh_thresh_button.setText("Apply coherency threshold")
+        self.apply_pd_thresh_button.setText("Perform PD thresholding")
+        #
         try:
             if self.header is not None:
                 self.procinfo['localsite'] = self.localsite
@@ -927,6 +943,10 @@ class MainWindow(QMainWindow):
         """
         Setup the bandaveraging
         """
+        # Reseting some buttons
+        self.apply_coh_thresh_button.setText("Apply coherency threshold")
+        self.apply_pd_thresh_button.setText("Perform PD thresholding")
+        #
         if 'localsite' in self.procinfo and self.procinfo['localsite'] == self.localsite:
             datasets = []
             bandavg_msg = {}
