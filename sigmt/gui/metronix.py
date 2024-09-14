@@ -997,63 +997,69 @@ class MainWindow(QMainWindow):
         """
         Apply coherency threshold
         """
-        output_channels = None
-        coh_thresh = float(self.coherency_threshold_edit.text())
-        min_percent = float(self.minimum_data_edit.text())
-        if self.project_setup['processing_mode'] == "MT + Tipper":
-            output_channels = ['ex', 'ey', 'hz']
-        elif self.project_setup['processing_mode'] == "MT Only":
-            output_channels = ['ex', 'ey']
-        self.bandavg_dataset = pds.perform_coh_thresh(self.bandavg_dataset, coh_thresh, min_percent, output_channels)
+        if self.project_setup:
+            output_channels = None
+            coh_thresh = float(self.coherency_threshold_edit.text())
+            min_percent = float(self.minimum_data_edit.text())
+            if self.project_setup['processing_mode'] == "MT + Tipper":
+                output_channels = ['ex', 'ey', 'hz']
+            elif self.project_setup['processing_mode'] == "MT Only":
+                output_channels = ['ex', 'ey']
+            self.bandavg_dataset = pds.perform_coh_thresh(self.bandavg_dataset, coh_thresh, min_percent,
+                                                          output_channels)
 
-        self.apply_coh_thresh_button.setText("Coherency threshold APPLIED!")
+            self.apply_coh_thresh_button.setText("Coherency threshold APPLIED!")
 
     def clear_coh_thresh(self):
         """
         Clear coherency threshold value
         """
-        self.bandavg_dataset = pds.clear_coh_thresh(self.bandavg_dataset)
-        self.apply_coh_thresh_button.setText("Apply coherency threshold")
+        if self.bandavg_dataset:
+            self.bandavg_dataset = pds.clear_coh_thresh(self.bandavg_dataset)
+            self.apply_coh_thresh_button.setText("Apply coherency threshold")
 
     def apply_pd_thresh(self):
         """
         Apply polarization direction threshold
         """
-        if not all(item in self.bandavg_dataset for item in ['ex', 'ey', 'hx', 'hy']):
-            QMessageBox.warning(self, "Warning", "One of ['Ex', 'Ey', 'Hx', 'Hy'] is missing.")
-        else:
-            component = self.pd_combo_box.currentText()
-            pd_min = float(self.pd_min_edit.text())
-            pd_max = float(self.pd_max_edit.text())
-            self.bandavg_dataset = pds.perform_pd_selection(self.bandavg_dataset, component, pd_min, pd_max)
-            self.apply_pd_thresh_button.setText("PD threshold APPLIED!")
+        if self.bandavg_dataset:
+            if not all(item in self.bandavg_dataset for item in ['ex', 'ey', 'hx', 'hy']):
+                QMessageBox.warning(self, "Warning", "One of ['Ex', 'Ey', 'Hx', 'Hy'] is missing.")
+            else:
+                component = self.pd_combo_box.currentText()
+                pd_min = float(self.pd_min_edit.text())
+                pd_max = float(self.pd_max_edit.text())
+                self.bandavg_dataset = pds.perform_pd_selection(self.bandavg_dataset, component, pd_min, pd_max)
+                self.apply_pd_thresh_button.setText("PD threshold APPLIED!")
 
     def clear_pd_thresh(self):
         """
         Clear polarization direction threshold
         """
-        self.bandavg_dataset = pds.clear_pd_selection(self.bandavg_dataset)
-        self.apply_pd_thresh_button.setText("Perform PD thresholding")
+        if self.bandavg_dataset:
+            self.bandavg_dataset = pds.clear_pd_selection(self.bandavg_dataset)
+            self.apply_pd_thresh_button.setText("Perform PD thresholding")
 
     def perform_robust_estimation(self):
         """
         Performs robust estimation with UI handling.
         """
-        progress_dialog = QProgressDialog("Performing Robust Estimation...", None, 0, 1, self)
-        progress_dialog.setWindowModality(Qt.WindowModal)
-        progress_dialog.setWindowTitle("Please wait")
-        progress_dialog.show()
-        # This is important to show the progress bar and GUI not to freeze
-        qapp_instance = QApplication.instance()
-        qapp_instance.processEvents()
+        if self.bandavg_dataset:
+            progress_dialog = QProgressDialog("Performing Robust Estimation...", None, 0, 1, self)
+            progress_dialog.setWindowModality(Qt.WindowModal)
+            progress_dialog.setWindowTitle("Please wait")
+            progress_dialog.show()
+            # This is important to show the progress bar and GUI not to freeze
+            qapp_instance = QApplication.instance()
+            qapp_instance.processEvents()
 
-        # Perform the robust estimation
-        estimation_instance = RobustEstimation(self.procinfo, self.bandavg_dataset)
-        self.estimates = estimation_instance.estimates
+            # Perform the robust estimation
+            estimation_instance = RobustEstimation(self.procinfo, self.bandavg_dataset)
+            self.estimates = estimation_instance.estimates
 
-        progress_dialog.setValue(1)
-        qapp_instance.processEvents()
-        QMessageBox.information(self, "Done", "Robust estimation done!")
+            progress_dialog.setValue(1)
+            qapp_instance.processEvents()
+            QMessageBox.information(self, "Done", "Robust estimation done!")
 
     def plot_impedance(self):
         """
@@ -1065,8 +1071,9 @@ class MainWindow(QMainWindow):
         """
         Docs
         """
-        if not self.project_setup['processing_mode'] == "MT Only":
-            plots.plot_tipper(self.estimates)
+        if self.project_setup:
+            if not self.project_setup['processing_mode'] == "MT Only":
+                plots.plot_tipper(self.estimates)
 
     def plot_coherency(self):
         """
