@@ -19,14 +19,16 @@ class EditProjectSetupDialog(QDialog):
         self.processing_mode = QComboBox()
         self.processing_mode.addItem('MT + Tipper')
         self.processing_mode.addItem('MT Only')
-        self.processing_mode.addItem('Tipper Only')
+        # TODO: Add this in future
+        # self.processing_mode.addItem('Tipper Only')
         self.processing_mode.setCurrentText(self.project_setup['processing_mode'])
         #
         self.frequencies_per_decade = QLineEdit(self.project_setup['frequencies_per_decade'])
         self.notch_frequency = QLineEdit(self.project_setup['notch_frequency'])
         self.preferred_cal_file = QComboBox()
         self.preferred_cal_file.addItem('xml')
-        self.preferred_cal_file.addItem('metronix txt')
+        # TODO: Add this in future
+        # self.preferred_cal_file.addItem('metronix txt')
         self.preferred_cal_file.setCurrentText(self.project_setup['preferred_cal_file'])
 
         layout.addWidget(QLabel("Project Name:"))
