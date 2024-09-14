@@ -149,7 +149,7 @@ class BandAvg:
         )
 
         # TODO: Extend to MT, Tipper
-        if self.processing_mode == "MT + Tipper":
+        if self.processing_mode == "MT + Tipper" or self.processing_mode == "MT Only":
             sum_parzen = np.sum(parzen_window, axis=0)
 
             # Compute the weighted sums
@@ -165,9 +165,10 @@ class BandAvg:
             self.bandavg_ds['hy'] = (
                 ('time_window', 'frequency'),
                 np.sum(self.xfft['hy'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
-            self.bandavg_ds['hz'] = (
-                ('time_window', 'frequency'),
-                np.sum(self.xfft['hz'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+            if not self.processing_mode == "MT Only":
+                self.bandavg_ds['hz'] = (
+                    ('time_window', 'frequency'),
+                    np.sum(self.xfft['hz'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
 
             if self.procinfo['remotesite'] is not None:
                 self.bandavg_ds['rx'] = (
@@ -180,7 +181,8 @@ class BandAvg:
             # Compute the auto- and cross-spectra
             ex_conj = np.conj(self.xfft['ex'])
             ey_conj = np.conj(self.xfft['ey'])
-            hz_conj = np.conj(self.xfft['hz'])
+            if not self.processing_mode == "MT Only":
+                hz_conj = np.conj(self.xfft['hz'])
             if self.procinfo['remotesite'] is not None:
                 hx_conj = np.conj(self.xfft['rx'])
                 hy_conj = np.conj(self.xfft['ry'])
@@ -196,8 +198,9 @@ class BandAvg:
                 self.xfft['hx'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
             self.bandavg_ds['hyhy'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['hy'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
-            self.bandavg_ds['hzhz'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['hz'][:, :, np.newaxis] * hz_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+            if not self.processing_mode == "MT Only":
+                self.bandavg_ds['hzhz'] = (('time_window', 'frequency'), np.sum(
+                    self.xfft['hz'][:, :, np.newaxis] * hz_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
             #
             self.bandavg_ds['exey'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['ex'][:, :, np.newaxis] * ey_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
@@ -218,11 +221,12 @@ class BandAvg:
             self.bandavg_ds['eyhy'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['ey'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
 
-            # Hz output =====
-            self.bandavg_ds['hzhx'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['hz'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
-            self.bandavg_ds['hzhy'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['hz'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+            if not self.processing_mode == "MT Only":
+                # Hz output =====
+                self.bandavg_ds['hzhx'] = (('time_window', 'frequency'), np.sum(
+                    self.xfft['hz'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                self.bandavg_ds['hzhy'] = (('time_window', 'frequency'), np.sum(
+                    self.xfft['hz'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
 
             z_deno = (self.bandavg_ds['hxhx'] * self.bandavg_ds['hyhy']) - (
                     self.bandavg_ds['hxhy'] * self.bandavg_ds['hyhx'])
@@ -241,12 +245,13 @@ class BandAvg:
             self.bandavg_ds['zyx_single'] = zyx_num / z_deno
             self.bandavg_ds['zyy_single'] = zyy_num / z_deno
 
-            t_deno = (self.bandavg_ds['hxhx'] * self.bandavg_ds['hyhy']) - (
-                    self.bandavg_ds['hxhy'] * self.bandavg_ds['hyhx'])
-            self.bandavg_ds['tzx_single'] = ((self.bandavg_ds['hzhx'] * self.bandavg_ds['hyhy']) - (
-                    self.bandavg_ds['hzhy'] * self.bandavg_ds['hyhx'])) / t_deno
-            self.bandavg_ds['tzy_single'] = ((self.bandavg_ds['hzhy'] * self.bandavg_ds['hxhx']) - (
-                    self.bandavg_ds['hzhx'] * self.bandavg_ds['hxhy'])) / t_deno
+            if not self.processing_mode == "MT Only":
+                t_deno = (self.bandavg_ds['hxhx'] * self.bandavg_ds['hyhy']) - (
+                        self.bandavg_ds['hxhy'] * self.bandavg_ds['hyhx'])
+                self.bandavg_ds['tzx_single'] = ((self.bandavg_ds['hzhx'] * self.bandavg_ds['hyhy']) - (
+                        self.bandavg_ds['hzhy'] * self.bandavg_ds['hyhx'])) / t_deno
+                self.bandavg_ds['tzy_single'] = ((self.bandavg_ds['hzhy'] * self.bandavg_ds['hxhx']) - (
+                        self.bandavg_ds['hzhx'] * self.bandavg_ds['hxhy'])) / t_deno
 
             # Preparing selection arrays
 
@@ -262,11 +267,12 @@ class BandAvg:
                 dims=self.bandavg_ds.dims
             )
 
-            self.bandavg_ds['hz_selection_coh'] = xr.DataArray(
-                np.full(self.bandavg_ds['hz'].shape, True),
-                coords=self.bandavg_ds.coords,
-                dims=self.bandavg_ds.dims
-            )
+            if not self.processing_mode == "MT Only":
+                self.bandavg_ds['hz_selection_coh'] = xr.DataArray(
+                    np.full(self.bandavg_ds['hz'].shape, True),
+                    coords=self.bandavg_ds.coords,
+                    dims=self.bandavg_ds.dims
+                )
 
             self.bandavg_ds['alpha_e_selection'] = xr.DataArray(
                 np.full(self.bandavg_ds['ex'].shape, True),

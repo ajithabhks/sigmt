@@ -32,12 +32,14 @@ class ProjectSetupDialog(QDialog):
         self.processing_mode = QComboBox()
         self.processing_mode.addItem('MT + Tipper')
         self.processing_mode.addItem('MT Only')
-        self.processing_mode.addItem('Tipper Only')
+        # TODO: Support use of tipper only in future
+        # self.processing_mode.addItem('Tipper Only')
         #
         self.frequencies_per_decade = QLineEdit('12')
         self.notch_frequency = QLineEdit('50')
         self.preferred_cal_file = QComboBox()
         self.preferred_cal_file.addItem('xml')
+        # TODO: Support use of metronix text file in future
         # self.preferred_cal_file.addItem('metronix txt')
 
         layout.addWidget(QLabel("Project Name:"))

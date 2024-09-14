@@ -103,11 +103,13 @@ def get_sampling_frequency_from_xml(meas_paths: list) -> tuple:
     return sampfreq, chopper_value
 
 
-def read_ts(meas_path: str) -> tuple:
+def read_ts(meas_path: str, project_setup: dict) -> tuple:
     """
     Reads all time series files (ats) from the measurement path and returns header and time series data as dictionaries.
     :param meas_path: Measurement path
     :type meas_path: str
+    :param project_setup: Dictionary containing project information
+    :type project_setup: dict
     :return: Header information of time series and Time series data as dictionaries.
     :rtype: Tuple
     """
@@ -129,7 +131,12 @@ def read_ts(meas_path: str) -> tuple:
         header_info['duration'] = duration  # Saves duration just for information
         header[header_info['ch_type']] = header_info
         # Creates xarray
-        ts[header_info['ch_type']] = xr.DataArray(ts_data, coords={'time': time_index}, dims=['time'])
+        if project_setup['processing_mode'] == 'MT + Tipper':
+            if header_info['ch_type'] in ['ex', 'ey', 'hx', 'hy', 'hz']:
+                ts[header_info['ch_type']] = xr.DataArray(ts_data, coords={'time': time_index}, dims=['time'])
+        elif project_setup['processing_mode'] == 'MT Only':
+            if header_info['ch_type'] in ['ex', 'ey', 'hx', 'hy']:
+                ts[header_info['ch_type']] = xr.DataArray(ts_data, coords={'time': time_index}, dims=['time'])
     return header, ts
 
 

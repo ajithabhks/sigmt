@@ -222,7 +222,6 @@ class MainWindow(QMainWindow):
         self.verify_layout_button = QPushButton("Verify/Edit layout settings")
         self.verify_layout_button.clicked.connect(self.open_layout_settings)
         self.verify_layout_button.hide()
-        # self.verify_layout_button.clicked.connect(self.read_ts)
         section1_grid_layout.addWidget(self.verify_layout_button, 1, 1)
         section1_grid_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         #
@@ -743,7 +742,7 @@ class MainWindow(QMainWindow):
             # Creates a h5 file in project directory in write mode
             with h5py.File(self.h5file, 'w') as f:
                 for local_path in local_paths:
-                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path)
+                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path, self.project_setup)
                     self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(local_path)
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
@@ -766,7 +765,7 @@ class MainWindow(QMainWindow):
             # Creates a h5 file in project directory in write mode
             with h5py.File(self.h5file, 'w') as f:
                 for local_path, remote_path in zip(local_paths, remote_paths):
-                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path)
+                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path, self.project_setup)
                     self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(local_path)
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
@@ -774,7 +773,7 @@ class MainWindow(QMainWindow):
                         self.header[f'ts_{num}'][key]['time_coord'] = ts_dict[key].time
                         # self.header[f'ts_{num}'][key]['start_time'] = ts_dict[key].time.min()
                         # self.header[f'ts_{num}'][key]['end_time'] = ts_dict[key].time.max()
-                    header_r, ts_r = metronix_utils.read_ts(remote_path)
+                    header_r, ts_r = metronix_utils.read_ts(remote_path, self.project_setup)
                     xml_caldata_r = metronix_utils.read_calibration_from_xml(remote_path)
                     self.xml_caldata[f'ts_{num}'].update(xml_caldata_r)
                     if 'hx' in header_r:
@@ -961,7 +960,9 @@ class MainWindow(QMainWindow):
         time_dataselection = time.time()
         self.bandavg_dataset['coh_ex'] = (('time_window', 'frequency'), dataselectiontools.cohex(self.bandavg_dataset))
         self.bandavg_dataset['coh_ey'] = (('time_window', 'frequency'), dataselectiontools.cohey(self.bandavg_dataset))
-        self.bandavg_dataset['coh_hz'] = (('time_window', 'frequency'), dataselectiontools.cohhz(self.bandavg_dataset))
+        if not self.project_setup['processing_mode'] == "MT Only":
+            self.bandavg_dataset['coh_hz'] = (
+            ('time_window', 'frequency'), dataselectiontools.cohhz(self.bandavg_dataset))
         self.bandavg_dataset['alpha_h'], self.bandavg_dataset['alpha_e'] = dataselectiontools.pdvalues(
             self.bandavg_dataset)
         print(f'Time taken for data selection tool: ' + str(time.time() - time_dataselection))
@@ -992,12 +993,14 @@ class MainWindow(QMainWindow):
         """
         Apply coherency threshold
         """
-
+        output_channels = None
         coh_thresh = float(self.coherency_threshold_edit.text())
         min_percent = float(self.minimum_data_edit.text())
-        channels = ['ex', 'ey', 'hz']
-
-        self.bandavg_dataset = pds.perform_coh_thresh(self.bandavg_dataset, coh_thresh, min_percent, channels)
+        if self.project_setup['processing_mode'] == "MT + Tipper":
+            output_channels = ['ex', 'ey', 'hz']
+        elif self.project_setup['processing_mode'] == "MT Only":
+            output_channels = ['ex', 'ey']
+        self.bandavg_dataset = pds.perform_coh_thresh(self.bandavg_dataset, coh_thresh, min_percent, output_channels)
 
         self.apply_coh_thresh_button.setText("Coherency threshold APPLIED!")
 
@@ -1058,7 +1061,8 @@ class MainWindow(QMainWindow):
         """
         Docs
         """
-        plots.plot_tipper(self.estimates)
+        if not self.project_setup['processing_mode'] == "MT Only":
+            plots.plot_tipper(self.estimates)
 
     def plot_coherency(self):
         """

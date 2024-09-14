@@ -68,14 +68,14 @@ def clear_pd_selection(bandavg_dataset):
     """
     if 'alpha_e_selection' in bandavg_dataset:
         bandavg_dataset['alpha_e_selection'] = xr.DataArray(
-            np.full(bandavg_dataset['Ex'].shape, True),
+            np.full(bandavg_dataset['ex'].shape, True),
             coords=bandavg_dataset.coords,
             dims=bandavg_dataset.dims
         )
 
     if 'alpha_h_selection' in bandavg_dataset:
         bandavg_dataset['alpha_h_selection'] = xr.DataArray(
-            np.full(bandavg_dataset['Hx'].shape, True),
+            np.full(bandavg_dataset['hx'].shape, True),
             coords=bandavg_dataset.coords,
             dims=bandavg_dataset.dims
         )

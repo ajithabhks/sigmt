@@ -54,9 +54,9 @@ class RobustEstimation:
         """
         if self.processing_mode == "MT + Tipper":
             self.output_channels = ['ex', 'ey', 'hz']
-        elif self.processing_mode == "MT":
+        elif self.processing_mode == "MT Only":
             self.output_channels = ['ex', 'ey']
-        elif self.processing_mode == "Tipper":
+        elif self.processing_mode == "Tipper Only":
             self.output_channels = ['hz']
 
     def get_selection_array(self):
@@ -67,8 +67,9 @@ class RobustEstimation:
                                               self.dataset['alpha_h_selection'])
         self.dataset['selection_array_ey'] = (self.dataset['ey_selection_coh'] * self.dataset['alpha_e_selection'] *
                                               self.dataset['alpha_h_selection'])
-        self.dataset['selection_array_hz'] = (self.dataset['hz_selection_coh'] * self.dataset['alpha_e_selection'] *
-                                              self.dataset['alpha_h_selection'])
+        if not self.processing_mode == "MT Only":
+            self.dataset['selection_array_hz'] = (self.dataset['hz_selection_coh'] * self.dataset['alpha_e_selection'] *
+                                                  self.dataset['alpha_h_selection'])
 
     def get_estimate_and_variance(self):
         """
