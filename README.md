@@ -11,7 +11,7 @@ Ajithabh, K.S., Patro, P.K., 2023. SigMT: An open-source Python package for magn
 
 
 ## Downloads
-* Download user manual: https://github.com/ajithabhks/sigmt/blob/main/docs/user_guide_sigmt.ipynb
+* Read user manual: https://github.com/ajithabhks/sigmt/blob/main/docs/user_guide_sigmt.ipynb
 
 ## Contact details
 * K. S. Ajithabh
