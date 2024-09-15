@@ -86,7 +86,7 @@ class LayoutSettingsDialog(QDialog):
         :type header: Dict
         :param parent: Parent
         :type parent: object
-        
+
         """
         super().__init__(parent)
         self.header = header

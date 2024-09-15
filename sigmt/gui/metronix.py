@@ -1091,7 +1091,7 @@ class MainWindow(QMainWindow):
         Plot apparent resitivity and phase.
 
         """
-        plots.plot_mt_app_res(self.estimates)
+        plots.plot_mt_app_res(self.estimates, self.procinfo)
 
     def plot_tipper(self) -> None:
         """
@@ -1100,14 +1100,14 @@ class MainWindow(QMainWindow):
         """
         if self.project_setup:
             if not self.project_setup['processing_mode'] == "MT Only":
-                plots.plot_tipper(self.estimates)
+                plots.plot_tipper(self.estimates, self.procinfo)
 
     def plot_coherency(self) -> None:
         """
         Plot coherency.
 
         """
-        plots.plot_coherency(self.estimates)
+        plots.plot_coherency(self.estimates, self.procinfo)
 
     def save_as_edi(self) -> None:
         """
@@ -1119,7 +1119,7 @@ class MainWindow(QMainWindow):
     def open_edi_merger(self) -> None:
         """
         Open EDI merger.
-        
+
         """
         self.edi_merger = EDIMerger()
         self.edi_merger.show()

@@ -10,12 +10,14 @@ from matplotlib import pyplot as plt
 plt.rcParams['figure.max_open_warning'] = 50
 
 
-def plot_mt_app_res(dataset: xr.Dataset) -> None:
+def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict) -> None:
     """
     Plots apparent resistivity and phase
 
     :param dataset: Dataset containing estimates
     :type dataset: xr.Dataset
+    :param procinfo: Dictionary containing processing information
+    :type procinfo: dict
     :return: None
     :rtype: None
 
@@ -44,6 +46,7 @@ def plot_mt_app_res(dataset: xr.Dataset) -> None:
         # Plot App. res & Phase
         plt.figure()
         plt.subplot(211)
+        plt.suptitle(f'{procinfo["localsite"]} - {procinfo["fs"]} Hz')
         plt.scatter(ftlist, rho_xy, c='r', s=10, label='XY')
         plt.scatter(ftlist, rho_yx, c='b', s=10, label='YX')
         plt.errorbar(ftlist, rho_xy, yerr=err_rxy, ecolor='r', fmt="none")
@@ -90,12 +93,14 @@ def plot_mt_app_res(dataset: xr.Dataset) -> None:
     #
 
 
-def plot_tipper(dataset: xr.Dataset) -> None:
+def plot_tipper(dataset: xr.Dataset, procinfo: dict) -> None:
     """
     Plots tipper
 
     :param dataset: Dataset containing estimates
     :type dataset: xr.Dataset
+    :param procinfo: Dictionary containing processing information
+    :type procinfo: dict
     :return: None
     :rtype: None
 
@@ -112,6 +117,7 @@ def plot_tipper(dataset: xr.Dataset) -> None:
         # Plotting section
         plt.figure()
         plt.subplot(211)
+        plt.suptitle(f'{procinfo["localsite"]} - {procinfo["fs"]} Hz')
         plt.scatter(ftlist, tx_a, c='r', s=10, label='Tx')
         plt.scatter(ftlist, ty_a, c='b', s=10, label='Ty')
         plt.ylim(0, 1)
@@ -142,12 +148,14 @@ def plot_tipper(dataset: xr.Dataset) -> None:
         plt.show()
 
 
-def plot_coherency(dataset: xr.Dataset) -> None:
+def plot_coherency(dataset: xr.Dataset, procinfo: dict) -> None:
     """
     Plots coherencies
 
     :param dataset: Dataset containing estimates
     :type dataset: xr.Dataset
+    :param procinfo: Dictionary containing processing information
+    :type procinfo: dict
     :return: None
     :rtype: None
 
@@ -166,6 +174,7 @@ def plot_coherency(dataset: xr.Dataset) -> None:
         plt.yticks([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Predicted Coherency')
+        plt.title(f'{procinfo["localsite"]} - {procinfo["fs"]} Hz')
         plt.grid(which='both', linestyle='-.', linewidth=0.4)
         plt.legend()
         plt.show()
