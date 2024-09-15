@@ -19,9 +19,9 @@ from PyQt5.QtWidgets import (QMainWindow, QAction, QFileDialog, QMessageBox,
                              QApplication, QProgressDialog)
 from scipy import signal
 
-import sigmt.core.plots as plots
 from sigmt.core import dataselectiontools
 from sigmt.core import perform_data_selection as pds
+from sigmt.core import plots
 from sigmt.core.bandavg import BandAvg
 from sigmt.core.robust_estimation import RobustEstimation
 from sigmt.gui.about_dialog import AboutDialog
