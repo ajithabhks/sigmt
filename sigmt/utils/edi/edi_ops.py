@@ -555,7 +555,7 @@ def read_edi(file_path: str) -> tuple:
 
     :param file_path: EDI file path
     :type file_path: str
-    :retuns: Data from EDI
+    :return: Data from EDI
     :rtype: tuple
 
     """

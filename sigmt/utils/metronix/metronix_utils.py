@@ -28,6 +28,7 @@ def loadsites(project_dir: str) -> list:
     :type project_dir: str
     :return: List of sites
     :rtype: List[str]
+
     """
     ts_path = os.path.join(project_dir, 'time_series')
     sites = []
@@ -55,6 +56,7 @@ def list_meas_folders(directory: str) -> list:
     :type directory: str
     :return: List of paths to subdirectories starting with 'meas'.
     :rtype: List[str]
+
     """
     # List to store the values
     meas_folders = []
@@ -77,6 +79,7 @@ def get_sampling_frequency_from_xml(meas_paths: list) -> tuple:
     :type meas_paths: List[str]
     :return: tuple of lists containing chopper statuses.
     :rtype: Tuple of list[str]
+
     """
     sampfreq = []
     chopper_value = []
@@ -106,12 +109,14 @@ def get_sampling_frequency_from_xml(meas_paths: list) -> tuple:
 def read_ts(meas_path: str, project_setup: dict) -> tuple:
     """
     Reads all time series files (ats) from the measurement path and returns header and time series data as dictionaries.
+
     :param meas_path: Measurement path
     :type meas_path: str
     :param project_setup: Dictionary containing project information
     :type project_setup: dict
     :return: Header information of time series and Time series data as dictionaries.
     :rtype: Tuple
+
     """
     header = {}
     ts = {}
@@ -143,12 +148,10 @@ def read_ts(meas_path: str, project_setup: dict) -> tuple:
 def read_ats(filename: str) -> tuple:
     """
     Reads Metronix time series (ATS) data file.
-
     This function reads both the header information and the time series data from a Metronix ATS file.
 
     :param filename: List containing measurement paths.
     :type filename: Str
-
     :return: Header information (Dict) from the ATS file and Time series data (ndarray[Float])
     :rtype: tuple
     """
@@ -268,9 +271,9 @@ def read_calibration_from_xml(meas_path: str) -> dict:
 
     :param meas_path: Path to the measurement file, for eg: 'D:/project\\time_series\\KL33A\\meas_2019-08-29_14-30-00'
     :type meas_path: str
-
     :return: The Dictionary contains calibration data, ['coil_number'], within that 'ChoppOn' and 'ChoppOff'
     :rtype: dict
+
     """
     caldata = {}
     xmlfiles = []
@@ -299,9 +302,9 @@ def prepare_ts_from_h5(h5file_path: str, ts_key: str) -> dict:
     :type h5file_path: str
     :param ts_key: Key value for to access from the h5 group. Eg: 'ts_0'
     :type ts_key: str
-
     :return: Dictionary containing time series for 'Ex', 'Ey', ...
     :rtype: dict
+    
     """
     ts = {}
     with h5py.File(h5file_path, 'r') as f:

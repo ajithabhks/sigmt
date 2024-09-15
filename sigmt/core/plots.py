@@ -90,7 +90,6 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict) -> None:
         plt.ylabel('Phase (Deg.)')
         plt.grid(which='both', linestyle='-.', linewidth=0.4)
         plt.show()
-    #
 
 
 def plot_tipper(dataset: xr.Dataset, procinfo: dict) -> None:

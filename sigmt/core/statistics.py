@@ -63,6 +63,7 @@ def fisher_critical(dof: int) -> float:
     """
     Calculate the critical value of the F-distribution for a given
     degrees of freedom.
+    Dr. Manoj C. Nair helped with this computation.
 
     :param dof: Degree of freedom
     :type dof: int
