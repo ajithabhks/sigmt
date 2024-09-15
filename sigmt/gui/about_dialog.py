@@ -5,6 +5,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel
 
+from sigmt.__version__ import __version__
+
 
 class AboutDialog(QDialog):
     """
@@ -22,12 +24,15 @@ class AboutDialog(QDialog):
         # Create a layout for the dialog
         layout = QVBoxLayout()
 
-        self.get_citation_label()
+        self.version_label = QLabel(f'SigMT version: {__version__}')
+        self.version_label.setAlignment(Qt.AlignCenter)
 
+        self.get_citation_label()
         self.citation_label.setOpenExternalLinks(True)  # Enable clickable link
         self.citation_label.setAlignment(Qt.AlignCenter)
 
         # Add the label to the layout
+        layout.addWidget(self.version_label)
         layout.addWidget(self.citation_label)
 
         # Set the layout for the dialog

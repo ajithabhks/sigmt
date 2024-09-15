@@ -22,7 +22,7 @@ class SelectionDialog(QDialog):
         :type remote_meas: list
         :param parent: Parent
         :type parent: object
-        
+
         """
         super().__init__(parent)
 
@@ -75,6 +75,7 @@ class LayoutSettingsDialog(QDialog):
     """
     It is the layout to show MT field layout settings. Presently it shows the dipole lengths and
     coil numbers only.
+
     """
 
     def __init__(self, header, parent=None):
@@ -85,6 +86,7 @@ class LayoutSettingsDialog(QDialog):
         :type header: Dict
         :param parent: Parent
         :type parent: object
+        
         """
         super().__init__(parent)
         self.header = header
