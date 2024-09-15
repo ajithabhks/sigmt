@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
@@ -6,7 +6,10 @@ with open('requirements.txt') as f:
 setup(
     name='sigmt',
     version="2.0.0",
-    packages=find_packages(),
+    packages=['sigmt', 'sigmt.core',
+              'sigmt.gui', 'sigmt.utils',
+              'sigmt.utils.edi', 'sigmt.utils.metronix',
+              'sigmt.gui.project_related'],
     include_package_data=True,
     install_requires=requirements,
     entry_points={
