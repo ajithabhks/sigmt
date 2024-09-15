@@ -508,7 +508,7 @@ class MainWindow(QMainWindow):
         """
         Method to load the sites in the time_series folder in the project folder.
         It displays all possible sites for local and remote reference processing.
-        :return: None
+
         """
         # Reseting some buttons
         self.apply_coh_thresh_button.setText("Apply coherency threshold")
@@ -569,7 +569,6 @@ class MainWindow(QMainWindow):
 
         Need to improve strategy later. Works for now!
 
-        :return: None
         """
         if self.verify_layout_button is not None:
             self.verify_layout_button.hide()
@@ -662,8 +661,7 @@ class MainWindow(QMainWindow):
         """
         Opens a dialog window for manual selection of remote measurements.
         This method creates a dialog window for manually selecting remote measurements.
-        
-        :return: None
+
         """
         try:
             dialog = SelectionDialog(local_meas=self.localsite_meas, remote_meas=self.remotesite_meas, parent=self)
@@ -709,9 +707,8 @@ class MainWindow(QMainWindow):
         Reads time series based on the self.processing_route.
         processing_route is a DataFrame containing ['local', 'remote', 'sampling_frequency', 'chopper_status',
         'sampling_chopper'] for all measurements.
-        processing_df contains the values for selected sampling frequency & chopper status combo
-        
-        :return: None
+        processing_df contains the values for selected sampling frequency & chopper status combo.
+
         """
         # Reseting some buttons
         self.apply_coh_thresh_button.setText("Apply coherency threshold")
@@ -836,7 +833,6 @@ class MainWindow(QMainWindow):
         """
         Opens layout settings dialog
 
-        :return: None
         """
         try:
             dialog = LayoutSettingsDialog(header=self.header, parent=self)
@@ -849,7 +845,6 @@ class MainWindow(QMainWindow):
         """
         Decimate the time series.
 
-        :return: None
         """
         # Reseting some buttons
         self.apply_coh_thresh_button.setText("Apply coherency threshold")
@@ -899,6 +894,7 @@ class MainWindow(QMainWindow):
     def handle_radio_button(self) -> None:
         """
         Handles the state change of the radio buttons and updates the notch filter status.
+
         """
         if self.notch_radio_off.isChecked():
             self.notch_status = 'off'
@@ -907,7 +903,8 @@ class MainWindow(QMainWindow):
 
     def save_parameters(self) -> None:
         """
-        Saves the parameters to the self.procinfo dictionary
+        Saves the parameters to the self.procinfo dictionary.
+
         """
         # Reseting some buttons
         self.apply_coh_thresh_button.setText("Apply coherency threshold")
@@ -939,9 +936,10 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}."
                                                 "Ensure time series is read!!!")
 
-    def perform_bandavg(self):
+    def perform_bandavg(self) -> None:
         """
-        Setup the bandaveraging
+        Setup the band averaging.
+
         """
         # Reseting some buttons
         self.apply_coh_thresh_button.setText("Apply coherency threshold")
@@ -1001,21 +999,24 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.critical(self, "Error", f"Please read time series again!!")
 
-    def plot_coh_all(self):
+    def plot_coh_all(self) -> None:
         """
-        Docs
+        Plot coherency plots for all frequencies
+
         """
         plots.plot_coherencies_all(self.bandavg_dataset)
 
-    def plot_pd_all(self):
+    def plot_pd_all(self) -> None:
         """
-        Docs
+        Plot polarization direction plots for all frequencies
+
         """
         plots.plot_pd_all(self.bandavg_dataset)
 
-    def apply_coh_thresh(self):
+    def apply_coh_thresh(self) -> None:
         """
-        Apply coherency threshold
+        Apply coherency threshold.
+
         """
         if self.project_setup:
             output_channels = None
@@ -1030,17 +1031,19 @@ class MainWindow(QMainWindow):
 
             self.apply_coh_thresh_button.setText("Coherency threshold APPLIED!")
 
-    def clear_coh_thresh(self):
+    def clear_coh_thresh(self) -> None:
         """
-        Clear coherency threshold value
+        Clear coherency threshold value.
+
         """
         if self.bandavg_dataset:
             self.bandavg_dataset = pds.clear_coh_thresh(self.bandavg_dataset)
             self.apply_coh_thresh_button.setText("Apply coherency threshold")
 
-    def apply_pd_thresh(self):
+    def apply_pd_thresh(self) -> None:
         """
-        Apply polarization direction threshold
+        Apply polarization direction threshold.
+
         """
         if self.bandavg_dataset:
             if not all(item in self.bandavg_dataset for item in ['ex', 'ey', 'hx', 'hy']):
@@ -1052,17 +1055,19 @@ class MainWindow(QMainWindow):
                 self.bandavg_dataset = pds.perform_pd_selection(self.bandavg_dataset, component, pd_min, pd_max)
                 self.apply_pd_thresh_button.setText("PD threshold APPLIED!")
 
-    def clear_pd_thresh(self):
+    def clear_pd_thresh(self) -> None:
         """
-        Clear polarization direction threshold
+        Clear polarization direction threshold.
+
         """
         if self.bandavg_dataset:
             self.bandavg_dataset = pds.clear_pd_selection(self.bandavg_dataset)
             self.apply_pd_thresh_button.setText("Perform PD thresholding")
 
-    def perform_robust_estimation(self):
+    def perform_robust_estimation(self) -> None:
         """
         Performs robust estimation with UI handling.
+
         """
         if self.bandavg_dataset:
             progress_dialog = QProgressDialog("Performing Robust Estimation...", None, 0, 1, self)
@@ -1081,35 +1086,40 @@ class MainWindow(QMainWindow):
             qapp_instance.processEvents()
             QMessageBox.information(self, "Done", "Robust estimation done!")
 
-    def plot_impedance(self):
+    def plot_impedance(self) -> None:
         """
-        Docs
-        """
-        plots.plot_mt_impedances(self.estimates)
+        Plot apparent resitivity and phase.
 
-    def plot_tipper(self):
         """
-        Docs
+        plots.plot_mt_app_res(self.estimates)
+
+    def plot_tipper(self) -> None:
+        """
+        Plot tipper.
+
         """
         if self.project_setup:
             if not self.project_setup['processing_mode'] == "MT Only":
                 plots.plot_tipper(self.estimates)
 
-    def plot_coherency(self):
+    def plot_coherency(self) -> None:
         """
-        Docs
+        Plot coherency.
+
         """
         plots.plot_coherency(self.estimates)
 
-    def save_as_edi(self):
+    def save_as_edi(self) -> None:
         """
-        Docs
+        Save as EDI.
+
         """
         edi_ops.save_edi(self.estimates, self.procinfo, self.project_setup)
 
-    def open_edi_merger(self):
+    def open_edi_merger(self) -> None:
         """
-        Docs
+        Open EDI merger.
+        
         """
         self.edi_merger = EDIMerger()
         self.edi_merger.show()

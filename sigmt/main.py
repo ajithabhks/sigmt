@@ -22,7 +22,7 @@ class Welcome(QDialog):
     Design of the welcome page. User can select the instrument based processing.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Constructor
         """

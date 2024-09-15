@@ -22,6 +22,7 @@ class SelectionDialog(QDialog):
         :type remote_meas: list
         :param parent: Parent
         :type parent: object
+        
         """
         super().__init__(parent)
 
@@ -60,7 +61,10 @@ class SelectionDialog(QDialog):
     def get_selected_values(self) -> tuple:
         """
         Returns the values selected by the user.
+
         :return: Measurement (meas) names that user selects.
+        :rtype: tuple
+
         """
         local_meas = self.local_meas_list.currentItem().text() if self.local_meas_list.currentItem() else None
         remote_meas = self.remote_meas_list.currentItem().text() if self.remote_meas_list.currentItem() else None
@@ -191,7 +195,7 @@ class LayoutSettingsDialog(QDialog):
     def accept_vals(self) -> None:
         """
         Update the header with the values from the input fields
-        :return: None
+
         """
         for key in self.header:
             self.header[key]['ex']['x1'][0] = float(self.dipole_north.text())

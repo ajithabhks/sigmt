@@ -68,7 +68,7 @@ class EDIMerger(QWidget):
         # Set the layout
         self.setLayout(layout)
 
-    def select_files(self):
+    def select_files(self) -> None:
         """
         Open file dialog with .edi filter and allow multiple selections
         """
@@ -116,9 +116,9 @@ class EDIMerger(QWidget):
                 self.edi_cont, data_temp, hmeas_temp = edi_ops.read_edi(
                     self.edi_files[indices_of_5[0]])
 
-    def plot_data(self):
+    def plot_data(self) -> None:
         """
-        Docs
+        Plots the data from multiple EDIs
         """
         self.fig, self.axs = plt.subplots(2)
         # Plot the scatter points
@@ -225,9 +225,9 @@ class EDIMerger(QWidget):
             # Update the plots
             self.axs[0].figure.canvas.draw()
 
-    def save_as_edi(self):
+    def save_as_edi(self) -> None:
         """
-        Docs
+        Save merged EDI
         """
         data_frame = self.data.to_dataframe().reset_index()
         data_frame = data_frame.sort_values(by=["frequency"], ascending=[False])
@@ -602,19 +602,19 @@ class EDIMerger(QWidget):
                     file_handle.write(">END")
                     file_handle.close()
 
-    def generate_colors1(self):
+    def generate_colors1(self) -> None:
         """
         Generate a list of 'num_colors' distinct colors
         """
         return sns.color_palette("dark", len(self.edi_files))
 
-    def generate_colors2(self):
+    def generate_colors2(self) -> None:
         """
         Generate a list of 'num_colors' distinct colors
         """
         return sns.color_palette("deep", len(self.edi_files))
 
-    def get_res_phase(self):
+    def get_res_phase(self) -> None:
         """
         Calculates resistivity and phase from impedance values
         """
@@ -627,7 +627,7 @@ class EDIMerger(QWidget):
         self.data['phase_xy'] = np.degrees(np.arctan(zxy.imag / zxy.real))
         self.data['phase_yx'] = np.degrees(np.arctan(zyx.imag / zyx.real))
 
-    def close_window(self):
+    def close_window(self) -> None:
         """
         Closes the window
         """

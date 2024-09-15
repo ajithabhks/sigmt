@@ -5,6 +5,10 @@ from PyQt5.QtWidgets import QLabel, QDialog, QLineEdit, QVBoxLayout, QDialogButt
 
 
 class EditProjectSetupDialog(QDialog):
+    """
+    GUI to edit project setup
+    """
+
     def __init__(self, parent=None, interface=None, project_setup=None):
         super().__init__(parent)
         self.interface = interface
@@ -59,7 +63,13 @@ class EditProjectSetupDialog(QDialog):
 
         self.setLayout(layout)
 
-    def get_values(self):
+    def get_values(self) -> dict:
+        """
+        Returns dictionary with values
+
+        :return: Dictionary with values
+        :rtype: dict
+        """
         return {
             "project_name": self.project_name.text(),
             "country": self.country.text(),

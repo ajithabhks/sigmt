@@ -4,14 +4,21 @@ Functions to plot output curves
 
 import matplotlib
 import numpy as np
+import xarray as xr
 from matplotlib import pyplot as plt
 
 plt.rcParams['figure.max_open_warning'] = 50
 
 
-def plot_mt_impedances(dataset):
+def plot_mt_app_res(dataset: xr.Dataset) -> None:
     """
-    Docs
+    Plots apparent resistivity and phase
+
+    :param dataset: Dataset containing estimates
+    :type dataset: xr.Dataset
+    :return: None
+    :rtype: None
+
     """
     if dataset:
         # Apparant resistivities and phase
@@ -83,9 +90,15 @@ def plot_mt_impedances(dataset):
     #
 
 
-def plot_tipper(dataset):
+def plot_tipper(dataset: xr.Dataset) -> None:
     """
-    Docs
+    Plots tipper
+
+    :param dataset: Dataset containing estimates
+    :type dataset: xr.Dataset
+    :return: None
+    :rtype: None
+
     """
     if dataset:
         ftlist = dataset['frequency'].values
@@ -129,9 +142,15 @@ def plot_tipper(dataset):
         plt.show()
 
 
-def plot_coherency(dataset):
+def plot_coherency(dataset: xr.Dataset) -> None:
     """
-    Docs
+    Plots coherencies
+
+    :param dataset: Dataset containing estimates
+    :type dataset: xr.Dataset
+    :return: None
+    :rtype: None
+
     """
     if dataset:
         plt.figure()
@@ -152,9 +171,15 @@ def plot_coherency(dataset):
         plt.show()
 
 
-def plot_coherencies_all(dataset):
+def plot_coherencies_all(dataset: xr.Dataset) -> None:
     """
-    Docs
+    Plots coherency values for all frequencies
+
+    :param dataset: Dataset containing band averaged values
+    :type dataset: xr.Dataset
+    :return: None
+    :rtype: None
+
     """
     if dataset:
         cdict = {'red': ((0.0, 0.0, 0.0),
@@ -255,9 +280,15 @@ def plot_coherencies_all(dataset):
             plt.show()
 
 
-def plot_pd_all(dataset):
+def plot_pd_all(dataset: xr.Dataset) -> None:
     """
-    Docs
+    Plots polarization directions values for all frequencies
+
+    :param dataset: Dataset containing band averaged values
+    :type dataset: xr.Dataset
+    :return: None
+    :rtype: None
+
     """
     if dataset:
         cdict = {'red': ((0.0, 0.0, 0.0),

@@ -14,7 +14,8 @@ class RobustEstimation:
     """
     Class for robust estimation
     """
-    def __init__(self, procinfo=None, dataset=None):
+
+    def __init__(self, procinfo: dict, dataset: xr.Dataset) -> None:
         """
         Constructor
         """
@@ -48,9 +49,9 @@ class RobustEstimation:
         self.get_selection_array()
         self.get_estimate_and_variance()
 
-    def get_output_channels(self):
+    def get_output_channels(self) -> None:
         """
-        Docs
+        Creates output channels based on processing mode
         """
         if self.processing_mode == "MT + Tipper":
             self.output_channels = ['ex', 'ey', 'hz']
@@ -59,7 +60,7 @@ class RobustEstimation:
         elif self.processing_mode == "Tipper Only":
             self.output_channels = ['hz']
 
-    def get_selection_array(self):
+    def get_selection_array(self) -> None:
         """
         Prepare an array of boolean suggesting selected time windows.
         """
@@ -71,9 +72,9 @@ class RobustEstimation:
             self.dataset['selection_array_hz'] = (self.dataset['hz_selection_coh'] * self.dataset['alpha_e_selection'] *
                                                   self.dataset['alpha_h_selection'])
 
-    def get_estimate_and_variance(self):
+    def get_estimate_and_variance(self) -> None:
         """
-        Doc
+        Computes the robust estimates and variances
         """
         estimate = {}
         estimation_time = time.time()
@@ -98,7 +99,6 @@ class RobustEstimation:
                 selected_windows = np.where(mahalanobis_selection.astype(bool))[0]
                 print(f'Channel: {self.channel}, ft: {ft} Hz. Applying Mahalanobis distance condition.')
                 self.filtered_dataset = self.filtered_dataset.isel(time_window=selected_windows)
-                # TODO: try plot and verify if selection is fine
                 print(f'Channel: {self.channel}, ft: {ft} Hz. Getting Jackknife initial guess.')
                 self.get_jackknife_initial_guess()
                 print(f'Channel: {self.channel}, ft: {ft} Hz. Performing robust estimation.')
@@ -153,9 +153,9 @@ class RobustEstimation:
             self.estimates = xr.Dataset(estimate)
         print(f'Total time taken for robust estimation: {time.time() - estimation_time} seconds.')
 
-    def get_mahalanobis_distance(self):
+    def get_mahalanobis_distance(self) -> None:
         """
-        Docs
+        Calculating mahalanobis distance
         """
         if self.channel == 'ex':
             z1 = self.filtered_dataset['zxx_single'].values
@@ -176,9 +176,9 @@ class RobustEstimation:
         self.z1_mean_md = complex(robust_cov.location_[0], robust_cov.location_[1])
         self.z2_mean_md = complex(robust_cov.location_[2], robust_cov.location_[3])
 
-    def get_jackknife_initial_guess(self):
+    def get_jackknife_initial_guess(self) -> None:
         """
-        Docs
+        Prepares jackknife intial guess
         """
         if self.channel == 'ex':
             self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['zxx_single'])
@@ -190,9 +190,9 @@ class RobustEstimation:
             self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['tzx_single'])
             self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['tzy_single'])
 
-    def perform_robust_estimation(self):
+    def perform_robust_estimation(self) -> None:
         """
-        Doc
+        Performs robust estimation
         """
         self.get_keys()
         self.hx = self.filtered_dataset['hxhx']
@@ -246,7 +246,6 @@ class RobustEstimation:
             self.get_huber_weights()
             #
             # Applying weights to band averaged cross-spectra
-            # TODO: Check if need to apply weights to elements permanently or not (as in SigMT now)
             for i in range(4):
                 element_dict[f'z1_num_{i}'] = element_dict[f'z1_num_{i}'] * self.huber_weights
                 element_dict[f'z2_num_{i}'] = element_dict[f'z2_num_{i}'] * self.huber_weights
@@ -270,9 +269,9 @@ class RobustEstimation:
                 self.z1_robust_huber = self.z1_robust_huber * -1
                 self.z2_robust_huber = self.z2_robust_huber * -1
 
-    def get_keys(self):
+    def get_keys(self) -> None:
         """
-        Doc
+        Prepares keys
         """
         self.z_deno_keys = ["hxhx", "hyhy", "hxhy", "hyhx"]
         if self.channel == 'ex':
@@ -288,18 +287,19 @@ class RobustEstimation:
             self.z1_num_keys = ["hyhy", "hzhx", "hyhx", "hzhy"]  # Zyx
             self.z2_num_keys = ["hxhx", "hzhy", "hxhy", "hzhx"]  # Zyy
 
-    def get_huber_weights(self):
+    def get_huber_weights(self) -> None:
         """
-        Doc
+        Prepares huber weights
         """
         huber_matrix1 = (self.residuals <= self.kmx) * 1
         huber_matrix2 = (self.residuals > self.kmx) * 1
         huber_matrix2 = huber_matrix2 * (self.kmx / self.residuals)
         self.huber_weights = (huber_matrix1 + huber_matrix2).values
 
-    def get_variance(self):
+    def get_variance(self) -> None:
         """
-        Help from Dr. Manoj C. Nair
+        Calculates variances.
+        Dr. Manoj C. Nair helped with this computation.
         """
         if self.channel == 'ex':
             outout = np.sum(self.filtered_dataset['exex'].values * self.huber_weights) / np.sum(self.huber_weights)
@@ -359,5 +359,4 @@ class RobustEstimation:
         self.z1_var = np.sqrt(np.real(da))
         self.z2_var = np.sqrt(np.real(db))
         #
-        # TODO: Check if coherency values are correct
         self.predicted_coherency = np.sqrt(coh)

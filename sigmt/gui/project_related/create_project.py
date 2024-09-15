@@ -75,6 +75,7 @@ class ProjectSetupDialog(QDialog):
         Return the values entered in the dialog box by the user.
 
         :return: Dictionary of content from the dialog box
+        :rtype: dict
         """
         return {
             "project_name": self.project_name.text(),

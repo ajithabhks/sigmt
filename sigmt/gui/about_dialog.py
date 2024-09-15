@@ -33,17 +33,17 @@ class AboutDialog(QDialog):
         # Set the layout for the dialog
         self.setLayout(layout)
 
-    def get_window_details(self):
+    def get_window_details(self) -> None:
         """
-        Docs
+        Getting window details
         """
         self.setWindowTitle("About")
         self.setFixedSize(400, 200)
         self.setWindowIcon(QIcon(r'sigmt\images\sigmt.ico'))
 
-    def get_citation_label(self):
+    def get_citation_label(self) -> None:
         """
-        Docs
+        Create citation label
         """
         # Add the citation label with a clickable DOI link using rich text (HTML)
         self.citation_label = QLabel('''

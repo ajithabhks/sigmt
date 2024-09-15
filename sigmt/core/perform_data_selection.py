@@ -2,9 +2,22 @@ import numpy as np
 import xarray as xr
 
 
-def perform_coh_thresh(bandavg_dataset, coh_thresh, min_percent, channels):
+def perform_coh_thresh(bandavg_dataset: xr.Dataset, coh_thresh: float, min_percent: float,
+                       channels: list) -> xr.Dataset:
     """
-    Doc
+    Performs cohrency thresholding
+
+    :param bandavg_dataset: Band averaged dataset
+    :type bandavg_dataset: xr.Dataset
+    :param coh_thresh: Coherency threshold values
+    :type coh_thresh: float
+    :param min_percent: Minimum percentage of data need to be maintained
+    :type min_percent: float
+    :param channels: List of channels in which thresholding to be applied.
+    :type channels: list
+    :return: Band averaged dataset added with coherency selection xarrays
+    :rtype: xr.Dataset
+
     """
     for channel in channels:
         min_windows = int(
@@ -20,9 +33,13 @@ def perform_coh_thresh(bandavg_dataset, coh_thresh, min_percent, channels):
     return bandavg_dataset
 
 
-def clear_coh_thresh(bandavg_dataset):
+def clear_coh_thresh(bandavg_dataset: xr.Dataset) -> xr.Dataset:
     """
-    Doc
+    Clears coherency threshold
+
+    :param bandavg_dataset: Band averaged dataset
+    :type bandavg_dataset: xr.Dataset
+
     """
     if 'ex_selection_coh' in bandavg_dataset:
         bandavg_dataset['ex_selection_coh'] = xr.DataArray(
@@ -45,9 +62,21 @@ def clear_coh_thresh(bandavg_dataset):
     return bandavg_dataset
 
 
-def perform_pd_selection(bandavg_dataset, component, pd_min, pd_max):
+def perform_pd_selection(bandavg_dataset: xr.Dataset, component: str, pd_min: float, pd_max: float) -> xr.Dataset:
     """
-    Doc
+    Performs cohrency thresholding
+
+    :param bandavg_dataset: Band averaged dataset
+    :type bandavg_dataset: xr.Dataset
+    :param component: Electric or Magnetic component
+    :type component: str
+    :param pd_min: Minimum value for polarization direction
+    :type pd_min: float
+    :param pd_max: Maximum value for polarization direction
+    :type pd_max: float
+    :return: Band averaged dataset added with coherency selection xarrays
+    :rtype: xr.Dataset
+
     """
     if component == 'Electric':
         for ft in bandavg_dataset['alpha_e'].coords['frequency']:
@@ -62,9 +91,13 @@ def perform_pd_selection(bandavg_dataset, component, pd_min, pd_max):
     return bandavg_dataset
 
 
-def clear_pd_selection(bandavg_dataset):
+def clear_pd_selection(bandavg_dataset: xr.Dataset) -> xr.Dataset:
     """
-    Doc
+    Clears Polarization direction based selection
+
+    :param bandavg_dataset: Band averaged dataset
+    :type bandavg_dataset: xr.Dataset
+
     """
     if 'alpha_e_selection' in bandavg_dataset:
         bandavg_dataset['alpha_e_selection'] = xr.DataArray(

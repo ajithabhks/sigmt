@@ -16,9 +16,9 @@ def notchfilsos(ts: np.ndarray, fs: float, notchfreq: float) -> np.ndarray:
     :type fs: float
     :param notchfreq: Frequency to be filtered
     :type notchfreq: float
-
     :return: Filtered time series data
     :rtype: np.ndarray
+
     """
     min_fs = (notchfreq + 5) * 2
     if fs > min_fs:
@@ -48,9 +48,9 @@ def do_fft(ts: np.ndarray, fs: float, fft_length: int) -> tuple:
     :type fs: float
     :param fft_length: FFT length
     :type fft_length: int
-
     :return: Tuple of f[np.ndarray: shape n,1], xfft[np.ndarray: shape n,n]
     :rtype: tuple
+
     """
     w = np.hanning(fft_length).reshape(-1, 1)
     fft_value = np.fft.fft(ts * w, fft_length, axis=0)

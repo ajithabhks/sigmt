@@ -1,20 +1,16 @@
 import numpy as np
+import xarray as xr
 
 
-def cohex(bandavg):
+def cohex(bandavg: xr.Dataset) -> np.ndarray:
     """
+    Computes coherency values for ex output channel.
 
-    Parameters
-    ----------
-    bandavg : It is a Python dictionary containing the auto- and cross- spectra
-        values and impedance values for all time windows at all target frequencies.
-
-    Returns
-    -------
-    AllcohEx : It is an array containing coherency values of Ex component for
-        all time windows for all target frequencies. Number of rows represent
-        number of target frequencies and number of column represent number of time
-        windows/events.
+    :param bandavg: Dataset containing the auto- and cross- spectra values and
+    impedance values for all time windows at all target frequencies.
+    :type bandavg: xr.Dataset
+    :return: Returns coherency values for all events.
+    :rtype: np.ndarray
 
     """
     # Ex predicted
@@ -33,20 +29,15 @@ def cohex(bandavg):
     return coh
 
 
-def cohey(bandavg):
+def cohey(bandavg: xr.Dataset) -> np.ndarray:
     """
+    Computes coherency values for ey output channel.
 
-    Parameters
-    ----------
-    bandavg : It is a Python dictionary containing the auto- and cross- spectra
-        values and impedance values for all time windows at all target frequencies.
-
-    Returns
-    -------
-    AllcohEx : It is an array containing coherency values of Ey component for
-        all time windows for all target frequencies. Number of rows represent
-        number of target frequencies and number of column represent number of time
-        windows/events.
+    :param bandavg: Dataset containing the auto- and cross- spectra values and
+    impedance values for all time windows at all target frequencies.
+    :type bandavg: xr.Dataset
+    :return: Returns coherency values for all events.
+    :rtype: np.ndarray
 
     """
     # Ey predicted
@@ -65,20 +56,15 @@ def cohey(bandavg):
     return coh
 
 
-def cohhz(bandavg):
+def cohhz(bandavg: xr.Dataset) -> np.ndarray:
     """
+    Computes coherency values for hz output channel.
 
-    Parameters
-    ----------
-    bandavg : It is a Python dictionary containing the auto- and cross- spectra
-        values and impedance values for all time windows at all target frequencies.
-
-    Returns
-    -------
-    AllcohEx : It is an array containing coherency values of Ex component for
-        all time windows for all target frequencies. Number of rows represent
-        number of target frequencies and number of column represent number of time
-        windows/events.
+    :param bandavg: Dataset containing the auto- and cross- spectra values and
+    impedance values for all time windows at all target frequencies.
+    :type bandavg: xr.Dataset
+    :return: Returns coherency values for all events.
+    :rtype: np.ndarray
 
     """
     # Ex predicted
@@ -97,22 +83,15 @@ def cohhz(bandavg):
     return coh
 
 
-def pdvalues(bandavg):
+def pdvalues(bandavg: xr.Dataset) -> tuple:
     """
+    Computes polarization directions for electric and magnetic field.
 
-    Parameters
-    ----------
-    bandavg : It is a Python dictionary containing the auto- and cross- spectra
-        values and impedance values for all time windows at all target frequencies.
-
-    Returns
-    -------
-    alpha_degH : It is an array containing magnetic polarization directions for
-        all time windows at all target frequencies. Number of rows represent number
-        of target frequencies and number of column represent number of time windows/events.
-    alpha_degE : It is an array containing electric polarization direction for
-        all time windows at all target frequencies. Number of rows represent number
-        of target frequencies and number of column represent number of time windows/events.
+    :param bandavg: Dataset containing the auto- and cross- spectra values and
+    impedance values for all time windows at all target frequencies.
+    :type bandavg: xr.Dataset
+    :return: Tuple containing polarization directions for electric field and magnetic field.
+    :rtype: tuple
 
     """
     hxhx = bandavg['hxhx']

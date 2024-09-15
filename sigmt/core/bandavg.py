@@ -16,10 +16,15 @@ from sigmt.utils.metronix.calibration import Calibration
 
 
 class BandAvg:
-    def __init__(self, procinfo=None, bandavg_msg=None):
+    """
+    Class to perform band averaging
+    """
+
+    def __init__(self, procinfo: dict, bandavg_msg: dict) -> None:
         """
         Constructor
         """
+        self.channels = None
         self.fft_freqs = None
         self.bandavg_ds = None
         self.avgf = None
@@ -60,7 +65,7 @@ class BandAvg:
 
         self.channels = list(self.ts.keys())
 
-    def calibrate_electric(self):
+    def calibrate_electric(self) -> None:
         """
         Calibrate electric field data
         """
@@ -72,7 +77,7 @@ class BandAvg:
             dipole_ew = abs(self.header['ey']['y1'][0]) + abs(self.header['ey']['y2'][0])
             self.ts['ey'] = self.ts['ey'] / (1 * dipole_ew / 1000)
 
-    def apply_notch(self):
+    def apply_notch(self) -> None:
         """
         Apply the notch filter
         """
@@ -90,7 +95,7 @@ class BandAvg:
                 self.ts[channel] = future.result()
         print("Notch filter applied")
 
-    def detrend_ts(self):
+    def detrend_ts(self) -> None:
         """
         Detrend time series
         """
@@ -98,7 +103,7 @@ class BandAvg:
         for channel in self.channels:
             self.ts[channel] = signal.detrend(self.ts[channel], axis=0)
 
-    def perform_fft(self):
+    def perform_fft(self) -> None:
         """
         Perform FFT
         """
@@ -107,7 +112,7 @@ class BandAvg:
         for channel in self.channels:
             self.fft_freqs, self.xfft[channel] = sp.do_fft(self.ts[channel], self.fs, self.fft_length)
 
-    def calibrate_mag(self):
+    def calibrate_mag(self) -> None:
         """
         Calibrates the magnetic field channels
         """
@@ -125,7 +130,7 @@ class BandAvg:
             calibration_object = Calibration(self.xfft[channel], self.fft_freqs, sensor_type, stat, calibration_data)
             self.xfft[channel] = calibration_object.calibrated_data
 
-    def perform_bandavg(self):
+    def perform_bandavg(self) -> None:
         """
         Perform band averaging.
         """
@@ -148,7 +153,6 @@ class BandAvg:
             }
         )
 
-        # TODO: Extend to MT, Tipper
         if self.processing_mode == "MT + Tipper" or self.processing_mode == "MT Only":
             sum_parzen = np.sum(parzen_window, axis=0)
 

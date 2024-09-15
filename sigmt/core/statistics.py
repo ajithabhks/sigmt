@@ -3,9 +3,10 @@ Module containing statistics functions
 """
 
 import numpy as np
+import xarray as xr
 
 
-def parzen(f, ft, cr):
+def parzen(f: np.ndarray, ft: float, cr: float) -> np.ndarray:
     """
     Function to create a parzen window
 
@@ -15,9 +16,9 @@ def parzen(f, ft, cr):
     :type ft: float
     :param cr: Parzen Window Radius
     :type cr: float
-
     :return: Parzen window. Length: FFT_length/2. Array shape: (n,1) - 1D
     :rtype: np.ndarray
+
     """
     pf = np.empty((np.shape(f)[0],))
     pf[:] = np.nan
@@ -36,15 +37,21 @@ def parzen(f, ft, cr):
     return pf
 
 
-def jackknife(Z):
+def jackknife(z: xr.DataArray) -> complex:
     """
-    Doc
+    Function to compute jackknife mean
+
+    :param z: Data array of impedance values
+    :type z: xr.DataArray
+    :return: Jackknife mean
+    :rtype: complex
+
     """
-    n = len(Z)
+    n = len(z)
     jackknife_means = np.zeros(n, dtype=complex)
 
     for i in range(n):
-        jackknife_sample = np.delete(Z, i)
+        jackknife_sample = np.delete(z, i)
         jackknife_means[i] = np.mean(jackknife_sample)
 
     jackknife_mean = np.mean(jackknife_means)
@@ -52,15 +59,15 @@ def jackknife(Z):
     return jackknife_mean
 
 
-def fisher_critical(dof):
+def fisher_critical(dof: int) -> float:
     """
-        Calculate the critical value of the F-distribution for a given
-        degrees of freedom.
+    Calculate the critical value of the F-distribution for a given
+    degrees of freedom.
 
-        :param dof: Degree of freedom
-        :type dof: float
-        :return: Critical value of F-distribution
-        :rtype: float
+    :param dof: Degree of freedom
+    :type dof: int
+    :return: The critical value of F-distribution
+    :rtype: float
 
     """
 

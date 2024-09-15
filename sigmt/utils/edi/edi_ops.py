@@ -3,14 +3,23 @@ from datetime import date
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 from PyQt5.QtWidgets import QFileDialog
 
 from sigmt.__version__ import __version__
 
 
-def save_edi(estimates, procinfo, project_setup):
+def save_edi(estimates: xr.Dataset, procinfo: dict, project_setup: dict) -> None:
     """
-    Docs
+    Saves EDI after processing is done.
+
+    :param estimates: Dataset containing estimates
+    :type estimates: xarray.Dataset
+    :param procinfo: Dictionary containing processing information.
+    :type procinfo: dict
+    :param project_setup: Dictionary containing project setup.
+    :type project_setup: dict
+
     """
 
     lat = procinfo['lat']
@@ -540,9 +549,15 @@ def save_edi(estimates, procinfo, project_setup):
             file_handle.close()
 
 
-def read_edi(file_path):
+def read_edi(file_path: str) -> tuple:
     """
-    Docs
+    Reads EDI file
+
+    :param file_path: EDI file path
+    :type file_path: str
+    :retuns: Data from EDI
+    :rtype: tuple
+
     """
     data = {}
     f = open(file_path, 'r')
@@ -612,9 +627,19 @@ def read_edi(file_path):
     return edi_cont, data, hmeas
 
 
-def read_component(text, freqs, edi_cont):
+def read_component(text: str, freqs: list, edi_cont: list) -> list:
     """
-    Docs
+    Read components from EDI file.
+
+    :param text: Component name. Eg: '>ZXXR'
+    :type text: str
+    :param freqs: List of frequencies
+    :type freqs: list
+    :param edi_cont: EDI content
+    :type edi_cont: list
+    :return: Data from the EDI
+    :rtype: list
+
     """
     data = []
     for index, line in enumerate(edi_cont):
