@@ -304,7 +304,7 @@ def prepare_ts_from_h5(h5file_path: str, ts_key: str) -> dict:
     :type ts_key: str
     :return: Dictionary containing time series for 'Ex', 'Ey', ...
     :rtype: dict
-    
+
     """
     ts = {}
     with h5py.File(h5file_path, 'r') as f:
