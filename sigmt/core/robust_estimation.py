@@ -19,6 +19,7 @@ class RobustEstimation:
         """
         Constructor
         """
+        self.ft = None
         self.output_channels = None
         self.channel = None
         self.filtered_dataset = None
@@ -46,7 +47,6 @@ class RobustEstimation:
         self.get_output_channels()
         self.dataset = dataset
         self.target_frequencies = dataset['frequency'].values
-        self.get_selection_array()
         self.get_estimate_and_variance()
 
     def get_output_channels(self) -> None:
@@ -60,18 +60,6 @@ class RobustEstimation:
         elif self.processing_mode == "Tipper Only":
             self.output_channels = ['hz']
 
-    def get_selection_array(self) -> None:
-        """
-        Prepare an array of boolean suggesting selected time windows.
-        """
-        self.dataset['selection_array_ex'] = (self.dataset['ex_selection_coh'] * self.dataset['alpha_e_selection'] *
-                                              self.dataset['alpha_h_selection'])
-        self.dataset['selection_array_ey'] = (self.dataset['ey_selection_coh'] * self.dataset['alpha_e_selection'] *
-                                              self.dataset['alpha_h_selection'])
-        if not self.processing_mode == "MT Only":
-            self.dataset['selection_array_hz'] = (self.dataset['hz_selection_coh'] * self.dataset['alpha_e_selection'] *
-                                                  self.dataset['alpha_h_selection'])
-
     def get_estimate_and_variance(self) -> None:
         """
         Computes the robust estimates and variances
@@ -84,26 +72,27 @@ class RobustEstimation:
             z1_var = []
             z2_var = []
             coh = []
-            for ft in self.target_frequencies:
+            for self.ft in self.target_frequencies:
                 single_time = time.time()
                 # Filtering based on target frequency
-                self.filtered_dataset = self.dataset.sel(frequency=ft)
+                self.filtered_dataset = self.dataset.sel(frequency=self.ft)
                 # Filtering based on a selection array for ex/ey/hz
+                self.get_selection_array()
                 selected_windows = \
                     np.where(self.filtered_dataset[f'selection_array_{self.channel}'].values.astype(bool))[0]
-                print(f'Channel: {self.channel}, ft: {ft} Hz. Applying data selection conditions.')
+                print(f'Channel: {self.channel}, ft: {self.ft} Hz. Applying data selection conditions.')
                 self.filtered_dataset = self.filtered_dataset.isel(time_window=selected_windows)
                 # Filtering based on mahalanobis distance
                 self.get_mahalanobis_distance()
                 mahalanobis_selection = self.filtered_dataset['maha_dist'] < self.procinfo['md_thresh']
                 selected_windows = np.where(mahalanobis_selection.astype(bool))[0]
-                print(f'Channel: {self.channel}, ft: {ft} Hz. Applying Mahalanobis distance condition.')
+                print(f'Channel: {self.channel}, ft: {self.ft} Hz. Applying Mahalanobis distance condition.')
                 self.filtered_dataset = self.filtered_dataset.isel(time_window=selected_windows)
-                print(f'Channel: {self.channel}, ft: {ft} Hz. Getting Jackknife initial guess.')
+                print(f'Channel: {self.channel}, ft: {self.ft} Hz. Getting Jackknife initial guess.')
                 self.get_jackknife_initial_guess()
-                print(f'Channel: {self.channel}, ft: {ft} Hz. Performing robust estimation.')
+                print(f'Channel: {self.channel}, ft: {self.ft} Hz. Performing robust estimation.')
                 self.perform_robust_estimation()
-                print(f'Channel: {self.channel}, ft: {ft} Hz. Computing variance.')
+                print(f'Channel: {self.channel}, ft: {self.ft} Hz. Computing variance.')
                 self.get_variance()
                 z1.append(self.z1_robust_huber)
                 z2.append(self.z2_robust_huber)
@@ -152,6 +141,40 @@ class RobustEstimation:
                                              )
             self.estimates = xr.Dataset(estimate)
         print(f'Total time taken for robust estimation: {time.time() - estimation_time} seconds.')
+
+    def get_selection_array(self) -> None:
+        """
+        Prepare an array of boolean suggesting selected time windows.
+        """
+        self.filtered_dataset['selection_array_ex'] = (
+                self.filtered_dataset['ex_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
+                self.filtered_dataset['alpha_h_selection'])
+        self.filtered_dataset['selection_array_ey'] = (
+                self.filtered_dataset['ey_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
+                self.filtered_dataset['alpha_h_selection'])
+        if not self.processing_mode == "MT Only":
+            self.filtered_dataset['selection_array_hz'] = (
+                    self.filtered_dataset['hz_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
+                    self.filtered_dataset['alpha_h_selection'])
+        # Avoiding GUI from crashing due to insufficient data
+        if np.sum(self.filtered_dataset['selection_array_ex']) < 10:
+            print(
+                f'Skipping polarization direction selection for ft:{self.ft} Hz (ex) '
+                f'due to insufficient data for robust regression. Try with different min and max values.')
+            self.filtered_dataset['selection_array_ex'] = self.filtered_dataset['ex_selection_coh']
+        #
+        if np.sum(self.filtered_dataset['selection_array_ey']) < 10:
+            print(
+                f'Skipping polarization direction selection for ft:{self.ft} Hz (ey) '
+                f'due to insufficient data for robust regression. Try with different min and max values.')
+            self.filtered_dataset['selection_array_ey'] = self.filtered_dataset['ey_selection_coh']
+        #
+        if not self.processing_mode == "MT Only":
+            if np.sum(self.filtered_dataset['selection_array_hz']) < 10:
+                print(
+                    f'Skipping polarization direction selection for ft:{self.ft} Hz (hz) '
+                    f'due to insufficient data for robust regression. Try with different min and max values.')
+                self.filtered_dataset['selection_array_hz'] = self.filtered_dataset['hz_selection_coh']
 
     def get_mahalanobis_distance(self) -> None:
         """
