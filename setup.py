@@ -1,4 +1,5 @@
 from setuptools import setup
+
 from sigmt.__version__ import __version__
 
 with open('requirements.txt') as f:
