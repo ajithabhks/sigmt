@@ -169,11 +169,12 @@ class RobustEstimation:
                 f'due to insufficient data for robust regression. Try with different min and max values.')
             self.filtered_dataset['selection_array_ey'] = self.filtered_dataset['ey_selection_coh']
         #
-        if np.sum(self.filtered_dataset['selection_array_hz']) < 10:
-            print(
-                f'Skipping polarization direction selection for ft:{self.ft} Hz (hz) '
-                f'due to insufficient data for robust regression. Try with different min and max values.')
-            self.filtered_dataset['selection_array_hz'] = self.filtered_dataset['hz_selection_coh']
+        if not self.processing_mode == "MT Only":
+            if np.sum(self.filtered_dataset['selection_array_hz']) < 10:
+                print(
+                    f'Skipping polarization direction selection for ft:{self.ft} Hz (hz) '
+                    f'due to insufficient data for robust regression. Try with different min and max values.')
+                self.filtered_dataset['selection_array_hz'] = self.filtered_dataset['hz_selection_coh']
 
     def get_mahalanobis_distance(self) -> None:
         """
