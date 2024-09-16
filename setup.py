@@ -1,11 +1,12 @@
 from setuptools import setup
+from sigmt.__version__ import __version__
 
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(
     name='sigmt',
-    version="2.0.0",
+    version=__version__,
     packages=['sigmt', 'sigmt.core',
               'sigmt.gui', 'sigmt.utils',
               'sigmt.utils.edi', 'sigmt.utils.metronix',
