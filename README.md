@@ -18,6 +18,8 @@ If you use SigMT for publication, please cite the following paper:
 
 Ajithabh, K.S., Patro, P.K., 2023. SigMT: An open-source Python package for magnetotelluric data processing. Computers & Geosciences, 171, 105270. https://doi.org/10.1016/j.cageo.2022.105270
 
+## Discussions
+If you have any questions, feedback, or suggestions regarding SigMT, please feel free to post them in the [discussions section](https://github.com/ajithabhks/sigmt/discussions).
 
 ## Downloads
 * Read user guide: https://github.com/ajithabhks/sigmt/blob/main/docs/user_guide_sigmt.ipynb
