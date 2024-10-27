@@ -23,6 +23,9 @@ If you have any questions, feedback, or suggestions regarding SigMT, please feel
 
 ## Downloads
 * Read user guide: https://github.com/ajithabhks/sigmt/blob/main/docs/user_guide_sigmt.ipynb
+* Metronix test data link: https://cloud.geo-metronix.de/s/GcigJA3Zp8zTAif
+
+  Download Northern_Mining.zip, use Sarıçam site in the ts folder.
 
 ## Contact details
 * K. S. Ajithabh
