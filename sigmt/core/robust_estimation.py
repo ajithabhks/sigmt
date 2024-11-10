@@ -379,7 +379,7 @@ class RobustEstimation:
         else:
             db = 100
 
-        self.z1_var = np.sqrt(np.real(da))
-        self.z2_var = np.sqrt(np.real(db))
+        self.z1_var = np.sqrt(abs(np.real(da)))
+        self.z2_var = np.sqrt(abs(np.real(db)))
         #
         self.predicted_coherency = np.sqrt(coh)
