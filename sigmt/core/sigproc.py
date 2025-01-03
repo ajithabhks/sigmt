@@ -23,10 +23,10 @@ def notchfilsos(ts: np.ndarray, fs: float, notchfreq: float) -> np.ndarray:
     min_fs = (notchfreq + 5) * 2
     if fs > min_fs:
         har = int((fs / 2.5) / notchfreq) + 1
-        if har > int(14000 / notchfreq):
-            har = int(14000 / notchfreq)
+        har = min(har, int(14000 / notchfreq))
         print('No. of harmonics: ' + str(har))
-        sos = signal.butter(4, [notchfreq - 5, notchfreq + 5], btype='bandstop', fs=fs, output='sos')
+        sos = signal.butter(4, [notchfreq - 5, notchfreq + 5], btype='bandstop', fs=fs,
+                            output='sos')
         for n in range(2, har):
             f0 = n * notchfreq
             sos_new = signal.butter(4, [f0 - 5, f0 + 5], btype='bandstop', fs=fs, output='sos')

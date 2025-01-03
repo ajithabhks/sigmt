@@ -1,12 +1,17 @@
+"""
+This module contains functions for computing data selection tools such as
+coherency and polarization directions.
+"""
+
 import numpy as np
 import xarray as xr
 
 
-def cohex(bandavg: xr.Dataset) -> np.ndarray:
+def coh_ex(bandavg: xr.Dataset) -> np.ndarray:
     """
     Computes coherency values for ex output channel.
 
-    :param bandavg: Dataset containing the auto- and cross- spectra values and
+    :param bandavg: Dataset containing the auto- and cross-spectra values and
     impedance values for all time windows at all target frequencies.
     :type bandavg: xr.Dataset
     :return: Returns coherency values for all events.
@@ -29,7 +34,7 @@ def cohex(bandavg: xr.Dataset) -> np.ndarray:
     return coh
 
 
-def cohey(bandavg: xr.Dataset) -> np.ndarray:
+def coh_ey(bandavg: xr.Dataset) -> np.ndarray:
     """
     Computes coherency values for ey output channel.
 
@@ -56,7 +61,7 @@ def cohey(bandavg: xr.Dataset) -> np.ndarray:
     return coh
 
 
-def cohhz(bandavg: xr.Dataset) -> np.ndarray:
+def coh_hz(bandavg: xr.Dataset) -> np.ndarray:
     """
     Computes coherency values for hz output channel.
 
@@ -83,7 +88,7 @@ def cohhz(bandavg: xr.Dataset) -> np.ndarray:
     return coh
 
 
-def pdvalues(bandavg: xr.Dataset) -> tuple:
+def pd_values(bandavg: xr.Dataset) -> tuple:
     """
     Computes polarization directions for electric and magnetic field.
 

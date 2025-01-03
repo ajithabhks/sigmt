@@ -79,16 +79,21 @@ class RobustEstimation:
                 # Filtering based on a selection array for ex/ey/hz
                 self.get_selection_array()
                 selected_windows = \
-                    np.where(self.filtered_dataset[f'selection_array_{self.channel}'].values.astype(bool))[0]
-                print(f'Channel: {self.channel}, ft: {self.ft} Hz. Applying data selection conditions.')
+                    np.where(self.filtered_dataset[f'selection_array_{self.channel}'].values.astype(
+                        bool))[0]
+                print(
+                    f'Channel: {self.channel}, ft: {self.ft} Hz. Applying data selection conditions.')
                 self.filtered_dataset = self.filtered_dataset.isel(time_window=selected_windows)
                 # Filtering based on mahalanobis distance
                 self.get_mahalanobis_distance()
-                mahalanobis_selection = self.filtered_dataset['maha_dist'] < self.procinfo['md_thresh']
+                mahalanobis_selection = self.filtered_dataset['maha_dist'] < self.procinfo[
+                    'md_thresh']
                 selected_windows = np.where(mahalanobis_selection.astype(bool))[0]
-                print(f'Channel: {self.channel}, ft: {self.ft} Hz. Applying Mahalanobis distance condition.')
+                print(
+                    f'Channel: {self.channel}, ft: {self.ft} Hz. Applying Mahalanobis distance condition.')
                 self.filtered_dataset = self.filtered_dataset.isel(time_window=selected_windows)
-                print(f'Channel: {self.channel}, ft: {self.ft} Hz. Getting Jackknife initial guess.')
+                print(
+                    f'Channel: {self.channel}, ft: {self.ft} Hz. Getting Jackknife initial guess.')
                 self.get_jackknife_initial_guess()
                 print(f'Channel: {self.channel}, ft: {self.ft} Hz. Performing robust estimation.')
                 self.perform_robust_estimation()
@@ -147,14 +152,17 @@ class RobustEstimation:
         Prepare an array of boolean suggesting selected time windows.
         """
         self.filtered_dataset['selection_array_ex'] = (
-                self.filtered_dataset['ex_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
+                self.filtered_dataset['ex_selection_coh'] * self.filtered_dataset[
+            'alpha_e_selection'] *
                 self.filtered_dataset['alpha_h_selection'])
         self.filtered_dataset['selection_array_ey'] = (
-                self.filtered_dataset['ey_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
+                self.filtered_dataset['ey_selection_coh'] * self.filtered_dataset[
+            'alpha_e_selection'] *
                 self.filtered_dataset['alpha_h_selection'])
         if not self.processing_mode == "MT Only":
             self.filtered_dataset['selection_array_hz'] = (
-                    self.filtered_dataset['hz_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
+                    self.filtered_dataset['hz_selection_coh'] * self.filtered_dataset[
+                'alpha_e_selection'] *
                     self.filtered_dataset['alpha_h_selection'])
         # Avoiding GUI from crashing due to insufficient data
         if np.sum(self.filtered_dataset['selection_array_ex']) < 10:
@@ -174,7 +182,8 @@ class RobustEstimation:
                 print(
                     f'Skipping polarization direction selection for ft:{self.ft} Hz (hz) '
                     f'due to insufficient data for robust regression. Try with different min and max values.')
-                self.filtered_dataset['selection_array_hz'] = self.filtered_dataset['hz_selection_coh']
+                self.filtered_dataset['selection_array_hz'] = self.filtered_dataset[
+                    'hz_selection_coh']
 
     def get_mahalanobis_distance(self) -> None:
         """
@@ -223,7 +232,8 @@ class RobustEstimation:
         n_time_windows = self.output.shape[0]
         # Calculating residuals
         self.residuals = abs(abs(self.output) - (abs(self.z1_initial_jackknife) *
-                                                 abs(self.hx)) - (abs(self.z2_initial_jackknife) * abs(self.hy)))
+                                                 abs(self.hx)) - (
+                                         abs(self.z2_initial_jackknife) * abs(self.hy)))
         # Initial variance based on MAD scale estimate
         dmx = 1.483 * np.median(abs(self.residuals - np.median(self.residuals)))
         # Upper limit to the MAD scale estimate
@@ -234,23 +244,31 @@ class RobustEstimation:
         element_avg_dict = {}
         # Applying weights to band averaged cross-spectra
         for i in range(4):
-            element_dict[f'z1_num_{i}'] = self.filtered_dataset[self.z1_num_keys[i]].values * self.huber_weights
-            element_dict[f'z2_num_{i}'] = self.filtered_dataset[self.z2_num_keys[i]].values * self.huber_weights
-            element_dict[f'z_deno_{i}'] = self.filtered_dataset[self.z_deno_keys[i]].values * self.huber_weights
+            element_dict[f'z1_num_{i}'] = self.filtered_dataset[
+                                              self.z1_num_keys[i]].values * self.huber_weights
+            element_dict[f'z2_num_{i}'] = self.filtered_dataset[
+                                              self.z2_num_keys[i]].values * self.huber_weights
+            element_dict[f'z_deno_{i}'] = self.filtered_dataset[
+                                              self.z_deno_keys[i]].values * self.huber_weights
         # Weighted mean of cross-spectra
         for i in range(4):
-            element_avg_dict[f'z1_num_avg_{i}'] = np.sum(element_dict[f'z1_num_{i}']) / np.sum(self.huber_weights)
-            element_avg_dict[f'z2_num_avg_{i}'] = np.sum(element_dict[f'z2_num_{i}']) / np.sum(self.huber_weights)
-            element_avg_dict[f'z_deno_avg_{i}'] = np.sum(element_dict[f'z_deno_{i}']) / np.sum(self.huber_weights)
+            element_avg_dict[f'z1_num_avg_{i}'] = np.sum(element_dict[f'z1_num_{i}']) / np.sum(
+                self.huber_weights)
+            element_avg_dict[f'z2_num_avg_{i}'] = np.sum(element_dict[f'z2_num_{i}']) / np.sum(
+                self.huber_weights)
+            element_avg_dict[f'z_deno_avg_{i}'] = np.sum(element_dict[f'z_deno_{i}']) / np.sum(
+                self.huber_weights)
 
         z_deno = ((element_avg_dict['z_deno_avg_0'] * element_avg_dict['z_deno_avg_1']) -
                   (element_avg_dict['z_deno_avg_2'] * element_avg_dict['z_deno_avg_3']))
-        self.z1_robust_huber = (((element_avg_dict['z1_num_avg_0'] * element_avg_dict['z1_num_avg_1']) -
-                                 (element_avg_dict['z1_num_avg_2'] * element_avg_dict['z1_num_avg_3'])) /
-                                z_deno)
-        self.z2_robust_huber = (((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
-                                 (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
-                                z_deno)
+        self.z1_robust_huber = (
+                    ((element_avg_dict['z1_num_avg_0'] * element_avg_dict['z1_num_avg_1']) -
+                     (element_avg_dict['z1_num_avg_2'] * element_avg_dict['z1_num_avg_3'])) /
+                    z_deno)
+        self.z2_robust_huber = (
+                    ((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
+                     (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
+                    z_deno)
         # ------------ Iteration starts here ------------------
         for iteration in range(20):
             lc = np.sum((self.huber_weights == 1) * 1)
@@ -263,7 +281,8 @@ class RobustEstimation:
                                  (abs(self.z1_robust_huber) * abs(self.hx)) -
                                  (abs(self.z2_robust_huber) * abs(self.hy)))
             # New variance of the robust solution
-            dhx = np.sqrt((n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2))))
+            dhx = np.sqrt(
+                (n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2))))
             # Upper limit
             self.kmx = 1.5 * dhx
             self.get_huber_weights()
@@ -275,19 +294,24 @@ class RobustEstimation:
                 element_dict[f'z_deno_{i}'] = element_dict[f'z_deno_{i}'] * self.huber_weights
             # Weighted mean of cross-spectra
             for i in range(4):
-                element_avg_dict[f'z1_num_avg_{i}'] = np.sum(element_dict[f'z1_num_{i}']) / np.sum(self.huber_weights)
-                element_avg_dict[f'z2_num_avg_{i}'] = np.sum(element_dict[f'z2_num_{i}']) / np.sum(self.huber_weights)
-                element_avg_dict[f'z_deno_avg_{i}'] = np.sum(element_dict[f'z_deno_{i}']) / np.sum(self.huber_weights)
+                element_avg_dict[f'z1_num_avg_{i}'] = np.sum(element_dict[f'z1_num_{i}']) / np.sum(
+                    self.huber_weights)
+                element_avg_dict[f'z2_num_avg_{i}'] = np.sum(element_dict[f'z2_num_{i}']) / np.sum(
+                    self.huber_weights)
+                element_avg_dict[f'z_deno_avg_{i}'] = np.sum(element_dict[f'z_deno_{i}']) / np.sum(
+                    self.huber_weights)
 
             #
             z_deno = ((element_avg_dict['z_deno_avg_0'] * element_avg_dict['z_deno_avg_1']) -
                       (element_avg_dict['z_deno_avg_2'] * element_avg_dict['z_deno_avg_3']))
-            self.z1_robust_huber = (((element_avg_dict['z1_num_avg_0'] * element_avg_dict['z1_num_avg_1']) -
-                                     (element_avg_dict['z1_num_avg_2'] * element_avg_dict['z1_num_avg_3'])) /
-                                    z_deno)
-            self.z2_robust_huber = (((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
-                                     (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
-                                    z_deno)
+            self.z1_robust_huber = (
+                        ((element_avg_dict['z1_num_avg_0'] * element_avg_dict['z1_num_avg_1']) -
+                         (element_avg_dict['z1_num_avg_2'] * element_avg_dict['z1_num_avg_3'])) /
+                        z_deno)
+            self.z2_robust_huber = (
+                        ((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
+                         (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
+                        z_deno)
             if self.channel != 'hz':
                 self.z1_robust_huber = self.z1_robust_huber * -1
                 self.z2_robust_huber = self.z2_robust_huber * -1
@@ -325,22 +349,35 @@ class RobustEstimation:
         Dr. Manoj C. Nair helped with this computation.
         """
         if self.channel == 'ex':
-            outout = np.sum(self.filtered_dataset['exex'].values * self.huber_weights) / np.sum(self.huber_weights)
-            outhx = np.sum(self.filtered_dataset['exhx'].values * self.huber_weights) / np.sum(self.huber_weights)
-            outhy = np.sum(self.filtered_dataset['exhy'].values * self.huber_weights) / np.sum(self.huber_weights)
+            outout = np.sum(self.filtered_dataset['exex'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
+            outhx = np.sum(self.filtered_dataset['exhx'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
+            outhy = np.sum(self.filtered_dataset['exhy'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
         if self.channel == 'ey':
-            outout = np.sum(self.filtered_dataset['eyey'].values * self.huber_weights) / np.sum(self.huber_weights)
-            outhx = np.sum(self.filtered_dataset['eyhx'].values * self.huber_weights) / np.sum(self.huber_weights)
-            outhy = np.sum(self.filtered_dataset['eyhy'].values * self.huber_weights) / np.sum(self.huber_weights)
+            outout = np.sum(self.filtered_dataset['eyey'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
+            outhx = np.sum(self.filtered_dataset['eyhx'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
+            outhy = np.sum(self.filtered_dataset['eyhy'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
         if self.channel == 'hz':
-            outout = np.sum(self.filtered_dataset['hzhz'].values * self.huber_weights) / np.sum(self.huber_weights)
-            outhx = np.sum(self.filtered_dataset['hzhx'].values * self.huber_weights) / np.sum(self.huber_weights)
-            outhy = np.sum(self.filtered_dataset['hzhy'].values * self.huber_weights) / np.sum(self.huber_weights)
+            outout = np.sum(self.filtered_dataset['hzhz'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
+            outhx = np.sum(self.filtered_dataset['hzhx'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
+            outhy = np.sum(self.filtered_dataset['hzhy'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
 
-        hxhx = np.sum(self.filtered_dataset['hxhx'].values * self.huber_weights) / np.sum(self.huber_weights)
-        hxhy = np.sum(self.filtered_dataset['hxhy'].values * self.huber_weights) / np.sum(self.huber_weights)
-        hyhx = np.sum(self.filtered_dataset['hyhx'].values * self.huber_weights) / np.sum(self.huber_weights)
-        hyhy = np.sum(self.filtered_dataset['hyhy'].values * self.huber_weights) / np.sum(self.huber_weights)
+        hxhx = np.sum(self.filtered_dataset['hxhx'].values * self.huber_weights) / np.sum(
+            self.huber_weights)
+        hxhy = np.sum(self.filtered_dataset['hxhy'].values * self.huber_weights) / np.sum(
+            self.huber_weights)
+        hyhx = np.sum(self.filtered_dataset['hyhx'].values * self.huber_weights) / np.sum(
+            self.huber_weights)
+        hyhy = np.sum(self.filtered_dataset['hyhy'].values * self.huber_weights) / np.sum(
+            self.huber_weights)
 
         zpz = self.z1_robust_huber * np.conj(outhx) + self.z2_robust_huber * np.conj(outhy)
         zpx = self.z1_robust_huber * hxhx + self.z2_robust_huber * hyhx

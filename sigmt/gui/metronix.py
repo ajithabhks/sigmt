@@ -611,18 +611,22 @@ class MainWindow(QMainWindow):
         elif self.remotesite is None:
             overlapping_meas = self.localsite_meas
         # Operations on local site
-        local_meas_paths = [os.path.join(self.project_dir, 'time_series', self.localsite, meas) for meas in
+        local_meas_paths = [os.path.join(self.project_dir, 'time_series', self.localsite, meas) for
+                            meas in
                             overlapping_meas]
         [sampfreq, chopper_value] = metronix_utils.get_sampling_frequency_from_xml(local_meas_paths)
         localsite_meas_overlap = set(zip(overlapping_meas, sampfreq, chopper_value))
         # Operations on remote site
         if self.remotesite is not None:
-            remote_meas_paths = [os.path.join(self.project_dir, 'time_series', self.remotesite, meas) for meas in
-                                 overlapping_meas]
-            [sampfreq, chopper_value] = metronix_utils.get_sampling_frequency_from_xml(remote_meas_paths)
+            remote_meas_paths = [
+                os.path.join(self.project_dir, 'time_series', self.remotesite, meas) for meas in
+                overlapping_meas]
+            [sampfreq, chopper_value] = metronix_utils.get_sampling_frequency_from_xml(
+                remote_meas_paths)
             remotesite_meas_overlap = set(zip(overlapping_meas, sampfreq, chopper_value))
         if self.remotesite is not None:
-            self.overlapping_meas = list(localsite_meas_overlap.intersection(remotesite_meas_overlap))
+            self.overlapping_meas = list(
+                localsite_meas_overlap.intersection(remotesite_meas_overlap))
         elif self.remotesite is None:
             self.overlapping_meas = list(localsite_meas_overlap)
         # Creating processing route
@@ -633,7 +637,8 @@ class MainWindow(QMainWindow):
                 'remote': [meas[0] for meas in self.overlapping_meas],
                 'sampling_frequency': [meas[1] for meas in self.overlapping_meas],
                 'chopper_status': [meas[2] for meas in self.overlapping_meas],
-                'sampling_chopper': [str(meas[1]) + ' Hz - ' + meas[2] for meas in self.overlapping_meas]
+                'sampling_chopper': [str(meas[1]) + ' Hz - ' + meas[2] for meas in
+                                     self.overlapping_meas]
             }
         elif self.remotesite is None:
             processing_route = {
@@ -641,7 +646,8 @@ class MainWindow(QMainWindow):
                 'remote': [None for meas in self.overlapping_meas],
                 'sampling_frequency': [meas[1] for meas in self.overlapping_meas],
                 'chopper_status': [meas[2] for meas in self.overlapping_meas],
-                'sampling_chopper': [str(meas[1]) + ' Hz - ' + meas[2] for meas in self.overlapping_meas]
+                'sampling_chopper': [str(meas[1]) + ' Hz - ' + meas[2] for meas in
+                                     self.overlapping_meas]
             }
         if self.remotesite_manual is not None:
             processing_route = {
@@ -664,17 +670,23 @@ class MainWindow(QMainWindow):
 
         """
         try:
-            dialog = SelectionDialog(local_meas=self.localsite_meas, remote_meas=self.remotesite_meas, parent=self)
+            dialog = SelectionDialog(local_meas=self.localsite_meas,
+                                     remote_meas=self.remotesite_meas, parent=self)
             if dialog.exec_() == QDialog.Accepted:
                 [local, remote] = dialog.get_selected_values()
                 if self.remotesite is None:
                     self.remotesite = self.remotesite_manual
-                local_meas_path = [os.path.join(self.project_dir, 'time_series', self.localsite, local)]
-                [l_sampfreq, l_chopper_value] = metronix_utils.get_sampling_frequency_from_xml(local_meas_path)
-                remote_meas_path = [os.path.join(self.project_dir, 'time_series', self.remotesite, remote)]
-                [r_sampfreq, r_chopper_value] = metronix_utils.get_sampling_frequency_from_xml(remote_meas_path)
+                local_meas_path = [
+                    os.path.join(self.project_dir, 'time_series', self.localsite, local)]
+                [l_sampfreq, l_chopper_value] = metronix_utils.get_sampling_frequency_from_xml(
+                    local_meas_path)
+                remote_meas_path = [
+                    os.path.join(self.project_dir, 'time_series', self.remotesite, remote)]
+                [r_sampfreq, r_chopper_value] = metronix_utils.get_sampling_frequency_from_xml(
+                    remote_meas_path)
                 if l_sampfreq != r_sampfreq:
-                    QMessageBox.critical(self, "Error", f"Sampling frequencies are not matching. Cannot proceed.")
+                    QMessageBox.critical(self, "Error",
+                                         f"Sampling frequencies are not matching. Cannot proceed.")
                     self.remotesite = None
                     self.remotesite_dropdown.setCurrentIndex(0)
                     return
@@ -717,7 +729,8 @@ class MainWindow(QMainWindow):
         self.new_fs.hide()
         if self.processing_route is not None:
             self.sfreq_selected = self.sampling_frequency_dropdown.currentText()
-            self.processing_df = self.processing_route[self.processing_route['sampling_chopper'] == self.sfreq_selected]
+            self.processing_df = self.processing_route[
+                self.processing_route['sampling_chopper'] == self.sfreq_selected]
         else:
             QMessageBox.warning(self, 'Warning', "Please choose sampling frequency.")
             return
@@ -726,7 +739,8 @@ class MainWindow(QMainWindow):
             return
 
         # Create a progress dialog
-        progress_dialog = QProgressDialog("Reading time series...", None, 0, len(self.processing_df.index), self)
+        progress_dialog = QProgressDialog("Reading time series...", None, 0,
+                                          len(self.processing_df.index), self)
         progress_dialog.setWindowModality(Qt.WindowModal)
         progress_dialog.setWindowTitle("Please wait")
         progress_dialog.show()
@@ -737,7 +751,8 @@ class MainWindow(QMainWindow):
 
         # If single site processing or remote site processing?
         if self.remotesite is None:
-            local_paths = [os.path.join(self.project_dir, 'time_series', self.localsite, meas) for meas in
+            local_paths = [os.path.join(self.project_dir, 'time_series', self.localsite, meas) for
+                           meas in
                            self.processing_df['local']]
             num = 0
             self.header = {}
@@ -748,8 +763,10 @@ class MainWindow(QMainWindow):
             # Creates a h5 file in project directory in write mode
             with h5py.File(self.h5file, 'w') as f:
                 for local_path in local_paths:
-                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path, self.project_setup)
-                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(local_path)
+                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
+                                                                               self.project_setup)
+                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
+                        local_path)
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
                         ts.create_dataset(key, data=ts_dict[key].values)
@@ -758,9 +775,11 @@ class MainWindow(QMainWindow):
                     num += 1
                     progress_dialog.setValue(num)
         elif self.remotesite is not None:
-            local_paths = [os.path.join(self.project_dir, 'time_series', self.localsite, meas) for meas in
+            local_paths = [os.path.join(self.project_dir, 'time_series', self.localsite, meas) for
+                           meas in
                            self.processing_df['local']]
-            remote_paths = [os.path.join(self.project_dir, 'time_series', self.remotesite, meas) for meas in
+            remote_paths = [os.path.join(self.project_dir, 'time_series', self.remotesite, meas) for
+                            meas in
                             self.processing_df['remote']]
             num = 0
             self.header = {}
@@ -771,8 +790,10 @@ class MainWindow(QMainWindow):
             # Creates a h5 file in project directory in write mode
             with h5py.File(self.h5file, 'w') as f:
                 for local_path, remote_path in zip(local_paths, remote_paths):
-                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path, self.project_setup)
-                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(local_path)
+                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
+                                                                               self.project_setup)
+                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
+                        local_path)
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
                         ts.create_dataset(key, data=ts_dict[key].values)
@@ -865,13 +886,16 @@ class MainWindow(QMainWindow):
             with h5py.File(self.h5file, 'r+') as f:
                 for ts in f.keys():
                     for channel in f[ts]:
-                        decimated_data = signal.decimate(f[ts][channel][:], decimation_factor, n=None, ftype='iir')
+                        decimated_data = signal.decimate(f[ts][channel][:], decimation_factor,
+                                                         n=None, ftype='iir')
                         del f[ts][channel]
                         ts_group = f[ts]
                         ts_group.create_dataset(channel, data=decimated_data)
-                        self.header[ts][channel]['sfreq'] = [self.header[ts][channel]['sfreq'][0] / decimation_factor]
+                        self.header[ts][channel]['sfreq'] = [
+                            self.header[ts][channel]['sfreq'][0] / decimation_factor]
                         self.header[ts][channel]['nsamples'] = len(decimated_data)
-                        self.header[ts][channel]['time_coord'] = self.header[ts][channel]['time_coord'][
+                        self.header[ts][channel]['time_coord'] = self.header[ts][channel][
+                                                                     'time_coord'][
                                                                  ::decimation_factor]
             self.procinfo['fs'] = self.procinfo['fs'] / decimation_factor
             self.new_fs.setText(f"Now sampling frequency is {self.procinfo['fs']} Hz")
@@ -879,7 +903,8 @@ class MainWindow(QMainWindow):
             self.procinfo['nsamples_mostly'] = utils.get_nsamples(self.header)
             fftlength = utils.get_fftlength(self.procinfo['nsamples_mostly'])
             # Updating FFT length dropdown
-            self.fft_length_dropdown.setCurrentIndex(self.fft_length_dropdown.findText(str(fftlength)))
+            self.fft_length_dropdown.setCurrentIndex(
+                self.fft_length_dropdown.findText(str(fftlength)))
             # Updating parzen window radius
             parzen_radius = utils.get_parzen(self.procinfo['fs'])
             self.parzen_radius_entry.setText(str(parzen_radius))
@@ -921,7 +946,8 @@ class MainWindow(QMainWindow):
                 self.procinfo['md_thresh'] = float(self.md_threshold_entry.text())
                 self.procinfo['notch_frequency'] = float(self.project_setup['notch_frequency'])
                 self.procinfo['preferred_cal_file'] = self.project_setup['preferred_cal_file']
-                self.procinfo['frequencies_per_decade'] = int(self.project_setup['frequencies_per_decade'])
+                self.procinfo['frequencies_per_decade'] = int(
+                    self.project_setup['frequencies_per_decade'])
                 first_header = next(iter(next(iter(self.header.values())).values()))
                 #
                 self.procinfo['lat'] = first_header['lat'][0] / 1000 / 60 / 60
@@ -949,7 +975,8 @@ class MainWindow(QMainWindow):
             datasets = []
             bandavg_msg = {}
             #
-            progress_dialog = QProgressDialog("Performing band averaging...", None, 0, len(self.header), self)
+            progress_dialog = QProgressDialog("Performing band averaging...", None, 0,
+                                              len(self.header), self)
             progress_dialog.setWindowModality(Qt.WindowModal)
             progress_dialog.setWindowTitle("Please wait")
             progress_dialog.show()
@@ -985,13 +1012,14 @@ class MainWindow(QMainWindow):
             # Calculating data selection parameters
             time_dataselection = time.time()
             self.bandavg_dataset['coh_ex'] = (
-                ('time_window', 'frequency'), dataselectiontools.cohex(self.bandavg_dataset))
+                ('time_window', 'frequency'), dataselectiontools.coh_ex(self.bandavg_dataset))
             self.bandavg_dataset['coh_ey'] = (
-                ('time_window', 'frequency'), dataselectiontools.cohey(self.bandavg_dataset))
+                ('time_window', 'frequency'), dataselectiontools.coh_ey(self.bandavg_dataset))
             if not self.project_setup['processing_mode'] == "MT Only":
                 self.bandavg_dataset['coh_hz'] = (
-                    ('time_window', 'frequency'), dataselectiontools.cohhz(self.bandavg_dataset))
-            self.bandavg_dataset['alpha_h'], self.bandavg_dataset['alpha_e'] = dataselectiontools.pdvalues(
+                    ('time_window', 'frequency'), dataselectiontools.coh_hz(self.bandavg_dataset))
+            self.bandavg_dataset['alpha_h'], self.bandavg_dataset[
+                'alpha_e'] = dataselectiontools.pd_values(
                 self.bandavg_dataset)
             print(f'Time taken for data selection tool: ' + str(time.time() - time_dataselection))
             qapp_instance.processEvents()
@@ -1026,7 +1054,8 @@ class MainWindow(QMainWindow):
                 output_channels = ['ex', 'ey', 'hz']
             elif self.project_setup['processing_mode'] == "MT Only":
                 output_channels = ['ex', 'ey']
-            self.bandavg_dataset = pds.perform_coh_thresh(self.bandavg_dataset, coh_thresh, min_percent,
+            self.bandavg_dataset = pds.perform_coh_thresh(self.bandavg_dataset, coh_thresh,
+                                                          min_percent,
                                                           output_channels)
 
             self.apply_coh_thresh_button.setText("Coherency threshold APPLIED!")
@@ -1052,7 +1081,8 @@ class MainWindow(QMainWindow):
                 component = self.pd_combo_box.currentText()
                 pd_min = float(self.pd_min_edit.text())
                 pd_max = float(self.pd_max_edit.text())
-                self.bandavg_dataset = pds.perform_pd_selection(self.bandavg_dataset, component, pd_min, pd_max)
+                self.bandavg_dataset = pds.perform_pd_selection(self.bandavg_dataset, component,
+                                                                pd_min, pd_max)
                 self.apply_pd_thresh_button.setText("PD threshold APPLIED!")
 
     def clear_pd_thresh(self) -> None:

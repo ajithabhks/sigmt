@@ -59,8 +59,8 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict) -> None:
             plt.xlim((max(ftlist) + 10, min(ftlist) - 10))
             if min(ftlist) > 0.001:
                 plt.xlim((max(ftlist) + 10, 0.001))
-        ymax_magnitude = int(np.ceil(np.log10(max(max(rho_xy), max(rho_yx)))))
-        ymin_magnitude = int(np.floor(np.log10(min(min(rho_xy), min(rho_yx)))))
+        ymax_magnitude = int(np.ceil(np.log10(max(rho_xy + rho_yx))))
+        ymin_magnitude = int(np.floor(np.log10(min(rho_xy + rho_yx))))
         plt.ylim(10 ** (ymin_magnitude - 2), 10 ** (ymax_magnitude + 2))
         plt.yticks([10 ** i for i in range(ymin_magnitude - 2, ymax_magnitude + 3)])
         plt.xlabel('Frequency (Hz)')
@@ -79,12 +79,13 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict) -> None:
             plt.xlim((max(ftlist) + 10, min(ftlist) - 10))
             if min(ftlist) > 0.001:
                 plt.xlim((max(ftlist) + 10, 0.001))
-        if (min(phase_xy) > 0 and min(phase_yx) > 0) and (max(phase_xy) < 90 and max(phase_yx) < 90):
+        if (min(phase_xy) > 0 and min(phase_yx) > 0) and (
+                max(phase_xy) < 90 and max(phase_yx) < 90):
             plt.ylim((0, 90))
             plt.yticks([0, 15, 30, 45, 60, 75, 90])
         else:
-            ylim1 = min(min(phase_xy), min(phase_yx))
-            ylim2 = max(max(phase_xy), max(phase_yx))
+            ylim1 = min(phase_xy + phase_yx)
+            ylim2 = max(phase_xy + phase_yx)
             plt.ylim(ylim1 - 10, ylim2 + 10)
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Phase (Deg.)')
@@ -224,7 +225,11 @@ def plot_coherencies_all(dataset: xr.Dataset) -> None:
         if 'coh_hz' in dataset:
             num_coh = num_coh + 1
             coh_keys.append('coh_hz')
-        #
+
+        # Initialize x and y with default values
+        x = ''
+        y = ''
+
         for freq in dataset['frequency']:
             # Select data for the current frequency
             data_for_freq = dataset.sel(frequency=freq)
@@ -232,14 +237,15 @@ def plot_coherencies_all(dataset: xr.Dataset) -> None:
                 if coh_keys[0] == 'coh_ex':
                     x = 'zxy_single'
                     y = 'zxy_single'
-                if coh_keys[0] == 'coh_ey':
+                elif coh_keys[0] == 'coh_ey':
                     x = 'zyx_single'
                     y = 'zyx_single'
-                if coh_keys[0] == 'coh_hz':
+                elif coh_keys[0] == 'coh_hz':
                     x = 'tzx_single'
                     y = 'tzx_single'
                 plt.figure()
-                plt.scatter(data_for_freq[x].real, data_for_freq[y].imag, c=data_for_freq[coh_keys[0]], cmap=my_cmap,
+                plt.scatter(data_for_freq[x].real, data_for_freq[y].imag,
+                            c=data_for_freq[coh_keys[0]], cmap=my_cmap,
                             vmin=0, vmax=1)
                 plt.colorbar(label=coh_keys[0])  # Add color bar for reference
                 plt.title(f"Coherency ({coh_keys[0]}) plot for {freq.values} Hz", fontsize=12)
@@ -251,13 +257,14 @@ def plot_coherencies_all(dataset: xr.Dataset) -> None:
                     if coh_keys[i] == 'coh_ex':
                         x = 'zxy_single'
                         y = 'zxy_single'
-                    if coh_keys[i] == 'coh_ey':
+                    elif coh_keys[i] == 'coh_ey':
                         x = 'zyx_single'
                         y = 'zyx_single'
-                    if coh_keys[i] == 'coh_hz':
+                    elif coh_keys[i] == 'coh_hz':
                         x = 'tzx_single'
                         y = 'tzx_single'
-                    sc = axes[i].scatter(data_for_freq[x].real, data_for_freq[y].imag, c=data_for_freq[coh_keys[i]],
+                    sc = axes[i].scatter(data_for_freq[x].real, data_for_freq[y].imag,
+                                         c=data_for_freq[coh_keys[i]],
                                          cmap=my_cmap, vmin=0, vmax=1)
                     fig.colorbar(sc, ax=axes[i], label=coh_keys[i])
                     axes[i].set_title(coh_keys[i])
@@ -270,13 +277,14 @@ def plot_coherencies_all(dataset: xr.Dataset) -> None:
                     if coh_keys[i] == 'coh_ex':
                         x = 'zxy_single'
                         y = 'zxy_single'
-                    if coh_keys[i] == 'coh_ey':
+                    elif coh_keys[i] == 'coh_ey':
                         x = 'zyx_single'
                         y = 'zyx_single'
-                    if coh_keys[i] == 'coh_hz':
+                    elif coh_keys[i] == 'coh_hz':
                         x = 'tzx_single'
                         y = 'tzx_single'
-                    sc = axes[i].scatter(data_for_freq[x].real, data_for_freq[y].imag, c=data_for_freq[coh_keys[i]],
+                    sc = axes[i].scatter(data_for_freq[x].real, data_for_freq[y].imag,
+                                         c=data_for_freq[coh_keys[i]],
                                          cmap=my_cmap, vmin=0, vmax=1)
                     fig.colorbar(sc, ax=axes[i], label=coh_keys[i])
                     axes[i].set_title(coh_keys[i])
@@ -299,28 +307,6 @@ def plot_pd_all(dataset: xr.Dataset) -> None:
 
     """
     if dataset:
-        cdict = {'red': ((0.0, 0.0, 0.0),
-                         (0.1, 0.5, 0.5),
-                         (0.2, 0.0, 0.0),
-                         (0.4, 0.2, 0.2),
-                         (0.6, 0.0, 0.0),
-                         (0.8, 1.0, 1.0),
-                         (1.0, 1.0, 1.0)),
-                 'green': ((0.0, 0.0, 0.0),
-                           (0.1, 0.0, 0.0),
-                           (0.2, 0.0, 0.0),
-                           (0.4, 1.0, 1.0),
-                           (0.6, 1.0, 1.0),
-                           (0.8, 1.0, 1.0),
-                           (1.0, 0.0, 0.0)),
-                 'blue': ((0.0, 0.0, 0.0),
-                          (0.1, 0.5, 0.5),
-                          (0.2, 1.0, 1.0),
-                          (0.4, 1.0, 1.0),
-                          (0.6, 0.0, 0.0),
-                          (0.8, 0.0, 0.0),
-                          (1.0, 0.0, 0.0))}
-        my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap', cdict, 256)
         afont = {'fontname': 'Arial'}
         yticks = np.arange(-90, 100, 20)
 
