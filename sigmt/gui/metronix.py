@@ -22,7 +22,7 @@ from scipy import signal
 from sigmt.core import dataselectiontools
 from sigmt.core import perform_data_selection as pds
 from sigmt.core import plots
-from sigmt.core.bandavg import BandAvg
+from sigmt.core.band_average import BandAvg
 from sigmt.core.robust_estimation import RobustEstimation
 from sigmt.gui.about_dialog import AboutDialog
 from sigmt.gui.edi_merger import EDIMerger
