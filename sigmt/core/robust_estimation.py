@@ -217,17 +217,24 @@ class RobustEstimation:
         """
         Performs robust estimation
         """
+        residual_list = []
+        z1_list = []
+        z2_list = []
         self.get_keys()
         self.hx = self.filtered_dataset['hxhx']
         self.hy = self.filtered_dataset['hyhy']
         n_time_windows = self.output.shape[0]
         # Calculating residuals
-        self.residuals = abs(abs(self.output) - (abs(self.z1_initial_jackknife) *
-                                                 abs(self.hx)) - (abs(self.z2_initial_jackknife) * abs(self.hy)))
-        # Initial variance based on MAD scale estimate
+        self.residuals = abs(self.output - (self.z1_initial_jackknife * self.hx) - (self.z2_initial_jackknife * self.hy))
+        residual_list.append(self.residuals.copy())
+        z1_list.append(self.z1_initial_jackknife.copy())
+        z2_list.append(self.z2_initial_jackknife.copy())
+        # Initial guess of variance based on MAD scale estimate
         dmx = 1.483 * np.median(abs(self.residuals - np.median(self.residuals)))
         # Upper limit to the MAD scale estimate
         self.kmx = 1.5 * dmx
+        # TODO: Here, if outliers are more than 20%, 1.5 may be adjusted!!!
+        # Get huber weights based on kmx
         self.get_huber_weights()
         #
         element_dict = {}
@@ -251,22 +258,24 @@ class RobustEstimation:
         self.z2_robust_huber = (((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
                                  (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
                                 z_deno)
+        z1_list.append(self.z1_robust_huber.copy())
+        z2_list.append(self.z2_robust_huber.copy())
         # ------------ Iteration starts here ------------------
         for iteration in range(20):
             lc = np.sum((self.huber_weights == 1) * 1)
             if lc == 0:
                 lc = 1
-            self.output = self.output * self.huber_weights
-            self.hx = self.hx * self.huber_weights
-            self.hy = self.hy * self.huber_weights
-            self.residuals = abs(abs(self.output) -
-                                 (abs(self.z1_robust_huber) * abs(self.hx)) -
-                                 (abs(self.z2_robust_huber) * abs(self.hy)))
             # New variance of the robust solution
             dhx = np.sqrt((n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2))))
             # Upper limit
             self.kmx = 1.5 * dhx
+            # Get huber weights based on kmx
             self.get_huber_weights()
+            # self.output = self.output * self.huber_weights
+            # self.hx = self.hx * self.huber_weights
+            # self.hy = self.hy * self.huber_weights
+            self.residuals = abs(self.output - (self.z1_robust_huber * self.hx) - (self.z2_robust_huber * self.hy))
+            residual_list.append(self.residuals.copy())
             #
             # Applying weights to band averaged cross-spectra
             for i in range(4):
@@ -288,6 +297,8 @@ class RobustEstimation:
             self.z2_robust_huber = (((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
                                      (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
                                     z_deno)
+            z1_list.append(self.z1_robust_huber.copy())
+            z2_list.append(self.z2_robust_huber.copy())
         if self.channel != 'hz':
             self.z1_robust_huber = self.z1_robust_huber * -1
             self.z2_robust_huber = self.z2_robust_huber * -1
