@@ -288,9 +288,9 @@ class RobustEstimation:
             self.z2_robust_huber = (((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
                                      (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
                                     z_deno)
-            if self.channel != 'hz':
-                self.z1_robust_huber = self.z1_robust_huber * -1
-                self.z2_robust_huber = self.z2_robust_huber * -1
+        if self.channel != 'hz':
+            self.z1_robust_huber = self.z1_robust_huber * -1
+            self.z2_robust_huber = self.z2_robust_huber * -1
 
     def get_keys(self) -> None:
         """
