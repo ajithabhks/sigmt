@@ -41,6 +41,7 @@ class RobustEstimation:
         self.z2_robust_huber = None
         self.z1_var = None
         self.z2_var = None
+        self.file_name = "D:/log/regression_log.txt"
         self.predicted_coherency = None
         self.procinfo = procinfo
         self.processing_mode = self.procinfo['processing_mode']
@@ -73,6 +74,9 @@ class RobustEstimation:
             z2_var = []
             coh = []
             for self.ft in self.target_frequencies:
+                with open(self.file_name, "a") as file:
+                    file.write("--------Starts here--------\n")
+                    file.write(f"Target frequency: {self.ft}\n")
                 single_time = time.time()
                 # Filtering based on target frequency
                 self.filtered_dataset = self.dataset.sel(frequency=self.ft)
@@ -198,6 +202,11 @@ class RobustEstimation:
         )
         self.z1_mean_md = complex(robust_cov.location_[0], robust_cov.location_[1])
         self.z2_mean_md = complex(robust_cov.location_[2], robust_cov.location_[3])
+        with open(self.file_name, "a") as file:
+            file.write("Mahalanobis Params---\n")
+            file.write(f"Channel: {self.channel}\n")
+            file.write(f"Z1_center: {self.z1_mean_md}\n")
+            file.write(f"Z2_center: {self.z2_mean_md}\n")
 
     def get_jackknife_initial_guess(self) -> None:
         """
@@ -206,12 +215,27 @@ class RobustEstimation:
         if self.channel == 'ex':
             self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['zxx_single'])
             self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['zxy_single'])
+            with open(self.file_name, "a") as file:
+                file.write("Jackk Params---\n")
+                file.write(f"Channel: {self.channel}\n")
+                file.write(f"Z1_initial: {self.z1_initial_jackknife}\n")
+                file.write(f"Z2_initial: {self.z2_initial_jackknife}\n")
         if self.channel == 'ey':
             self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['zyx_single'])
             self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['zyy_single'])
+            with open(self.file_name, "a") as file:
+                file.write("Jackk Params---\n")
+                file.write(f"Channel: {self.channel}\n")
+                file.write(f"Z1_initial: {self.z1_initial_jackknife}\n")
+                file.write(f"Z2_initial: {self.z2_initial_jackknife}\n")
         if self.channel == 'hz':
             self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['tzx_single'])
             self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['tzy_single'])
+            with open(self.file_name, "a") as file:
+                file.write("Jackk Params---\n")
+                file.write(f"Channel: {self.channel}\n")
+                file.write(f"Z1_initial: {self.z1_initial_jackknife}\n")
+                file.write(f"Z2_initial: {self.z2_initial_jackknife}\n")
 
     def perform_robust_estimation(self) -> None:
         """
@@ -258,6 +282,11 @@ class RobustEstimation:
         self.z2_robust_huber = (((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
                                  (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
                                 z_deno)
+        with open(self.file_name, "a") as file:
+            file.write("Robust Estimation---\n")
+            file.write(f"Channel: {self.channel}\n")
+            file.write(f"Z1_robust_initial: {self.z1_robust_huber}\n")
+            file.write(f"Z2_robust_initial: {self.z2_robust_huber}\n")
         z1_list.append(self.z1_robust_huber.copy())
         z2_list.append(self.z2_robust_huber.copy())
         # ------------ Iteration starts here ------------------
@@ -296,9 +325,17 @@ class RobustEstimation:
                                     z_deno)
             z1_list.append(self.z1_robust_huber.copy())
             z2_list.append(self.z2_robust_huber.copy())
+            with open(self.file_name, "a") as file:
+                file.write(f"Iteration: {iteration}\n")
+                file.write(f"Z1_robust: {self.z1_robust_huber}\n")
+                file.write(f"Z2_robust: {self.z2_robust_huber}\n")
         if self.channel != 'hz':
             self.z1_robust_huber = self.z1_robust_huber * -1
             self.z2_robust_huber = self.z2_robust_huber * -1
+        with open(self.file_name, "a") as file:
+            file.write(f"Final estimates after {iteration} iterations\n")
+            file.write(f"Final Z1_robust: {self.z1_robust_huber}\n")
+            file.write(f"Final Z2_robust: {self.z2_robust_huber}\n")
 
     def get_keys(self) -> None:
         """
