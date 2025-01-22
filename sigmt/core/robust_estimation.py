@@ -42,6 +42,7 @@ class RobustEstimation:
         self.z1_var = None
         self.z2_var = None
         self.file_name = "D:/log/regression_log.txt"
+        self.res_file_name = "D:/log/residual_log.txt"
         self.predicted_coherency = None
         self.procinfo = procinfo
         self.processing_mode = self.procinfo['processing_mode']
@@ -75,6 +76,9 @@ class RobustEstimation:
             coh = []
             for self.ft in self.target_frequencies:
                 with open(self.file_name, "a") as file:
+                    file.write("--------Starts here--------\n")
+                    file.write(f"Target frequency: {self.ft}\n")
+                with open(self.res_file_name, "a") as file:
                     file.write("--------Starts here--------\n")
                     file.write(f"Target frequency: {self.ft}\n")
                 single_time = time.time()
@@ -250,6 +254,7 @@ class RobustEstimation:
         n_time_windows = self.output.shape[0]
         # Calculating residuals
         self.residuals = abs(self.output - (self.z1_initial_jackknife * self.hx) - (self.z2_initial_jackknife * self.hy))
+        prev_mean_residuals = float(np.mean(self.residuals))
         residual_list.append(self.residuals.copy())
         z1_list.append(self.z1_initial_jackknife.copy())
         z2_list.append(self.z2_initial_jackknife.copy())
@@ -285,8 +290,11 @@ class RobustEstimation:
         with open(self.file_name, "a") as file:
             file.write("Robust Estimation---\n")
             file.write(f"Channel: {self.channel}\n")
+            file.write(f"Mean(Residuals): {float(np.mean(self.residuals).data)}\n")
             file.write(f"Z1_robust_initial: {self.z1_robust_huber}\n")
             file.write(f"Z2_robust_initial: {self.z2_robust_huber}\n")
+        with open(self.res_file_name, "a") as file:
+            file.write(f"Mean(Residuals): {float(np.mean(self.residuals).data)}\n")
         z1_list.append(self.z1_robust_huber.copy())
         z2_list.append(self.z2_robust_huber.copy())
         # ------------ Iteration starts here ------------------
@@ -294,7 +302,13 @@ class RobustEstimation:
             lc = np.sum((self.huber_weights == 1) * 1)
             if lc == 0:
                 lc = 1
+                with open(self.file_name, "a") as file:
+                    file.write("Lc is ZERO\n")
             self.residuals = abs(self.output - (self.z1_robust_huber * self.hx) - (self.z2_robust_huber * self.hy))
+            if abs(prev_mean_residuals - float(np.mean(self.residuals))) < 1e-6:
+                # Break the iteration when there is no significant change in the residuals
+                break
+            prev_mean_residuals = float(np.mean(self.residuals))
             residual_list.append(self.residuals.copy())
             # New variance of the robust solution
             dhx = np.sqrt((n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2))))
@@ -327,8 +341,11 @@ class RobustEstimation:
             z2_list.append(self.z2_robust_huber.copy())
             with open(self.file_name, "a") as file:
                 file.write(f"Iteration: {iteration}\n")
+                file.write(f"Mean(Residuals): {float(np.mean(self.residuals).data)}\n")
                 file.write(f"Z1_robust: {self.z1_robust_huber}\n")
                 file.write(f"Z2_robust: {self.z2_robust_huber}\n")
+            with open(self.res_file_name, "a") as file:
+                file.write(f"Mean(Residuals): {float(np.mean(self.residuals).data)}\n")
         if self.channel != 'hz':
             self.z1_robust_huber = self.z1_robust_huber * -1
             self.z2_robust_huber = self.z2_robust_huber * -1
