@@ -265,17 +265,14 @@ class RobustEstimation:
             lc = np.sum((self.huber_weights == 1) * 1)
             if lc == 0:
                 lc = 1
+            self.residuals = abs(self.output - (self.z1_robust_huber * self.hx) - (self.z2_robust_huber * self.hy))
+            residual_list.append(self.residuals.copy())
             # New variance of the robust solution
             dhx = np.sqrt((n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2))))
             # Upper limit
             self.kmx = 1.5 * dhx
             # Get huber weights based on kmx
             self.get_huber_weights()
-            # self.output = self.output * self.huber_weights
-            # self.hx = self.hx * self.huber_weights
-            # self.hy = self.hy * self.huber_weights
-            self.residuals = abs(self.output - (self.z1_robust_huber * self.hx) - (self.z2_robust_huber * self.hy))
-            residual_list.append(self.residuals.copy())
             #
             # Applying weights to band averaged cross-spectra
             for i in range(4):
