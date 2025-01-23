@@ -261,8 +261,14 @@ class RobustEstimation:
         # Initial guess of variance based on MAD scale estimate
         dmx = 1.483 * np.median(abs(self.residuals - np.median(self.residuals)))
         # Upper limit to the MAD scale estimate
-        self.kmx = 1.5 * dmx
-        # TODO: Here, if outliers are more than 20%, 1.5 may be adjusted!!!
+        scale_factor = 1.5
+        self.kmx = scale_factor * dmx
+        # Allowing up to 20% of the data by adjusting scale_factor = 1.5.
+        # Because, in some cases, high residual values prevent Huber weight
+        # conditions from being met, causing the runtime error when Lc becomes zero.
+        while int(np.sum(self.residuals <= self.kmx)) < int(np.ceil(len(self.residuals) * 0.2)):
+            scale_factor = scale_factor + 0.1
+            self.kmx = scale_factor * dmx
         # Get huber weights based on kmx
         self.get_huber_weights()
         #
@@ -300,10 +306,6 @@ class RobustEstimation:
         # ------------ Iteration starts here ------------------
         for iteration in range(20):
             lc = np.sum((self.huber_weights == 1) * 1)
-            if lc == 0:
-                lc = 1
-                with open(self.file_name, "a") as file:
-                    file.write("Lc is ZERO\n")
             self.residuals = abs(self.output - (self.z1_robust_huber * self.hx) - (self.z2_robust_huber * self.hy))
             max_diff = float(np.max(np.abs(prev_residuals - self.residuals)))
             prev_residuals = self.residuals.copy()
@@ -311,7 +313,7 @@ class RobustEstimation:
             if max_diff < 1e-6:
                 # Break the iteration when there is no significant change in the residuals
                 with open(self.res_file_name, "a") as file:
-                    file.write(f"Break Diff Residuals: {float(max_diff)}\n")
+                    file.write(f"{iteration}: Break Diff Residuals: {float(max_diff)}\n")
                 break
             # New variance of the robust solution
             dhx = np.sqrt((n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2))))
@@ -348,7 +350,7 @@ class RobustEstimation:
                 file.write(f"Z1_robust: {self.z1_robust_huber}\n")
                 file.write(f"Z2_robust: {self.z2_robust_huber}\n")
             with open(self.res_file_name, "a") as file:
-                file.write(f"Max Diff Residuals: {float(max_diff)}\n")
+                file.write(f"{iteration}: Max Diff Residuals: {float(max_diff)}\n")
         if self.channel != 'hz':
             self.z1_robust_huber = self.z1_robust_huber * -1
             self.z2_robust_huber = self.z2_robust_huber * -1
