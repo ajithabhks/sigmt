@@ -254,7 +254,7 @@ class RobustEstimation:
         n_time_windows = self.output.shape[0]
         # Calculating residuals
         self.residuals = abs(self.output - (self.z1_initial_jackknife * self.hx) - (self.z2_initial_jackknife * self.hy))
-        prev_mean_residuals = float(np.mean(self.residuals))
+        prev_residuals = self.residuals.copy()
         residual_list.append(self.residuals.copy())
         z1_list.append(self.z1_initial_jackknife.copy())
         z2_list.append(self.z2_initial_jackknife.copy())
@@ -305,11 +305,14 @@ class RobustEstimation:
                 with open(self.file_name, "a") as file:
                     file.write("Lc is ZERO\n")
             self.residuals = abs(self.output - (self.z1_robust_huber * self.hx) - (self.z2_robust_huber * self.hy))
-            if abs(prev_mean_residuals - float(np.mean(self.residuals))) < 1e-6:
+            max_diff = float(np.max(np.abs(prev_residuals - self.residuals)))
+            prev_residuals = self.residuals.copy()
+            residual_list.append(prev_residuals.copy())
+            if max_diff < 1e-6:
                 # Break the iteration when there is no significant change in the residuals
+                with open(self.res_file_name, "a") as file:
+                    file.write(f"Break Diff Residuals: {float(max_diff)}\n")
                 break
-            prev_mean_residuals = float(np.mean(self.residuals))
-            residual_list.append(self.residuals.copy())
             # New variance of the robust solution
             dhx = np.sqrt((n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2))))
             # Upper limit
@@ -341,11 +344,11 @@ class RobustEstimation:
             z2_list.append(self.z2_robust_huber.copy())
             with open(self.file_name, "a") as file:
                 file.write(f"Iteration: {iteration}\n")
-                file.write(f"Mean(Residuals): {float(np.mean(self.residuals).data)}\n")
+                file.write(f"Max Diff Residuals: {float(max_diff)}\n")
                 file.write(f"Z1_robust: {self.z1_robust_huber}\n")
                 file.write(f"Z2_robust: {self.z2_robust_huber}\n")
             with open(self.res_file_name, "a") as file:
-                file.write(f"Mean(Residuals): {float(np.mean(self.residuals).data)}\n")
+                file.write(f"Max Diff Residuals: {float(max_diff)}\n")
         if self.channel != 'hz':
             self.z1_robust_huber = self.z1_robust_huber * -1
             self.z2_robust_huber = self.z2_robust_huber * -1
