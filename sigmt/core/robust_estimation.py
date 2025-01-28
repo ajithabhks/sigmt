@@ -249,8 +249,8 @@ class RobustEstimation:
         z1_list = []
         z2_list = []
         self.get_keys()
-        self.hx = self.filtered_dataset['hxhx']
-        self.hy = self.filtered_dataset['hyhy']
+        self.hx = self.filtered_dataset['hx']
+        self.hy = self.filtered_dataset['hy']
         n_time_windows = self.output.shape[0]
         # Calculating residuals
         self.residuals = abs(self.output - (self.z1_initial_jackknife * self.hx) - (self.z2_initial_jackknife * self.hy))
@@ -263,10 +263,10 @@ class RobustEstimation:
         # Upper limit to the MAD scale estimate
         scale_factor = 1.5
         self.kmx = scale_factor * dmx
-        # Allowing up to 20% of the data by adjusting scale_factor = 1.5.
+        # Allowing up to 5% of the data by adjusting scale_factor = 1.5.
         # Because, in some cases, high residual values prevent Huber weight
         # conditions from being met, causing the runtime error when Lc becomes zero.
-        while int(np.sum(self.residuals <= self.kmx)) < int(np.ceil(len(self.residuals) * 0.2)):
+        while int(np.sum(self.residuals <= self.kmx)) < int(np.ceil(len(self.residuals) * 0.05)):
             scale_factor = scale_factor + 0.1
             self.kmx = scale_factor * dmx
         # Get huber weights based on kmx
