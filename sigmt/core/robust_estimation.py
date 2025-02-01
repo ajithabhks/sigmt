@@ -269,6 +269,8 @@ class RobustEstimation:
         while int(np.sum(self.residuals <= self.kmx)) < int(np.ceil(len(self.residuals) * 0.05)):
             scale_factor = scale_factor + 0.1
             self.kmx = scale_factor * dmx
+        with open(self.file_name, "a") as file:
+            file.write(f"Scale factor: {scale_factor}\n")
         # Get huber weights based on kmx
         self.get_huber_weights()
         #
@@ -365,15 +367,15 @@ class RobustEstimation:
         """
         self.z_deno_keys = ["hxhx", "hyhy", "hxhy", "hyhx"]
         if self.channel == 'ex':
-            self.output = self.filtered_dataset['exex']
+            self.output = self.filtered_dataset['ex']
             self.z1_num_keys = ["hyhy", "exhx", "hyhx", "exhy"]  # Zxx
             self.z2_num_keys = ["hxhx", "exhy", "hxhy", "exhx"]  # Zxy
         if self.channel == 'ey':
-            self.output = self.filtered_dataset['eyey']
+            self.output = self.filtered_dataset['ey']
             self.z1_num_keys = ["hyhy", "eyhx", "hyhx", "eyhy"]  # Zyx
             self.z2_num_keys = ["hxhx", "eyhy", "hxhy", "eyhx"]  # Zyy
         if self.channel == 'hz':
-            self.output = self.filtered_dataset['hzhz']
+            self.output = self.filtered_dataset['hz']
             self.z1_num_keys = ["hyhy", "hzhx", "hyhx", "hzhy"]  # Zyx
             self.z2_num_keys = ["hxhx", "hzhy", "hxhy", "hzhx"]  # Zyy
 
