@@ -41,8 +41,6 @@ class RobustEstimation:
         self.z2_robust_huber = None
         self.z1_var = None
         self.z2_var = None
-        self.file_name = "D:/log/regression_log.txt"
-        self.res_file_name = "D:/log/residual_log.txt"
         self.predicted_coherency = None
         self.procinfo = procinfo
         self.processing_mode = self.procinfo['processing_mode']
@@ -245,20 +243,15 @@ class RobustEstimation:
         """
         Performs robust estimation
         """
-        residual_list = []
-        z1_list = []
-        z2_list = []
         prev_sum_squared = None
+
         self.get_keys()
         self.hx = self.filtered_dataset['hx']
         self.hy = self.filtered_dataset['hy']
         n_time_windows = self.output.shape[0]
         # Calculating residuals
         self.residuals = abs(self.output - (self.z1_initial_jackknife * self.hx) - (self.z2_initial_jackknife * self.hy))
-        prev_residuals = self.residuals.copy()
-        residual_list.append(self.residuals.copy())
-        z1_list.append(self.z1_initial_jackknife.copy())
-        z2_list.append(self.z2_initial_jackknife.copy())
+
         # Initial guess of variance based on MAD scale estimate
         dmx = 1.483 * np.median(abs(self.residuals - np.median(self.residuals)))
         # Upper limit to the MAD scale estimate
@@ -296,28 +289,13 @@ class RobustEstimation:
         self.z2_robust_huber = (((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
                                  (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
                                 z_deno)
-        with open(self.file_name, "a") as file:
-            file.write("Robust Estimation---\n")
-            file.write(f"Channel: {self.channel}\n")
-            file.write(f"Mean(Residuals): {float(np.mean(self.residuals).data)}\n")
-            file.write(f"Z1_robust_initial: {self.z1_robust_huber}\n")
-            file.write(f"Z2_robust_initial: {self.z2_robust_huber}\n")
-        with open(self.res_file_name, "a") as file:
-            file.write(f"Mean(Residuals): {float(np.mean(self.residuals).data)}\n")
-        z1_list.append(self.z1_robust_huber.copy())
-        z2_list.append(self.z2_robust_huber.copy())
         # ------------ Iteration starts here ------------------
         for iteration in range(20):
             lc = np.sum((self.huber_weights == 1) * 1)
             self.residuals = abs(self.output - (self.z1_robust_huber * self.hx) - (self.z2_robust_huber * self.hy))
-            max_diff = float(np.max(np.abs(prev_residuals - self.residuals)))
-            prev_residuals = self.residuals.copy()
-            residual_list.append(prev_residuals.copy())
             sum_squared = (n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2)))
             if prev_sum_squared is not None:
                 change = abs(prev_sum_squared - sum_squared) / prev_sum_squared
-                with open(self.res_file_name, "a") as file:
-                    file.write(f"{iteration}: Change: {float(change)}\n")
                 if change < 0.01: # 1%
                     # Stop iteration when there is no change in sum squared more than 1%
                     # This logic is taken from
@@ -326,8 +304,6 @@ class RobustEstimation:
                     # Page: 189
                     break
             prev_sum_squared = sum_squared
-            with open(self.res_file_name, "a") as file:
-                file.write(f"{iteration}: Sum squared: {float(sum_squared)}\n")
             # New variance of the robust solution
             dhx = np.sqrt(sum_squared)
             # Upper limit
@@ -357,22 +333,9 @@ class RobustEstimation:
             self.z2_robust_huber = (((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
                                      (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
                                     z_deno)
-            z1_list.append(self.z1_robust_huber.copy())
-            z2_list.append(self.z2_robust_huber.copy())
-            with open(self.file_name, "a") as file:
-                file.write(f"Iteration: {iteration}\n")
-                file.write(f"Max Diff Residuals: {float(max_diff)}\n")
-                file.write(f"Z1_robust: {self.z1_robust_huber}\n")
-                file.write(f"Z2_robust: {self.z2_robust_huber}\n")
-            # with open(self.res_file_name, "a") as file:
-            #     file.write(f"{iteration}: Max Diff Residuals: {float(max_diff)}\n")
         if self.channel != 'hz':
             self.z1_robust_huber = self.z1_robust_huber * -1
             self.z2_robust_huber = self.z2_robust_huber * -1
-        with open(self.file_name, "a") as file:
-            file.write(f"Final estimates after {iteration} iterations\n")
-            file.write(f"Final Z1_robust: {self.z1_robust_huber}\n")
-            file.write(f"Final Z2_robust: {self.z2_robust_huber}\n")
 
     def get_keys(self) -> None:
         """
