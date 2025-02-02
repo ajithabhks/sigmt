@@ -29,8 +29,6 @@ class RobustEstimation:
         self.z2_mean_md = None
         self.z1_mean_md = None
         self.output = None
-        self.hx = None
-        self.hy = None
         self.z1_num_keys = None
         self.z2_num_keys = None
         self.z_deno_keys = None
@@ -73,12 +71,6 @@ class RobustEstimation:
             z2_var = []
             coh = []
             for self.ft in self.target_frequencies:
-                with open(self.file_name, "a") as file:
-                    file.write("--------Starts here--------\n")
-                    file.write(f"Target frequency: {self.ft}\n")
-                with open(self.res_file_name, "a") as file:
-                    file.write("--------Starts here--------\n")
-                    file.write(f"Target frequency: {self.ft}\n")
                 single_time = time.time()
                 # Filtering based on target frequency
                 self.filtered_dataset = self.dataset.sel(frequency=self.ft)
@@ -204,11 +196,6 @@ class RobustEstimation:
         )
         self.z1_mean_md = complex(robust_cov.location_[0], robust_cov.location_[1])
         self.z2_mean_md = complex(robust_cov.location_[2], robust_cov.location_[3])
-        with open(self.file_name, "a") as file:
-            file.write("Mahalanobis Params---\n")
-            file.write(f"Channel: {self.channel}\n")
-            file.write(f"Z1_center: {self.z1_mean_md}\n")
-            file.write(f"Z2_center: {self.z2_mean_md}\n")
 
     def get_jackknife_initial_guess(self) -> None:
         """
@@ -217,27 +204,12 @@ class RobustEstimation:
         if self.channel == 'ex':
             self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['zxx_single'])
             self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['zxy_single'])
-            with open(self.file_name, "a") as file:
-                file.write("Jackk Params---\n")
-                file.write(f"Channel: {self.channel}\n")
-                file.write(f"Z1_initial: {self.z1_initial_jackknife}\n")
-                file.write(f"Z2_initial: {self.z2_initial_jackknife}\n")
         if self.channel == 'ey':
             self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['zyx_single'])
             self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['zyy_single'])
-            with open(self.file_name, "a") as file:
-                file.write("Jackk Params---\n")
-                file.write(f"Channel: {self.channel}\n")
-                file.write(f"Z1_initial: {self.z1_initial_jackknife}\n")
-                file.write(f"Z2_initial: {self.z2_initial_jackknife}\n")
         if self.channel == 'hz':
             self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['tzx_single'])
             self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['tzy_single'])
-            with open(self.file_name, "a") as file:
-                file.write("Jackk Params---\n")
-                file.write(f"Channel: {self.channel}\n")
-                file.write(f"Z1_initial: {self.z1_initial_jackknife}\n")
-                file.write(f"Z2_initial: {self.z2_initial_jackknife}\n")
 
     def perform_robust_estimation(self) -> None:
         """
@@ -246,11 +218,11 @@ class RobustEstimation:
         prev_sum_squared = None
 
         self.get_keys()
-        self.hx = self.filtered_dataset['hx']
-        self.hy = self.filtered_dataset['hy']
+        hx = self.filtered_dataset['hx']
+        hy = self.filtered_dataset['hy']
         n_time_windows = self.output.shape[0]
         # Calculating residuals
-        self.residuals = abs(self.output - (self.z1_initial_jackknife * self.hx) - (self.z2_initial_jackknife * self.hy))
+        self.residuals = abs(self.output - (self.z1_initial_jackknife * hx) - (self.z2_initial_jackknife * hy))
 
         # Initial guess of variance based on MAD scale estimate
         dmx = 1.483 * np.median(abs(self.residuals - np.median(self.residuals)))
@@ -263,8 +235,6 @@ class RobustEstimation:
         while int(np.sum(self.residuals <= self.kmx)) < int(np.ceil(len(self.residuals) * 0.05)):
             scale_factor = scale_factor + 0.1
             self.kmx = scale_factor * dmx
-        with open(self.file_name, "a") as file:
-            file.write(f"Scale factor: {scale_factor}\n")
         # Get huber weights based on kmx
         self.get_huber_weights()
         #
@@ -292,7 +262,7 @@ class RobustEstimation:
         # ------------ Iteration starts here ------------------
         for iteration in range(20):
             lc = np.sum((self.huber_weights == 1) * 1)
-            self.residuals = abs(self.output - (self.z1_robust_huber * self.hx) - (self.z2_robust_huber * self.hy))
+            self.residuals = abs(self.output - (self.z1_robust_huber * hx) - (self.z2_robust_huber * hy))
             sum_squared = (n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2)))
             if prev_sum_squared is not None:
                 change = abs(prev_sum_squared - sum_squared) / prev_sum_squared
