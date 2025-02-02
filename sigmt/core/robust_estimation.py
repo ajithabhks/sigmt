@@ -198,7 +198,7 @@ class RobustEstimation:
             z1 = self.filtered_dataset['tzx_single'].values
             z2 = self.filtered_dataset['tzy_single'].values
         data = np.transpose(np.vstack((z1.real, z1.imag, z2.real, z2.imag)))
-        robust_cov = MinCovDet().fit(data)
+        robust_cov = MinCovDet(random_state=0).fit(data)
         self.filtered_dataset['maha_dist'] = xr.DataArray(
             np.sqrt(robust_cov.mahalanobis(data)),
             coords=self.filtered_dataset.coords,
