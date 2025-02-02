@@ -33,7 +33,6 @@ class RobustEstimation:
         self.z2_num_keys = None
         self.z_deno_keys = None
         self.residuals = None
-        self.kmx = None
         self.huber_weights = None
         self.z1_robust_huber = None
         self.z2_robust_huber = None
@@ -215,72 +214,57 @@ class RobustEstimation:
         """
         Performs robust estimation
         """
+        self.z1_robust_huber = None
+        self.z2_robust_huber = None
         prev_sum_squared = None
 
         self.get_keys()
         hx = self.filtered_dataset['hx']
         hy = self.filtered_dataset['hy']
         n_time_windows = self.output.shape[0]
-        # Calculating residuals
-        self.residuals = abs(self.output - (self.z1_initial_jackknife * hx) - (self.z2_initial_jackknife * hy))
 
-        # Initial guess of variance based on MAD scale estimate
-        dmx = 1.483 * np.median(abs(self.residuals - np.median(self.residuals)))
-        # Upper limit to the MAD scale estimate
-        scale_factor = 1.5
-        self.kmx = scale_factor * dmx
-        # Allowing up to 5% of the data by adjusting scale_factor = 1.5.
-        # Because, in some cases, high residual values prevent Huber weight
-        # conditions from being met, causing the runtime error when Lc becomes zero.
-        while int(np.sum(self.residuals <= self.kmx)) < int(np.ceil(len(self.residuals) * 0.05)):
-            scale_factor = scale_factor + 0.1
-            self.kmx = scale_factor * dmx
-        # Get huber weights based on kmx
-        self.get_huber_weights()
-        #
-        element_dict = {}
-        element_avg_dict = {}
-        # Applying weights to band averaged cross-spectra
-        for i in range(4):
-            element_dict[f'z1_num_{i}'] = self.filtered_dataset[self.z1_num_keys[i]].values * self.huber_weights
-            element_dict[f'z2_num_{i}'] = self.filtered_dataset[self.z2_num_keys[i]].values * self.huber_weights
-            element_dict[f'z_deno_{i}'] = self.filtered_dataset[self.z_deno_keys[i]].values * self.huber_weights
-        # Weighted mean of cross-spectra
-        for i in range(4):
-            element_avg_dict[f'z1_num_avg_{i}'] = np.sum(element_dict[f'z1_num_{i}']) / np.sum(self.huber_weights)
-            element_avg_dict[f'z2_num_avg_{i}'] = np.sum(element_dict[f'z2_num_{i}']) / np.sum(self.huber_weights)
-            element_avg_dict[f'z_deno_avg_{i}'] = np.sum(element_dict[f'z_deno_{i}']) / np.sum(self.huber_weights)
+        z1 = self.z1_initial_jackknife
+        z2 = self.z2_initial_jackknife
 
-        z_deno = ((element_avg_dict['z_deno_avg_0'] * element_avg_dict['z_deno_avg_1']) -
-                  (element_avg_dict['z_deno_avg_2'] * element_avg_dict['z_deno_avg_3']))
-        self.z1_robust_huber = (((element_avg_dict['z1_num_avg_0'] * element_avg_dict['z1_num_avg_1']) -
-                                 (element_avg_dict['z1_num_avg_2'] * element_avg_dict['z1_num_avg_3'])) /
-                                z_deno)
-        self.z2_robust_huber = (((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
-                                 (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
-                                z_deno)
         # ------------ Iteration starts here ------------------
         for iteration in range(20):
-            lc = np.sum((self.huber_weights == 1) * 1)
-            self.residuals = abs(self.output - (self.z1_robust_huber * hx) - (self.z2_robust_huber * hy))
-            sum_squared = (n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2)))
-            if prev_sum_squared is not None:
-                change = abs(prev_sum_squared - sum_squared) / prev_sum_squared
-                if change < 0.01: # 1%
-                    # Stop iteration when there is no change in sum squared more than 1%
-                    # This logic is taken from
-                    # Chave, A., Jones, A. (Eds.), 2012. The Magnetotelluric Method:
-                    # Theory and Practice. Cambridge University Press, Cambridge.
-                    # Page: 189
-                    break
-            prev_sum_squared = sum_squared
-            # New variance of the robust solution
-            dhx = np.sqrt(sum_squared)
-            # Upper limit
-            self.kmx = 1.5 * dhx
-            # Get huber weights based on kmx
-            self.get_huber_weights()
-            #
+            # Calculating residuals
+            self.residuals = abs(self.output - (z1 * hx) - (z2 * hy))
+
+            if iteration == 0:
+                # Initial guess of variance based on MAD scale estimate
+                dm = 1.483 * np.median(abs(self.residuals - np.median(self.residuals)))
+                # Upper limit to the MAD scale estimate
+                scale_factor = 1.5
+                km = scale_factor * dm
+                # Allowing up to 5% of the data by adjusting scale_factor = 1.5.
+                # Because, in some cases, high residual values prevent Huber weight
+                # conditions from being met, causing the runtime error when Lc becomes zero.
+                while int(np.sum(self.residuals <= km)) < int(np.ceil(len(self.residuals) * 0.05)):
+                    scale_factor = scale_factor + 0.1
+                    km = scale_factor * dm
+                # Get huber weights based on km
+                self.get_huber_weights(km)
+            else:
+                lc = np.sum((self.huber_weights == 1) * 1)
+                sum_squared = (n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2)))
+                if prev_sum_squared is not None:
+                    change = abs(prev_sum_squared - sum_squared) / prev_sum_squared
+                    if change < 0.01:  # 1%
+                        # Stop iteration when there is no change in sum squared more than 1%
+                        # This logic is taken from
+                        # Chave, A., Jones, A. (Eds.), 2012. The Magnetotelluric Method:
+                        # Theory and Practice. Cambridge University Press, Cambridge.
+                        # Page: 189
+                        break
+                prev_sum_squared = sum_squared
+                # New variance of the robust solution
+                dh = np.sqrt(sum_squared)
+                # Upper limit
+                kh = 1.5 * dh
+                # Get huber weights based on kh
+                self.get_huber_weights(kh)
+
             # Applying weights to band averaged cross-spectra
             element_dict = {}
             element_avg_dict = {}
@@ -297,15 +281,19 @@ class RobustEstimation:
             #
             z_deno = ((element_avg_dict['z_deno_avg_0'] * element_avg_dict['z_deno_avg_1']) -
                       (element_avg_dict['z_deno_avg_2'] * element_avg_dict['z_deno_avg_3']))
-            self.z1_robust_huber = (((element_avg_dict['z1_num_avg_0'] * element_avg_dict['z1_num_avg_1']) -
-                                     (element_avg_dict['z1_num_avg_2'] * element_avg_dict['z1_num_avg_3'])) /
-                                    z_deno)
-            self.z2_robust_huber = (((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
-                                     (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
-                                    z_deno)
-        if self.channel != 'hz':
-            self.z1_robust_huber = self.z1_robust_huber * -1
-            self.z2_robust_huber = self.z2_robust_huber * -1
+            z1 = (((element_avg_dict['z1_num_avg_0'] * element_avg_dict['z1_num_avg_1']) -
+                   (element_avg_dict['z1_num_avg_2'] * element_avg_dict['z1_num_avg_3'])) /
+                  z_deno)
+            z2 = (((element_avg_dict['z2_num_avg_0'] * element_avg_dict['z2_num_avg_1']) -
+                   (element_avg_dict['z2_num_avg_2'] * element_avg_dict['z2_num_avg_3'])) /
+                  z_deno)
+
+        if self.channel == 'ex' or self.channel == 'ey':
+            self.z1_robust_huber = z1 * -1
+            self.z2_robust_huber = z2 * -1
+        else:
+            self.z1_robust_huber = z1
+            self.z2_robust_huber = z2
 
     def get_keys(self) -> None:
         """
@@ -325,13 +313,13 @@ class RobustEstimation:
             self.z1_num_keys = ["hyhy", "hzhx", "hyhx", "hzhy"]  # Zyx
             self.z2_num_keys = ["hxhx", "hzhy", "hxhy", "hzhx"]  # Zyy
 
-    def get_huber_weights(self) -> None:
+    def get_huber_weights(self, upper_limit) -> None:
         """
         Prepares huber weights
         """
-        huber_matrix1 = (self.residuals <= self.kmx) * 1
-        huber_matrix2 = (self.residuals > self.kmx) * 1
-        huber_matrix2 = huber_matrix2 * (self.kmx / self.residuals)
+        huber_matrix1 = (self.residuals <= upper_limit) * 1
+        huber_matrix2 = (self.residuals > upper_limit) * 1
+        huber_matrix2 = huber_matrix2 * (upper_limit / self.residuals)
         self.huber_weights = (huber_matrix1 + huber_matrix2).values
 
     def get_variance(self) -> None:
