@@ -248,6 +248,7 @@ class RobustEstimation:
         residual_list = []
         z1_list = []
         z2_list = []
+        prev_sum_squared = None
         self.get_keys()
         self.hx = self.filtered_dataset['hx']
         self.hy = self.filtered_dataset['hy']
@@ -312,23 +313,35 @@ class RobustEstimation:
             max_diff = float(np.max(np.abs(prev_residuals - self.residuals)))
             prev_residuals = self.residuals.copy()
             residual_list.append(prev_residuals.copy())
-            if max_diff < 1e-6:
-                # Break the iteration when there is no significant change in the residuals
+            sum_squared = (n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2)))
+            if prev_sum_squared is not None:
+                change = abs(prev_sum_squared - sum_squared) / prev_sum_squared
                 with open(self.res_file_name, "a") as file:
-                    file.write(f"{iteration}: Break Diff Residuals: {float(max_diff)}\n")
-                break
+                    file.write(f"{iteration}: Change: {float(change)}\n")
+                if change < 0.01: # 1%
+                    # Stop iteration when there is no change in sum squared more than 1%
+                    # This logic is taken from
+                    # Chave, A., Jones, A. (Eds.), 2012. The Magnetotelluric Method:
+                    # Theory and Practice. Cambridge University Press, Cambridge.
+                    # Page: 189
+                    break
+            prev_sum_squared = sum_squared
+            with open(self.res_file_name, "a") as file:
+                file.write(f"{iteration}: Sum squared: {float(sum_squared)}\n")
             # New variance of the robust solution
-            dhx = np.sqrt((n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2))))
+            dhx = np.sqrt(sum_squared)
             # Upper limit
             self.kmx = 1.5 * dhx
             # Get huber weights based on kmx
             self.get_huber_weights()
             #
             # Applying weights to band averaged cross-spectra
+            element_dict = {}
+            element_avg_dict = {}
             for i in range(4):
-                element_dict[f'z1_num_{i}'] = element_dict[f'z1_num_{i}'] * self.huber_weights
-                element_dict[f'z2_num_{i}'] = element_dict[f'z2_num_{i}'] * self.huber_weights
-                element_dict[f'z_deno_{i}'] = element_dict[f'z_deno_{i}'] * self.huber_weights
+                element_dict[f'z1_num_{i}'] = self.filtered_dataset[self.z1_num_keys[i]].values * self.huber_weights
+                element_dict[f'z2_num_{i}'] = self.filtered_dataset[self.z2_num_keys[i]].values * self.huber_weights
+                element_dict[f'z_deno_{i}'] = self.filtered_dataset[self.z_deno_keys[i]].values * self.huber_weights
             # Weighted mean of cross-spectra
             for i in range(4):
                 element_avg_dict[f'z1_num_avg_{i}'] = np.sum(element_dict[f'z1_num_{i}']) / np.sum(self.huber_weights)
@@ -351,8 +364,8 @@ class RobustEstimation:
                 file.write(f"Max Diff Residuals: {float(max_diff)}\n")
                 file.write(f"Z1_robust: {self.z1_robust_huber}\n")
                 file.write(f"Z2_robust: {self.z2_robust_huber}\n")
-            with open(self.res_file_name, "a") as file:
-                file.write(f"{iteration}: Max Diff Residuals: {float(max_diff)}\n")
+            # with open(self.res_file_name, "a") as file:
+            #     file.write(f"{iteration}: Max Diff Residuals: {float(max_diff)}\n")
         if self.channel != 'hz':
             self.z1_robust_huber = self.z1_robust_huber * -1
             self.z2_robust_huber = self.z2_robust_huber * -1
