@@ -48,7 +48,8 @@ class RobustEstimation:
 
     def get_output_channels(self) -> None:
         """
-        Creates output channels based on processing mode
+        Creates output channels based on processing mode.
+        SigMT can support MT+Tipper, MT Only and Tipper Only mode.
         """
         if self.processing_mode == "MT + Tipper":
             self.output_channels = ['ex', 'ey', 'hz']
@@ -59,7 +60,10 @@ class RobustEstimation:
 
     def get_estimate_and_variance(self) -> None:
         """
-        Computes the robust estimates and variances
+        Computes the robust estimates and variances.
+        This method loops over available output channels and target frequencies.
+        It rejects noisy windows and pass data to robust estimation and variance
+        calculation methods and saves data in an xarray.
         """
         estimate = {}
         estimation_time = time.time()
@@ -175,7 +179,7 @@ class RobustEstimation:
 
     def get_mahalanobis_distance(self) -> None:
         """
-        Calculating mahalanobis distance
+        Method to calculate the mahalanobis distance
         """
         if self.channel == 'ex':
             z1 = self.filtered_dataset['zxx_single'].values
@@ -198,7 +202,7 @@ class RobustEstimation:
 
     def get_jackknife_initial_guess(self) -> None:
         """
-        Prepares jackknife intial guess
+        Prepares jackknife initial guess from transfer function values from selected time windows.
         """
         if self.channel == 'ex':
             self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['zxx_single'])
@@ -212,7 +216,21 @@ class RobustEstimation:
 
     def perform_robust_estimation(self) -> None:
         """
-        Performs robust estimation
+        Performs robust estimation.
+
+        The robust estimation algorithm used here is adapted from the following sources:
+
+        1.  Ritter, O., Junge, A., Dawes, G.J., 1998. New equipment and processing for
+            magnetotelluric remote reference observations. Geophys. J. Int. 132 (3), 535–548.
+            https://doi.org/10.1046/j.1365-246X.1998.00440.x.
+
+        2.  Manoj, C., 2003. Magnetotelluric Data Analysis Using Advances in Signal Processing
+            Techniques. Ph.D. Dissertation. CSIR – National Geophysical Research Institute and
+            Osmania University, India.
+
+        3.  Chave, A., Jones, A. (Eds.), 2012. The Magnetotelluric Method: Theory and Practice.
+            Cambridge University Press, Cambridge. Pages: 188-189
+
         """
         self.z1_robust_huber = None
         self.z2_robust_huber = None
@@ -232,6 +250,9 @@ class RobustEstimation:
             self.residuals = abs(self.output - (z1 * hx) - (z2 * hy))
 
             if iteration == 0:
+                # Iteration = 0 produces the preliminary estimates of the transfer function based on MAD.
+                # Robust estimation of transfer function (A1.3 - Ritter (1998)) begins with iteration = 1.
+                #
                 # Initial guess of variance based on MAD scale estimate
                 dm = 1.483 * np.median(abs(self.residuals - np.median(self.residuals)))
                 # Upper limit to the MAD scale estimate
@@ -246,7 +267,9 @@ class RobustEstimation:
                 # Get huber weights based on km
                 self.get_huber_weights(km)
             else:
+                # Number of windows in which weight = 1
                 lc = np.sum((self.huber_weights == 1) * 1)
+                # Weighted sum of squared residuals
                 sum_squared = (n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2)))
                 if prev_sum_squared is not None:
                     change = abs(prev_sum_squared - sum_squared) / prev_sum_squared
@@ -261,7 +284,7 @@ class RobustEstimation:
                 # New variance of the robust solution
                 dh = np.sqrt(sum_squared)
                 # Upper limit
-                kh = 1.5 * dh
+                kh = float(1.5 * dh)
                 # Get huber weights based on kh
                 self.get_huber_weights(kh)
 
@@ -289,6 +312,7 @@ class RobustEstimation:
                   z_deno)
 
         if self.channel == 'ex' or self.channel == 'ey':
+            # Metronix specific correction
             self.z1_robust_huber = z1 * -1
             self.z2_robust_huber = z2 * -1
         else:
@@ -297,7 +321,7 @@ class RobustEstimation:
 
     def get_keys(self) -> None:
         """
-        Prepares keys
+        Prepares keys based on the current channel of processing.
         """
         self.z_deno_keys = ["hxhx", "hyhy", "hxhy", "hyhx"]
         if self.channel == 'ex':
@@ -313,9 +337,9 @@ class RobustEstimation:
             self.z1_num_keys = ["hyhy", "hzhx", "hyhx", "hzhy"]  # Zyx
             self.z2_num_keys = ["hxhx", "hzhy", "hxhy", "hzhx"]  # Zyy
 
-    def get_huber_weights(self, upper_limit) -> None:
+    def get_huber_weights(self, upper_limit: float) -> None:
         """
-        Prepares huber weights
+        Prepares huber weights based on the upper limit.
         """
         huber_matrix1 = (self.residuals <= upper_limit) * 1
         huber_matrix2 = (self.residuals > upper_limit) * 1
@@ -324,7 +348,7 @@ class RobustEstimation:
 
     def get_variance(self) -> None:
         """
-        Calculates variances.
+        Parametric estimation of variances. Based on the predicted coherency and degree of freedom.
         Dr. Manoj C. Nair helped with this computation.
         """
         if self.channel == 'ex':
