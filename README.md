@@ -7,11 +7,15 @@ Please note that SigMT currently supports only Metronix data format (.ats).
 
 Open anaconda prompt and type:
 
-> pip install sigmt
+```
+pip install sigmt
+```
 
 After installation, type:
 
-> sigmt
+```
+sigmt
+```
 
 ## How to cite
 If you use SigMT for publication, please cite the following paper:
