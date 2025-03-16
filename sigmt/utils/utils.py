@@ -16,7 +16,7 @@ def read_yaml_file(file_path: str) -> Dict[str, Any]:
     :return: Content in the yaml file
     :rtype: dict
     """
-    with open(file_path, 'r') as yaml_file:
+    with open(file_path, 'r', encoding='utf-8') as yaml_file:
         data = yaml.load(yaml_file, Loader=yaml.FullLoader)
     return data
 
@@ -32,7 +32,7 @@ def get_nsamples(header: dict) -> int:
     """
     nsamples_list = []
 
-    for key, sub_dict in header.items():
+    for _, sub_dict in header.items():
         nsamples = sub_dict.get('nsamples')
         if nsamples is not None:
             nsamples_list.append(nsamples)
@@ -60,7 +60,7 @@ def get_fftlength(nofsamples: int) -> int:
     i = 1
     ffts = [256]
     cfft = 256 * (2 ** i)
-    term = nofsamples / (20 * i);
+    term = nofsamples / (20 * i)
     ffts.append(cfft)
     while cfft <= term:
         i = i + 1
@@ -68,9 +68,8 @@ def get_fftlength(nofsamples: int) -> int:
         term = nofsamples / (20 * i)
         if cfft <= term:
             ffts.append(cfft)
-    window_length = ffts[-1]
-    if window_length > 65536:
-        window_length = 65536
+
+    window_length = min(ffts[-1], 65536)
     return window_length
 
 
@@ -156,8 +155,7 @@ def targetfreq(fs, cr, fftlength, periods_per_decade):
     dof = totalbandwidth / (fs / fftlength)
 
     maximum = fs / 2
-    if maximum > 15000:
-        maximum = 15000
+    maximum = min(maximum, 15000)
     fmax = max(ftable[ftable < maximum])  # ft_max, following nyquist
 
     fmaxindex = np.where(ftable == fmax)[0][0]  # index in ftable

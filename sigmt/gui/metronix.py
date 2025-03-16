@@ -51,6 +51,8 @@ class MainWindow(QMainWindow):
         Constructor
         """
         super().__init__()
+        self.dof = None
+        self.avgf = None
         self.notch_status = None
         self.md_threshold_entry = None
         self.coh_plot_button = None
@@ -424,7 +426,7 @@ class MainWindow(QMainWindow):
 
                 # Save setup data to YAML file
                 setup_file_path = os.path.join(self.project_dir, 'project_setup', 'setup.yaml')
-                with open(setup_file_path, 'w') as yaml_file:
+                with open(setup_file_path, 'w', encoding='utf-8') as yaml_file:
                     yaml.dump(self.project_setup, yaml_file)
                 QMessageBox.information(self, 'Done',
                                         f'Project created at: {self.project_dir}')
@@ -454,15 +456,17 @@ class MainWindow(QMainWindow):
         try:
             self.project_setup = utils.read_yaml_file(os.path.join(
                 self.project_dir, 'project_setup', 'setup.yaml'))
+
             if self.project_setup['interface'] == self.interface:
-                self.setWindowTitle(self.project_setup[
-                                        'project_name'] +
-                                    ' - SigMT | '
-                                    'A Tool for Magnetotelluric Data Processing (Metronix)')
+                self.setWindowTitle(self.project_setup['project_name'] + ' - SigMT | '
+                                                                         'A Tool for Magnetotelluric Data Processing (Metronix)')
             else:
                 QMessageBox.warning(self, "Warning", "Not a Metronix Project")
-        except:
-            QMessageBox.warning(self, "Warning", "Not a valid SigMT Project")
+
+        except FileNotFoundError:
+            QMessageBox.warning(self, "Warning", "Setup file not found")
+        except KeyError as e:
+            QMessageBox.warning(self, "Warning", f"Missing key in setup: {e}")
 
     def close_project(self) -> None:
         """
@@ -501,6 +505,10 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Warning", "Please create and/or open a project!")
 
     def show_about_dialog(self):
+        """
+        TODO: Docs
+
+        """
         self.about_dialog = AboutDialog()
         self.about_dialog.show()
 
@@ -600,7 +608,8 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, 'Warning',
                                     "No overlapping measurements found! You need to "
                                     "set remote measurement manually "
-                                    "by clicking 'Set Remote Measurement Manually' button below. \n\n"
+                                    "by clicking 'Set Remote Measurement Manually' button "
+                                    "below. \n\n"
                                     "Else, please proceed with single site processing.")
                 # self.remotesite_dropdown.blockSignals(True)
                 # self.remotesite_dropdown.setCurrentIndex(0)
@@ -686,13 +695,14 @@ class MainWindow(QMainWindow):
                     remote_meas_path)
                 if l_sampfreq != r_sampfreq:
                     QMessageBox.critical(self, "Error",
-                                         f"Sampling frequencies are not matching. Cannot proceed.")
+                                         "Sampling frequencies are not matching. Cannot proceed.")
                     self.remotesite = None
                     self.remotesite_dropdown.setCurrentIndex(0)
                     return
                 if l_chopper_value != r_chopper_value:
                     QMessageBox.critical(self, "Error",
-                                         f"Chopper status not matching. Cannot proceed. Choose another match.")
+                                         "Chopper status not matching. Cannot proceed. Choose "
+                                         "another match.")
                     self.remotesite = None
                     self.remotesite_dropdown.setCurrentIndex(0)
                     return
@@ -711,13 +721,15 @@ class MainWindow(QMainWindow):
             self.processing_route.drop_duplicates(inplace=True)
         except:
             QMessageBox.critical(self, "Error",
-                                 f"Select local and remote site first! It works only if remote site is selected.")
+                                 "Select local and remote site first! It works only if remote "
+                                 "site is selected.")
 
     # noinspection PyTypeChecker
     def read_ts(self) -> None:
         """
         Reads time series based on the self.processing_route.
-        processing_route is a DataFrame containing ['local', 'remote', 'sampling_frequency', 'chopper_status',
+        processing_route is a DataFrame containing ['local', 'remote', 'sampling_frequency',
+        'chopper_status',
         'sampling_chopper'] for all measurements.
         processing_df contains the values for selected sampling frequency & chopper status combo.
 
@@ -836,8 +848,10 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "Information", "Time series reading completed!\n\n"
                                                      "Summary\n"
                                                      "----------\n"
-                                                     f"No. of measurements loaded: {len(self.processing_df)}\n"
-                                                     f"Sampling frequency: {self.procinfo['fs']} Hz")
+                                                     f"No. of measurements loaded: "
+                                                     f"{len(self.processing_df)}\n"
+                                                     f"Sampling frequency: {self.procinfo['fs']} "
+                                                     f"Hz")
         self.procinfo['nsamples_mostly'] = utils.get_nsamples(self.header)
         fftlength = utils.get_fftlength(self.procinfo['nsamples_mostly'])
         # Updating FFT length dropdown
@@ -955,9 +969,9 @@ class MainWindow(QMainWindow):
                 self.procinfo['elev'] = first_header['elev'][0] / 100
                 #
                 self.procinfo['start_time'] = first_header['start'][0]
-                QMessageBox.information(self, "Done", f"Parameters are saved.")
+                QMessageBox.information(self, "Done", "Parameters are saved.")
             else:
-                QMessageBox.critical(self, "Error", f"Please read time series first!!")
+                QMessageBox.critical(self, "Error", "Please read time series first!!")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}."
                                                 "Ensure time series is read!!!")
@@ -1008,7 +1022,7 @@ class MainWindow(QMainWindow):
                 coords={'frequency': self.bandavg_dataset.coords['frequency']},
                 dims='frequency'
             )
-            print(f'Time taken for band averaging: ' + str(time.time() - bandavg_time))
+            print(f'Time taken for band averaging: {str(time.time() - bandavg_time)}')
             # Calculating data selection parameters
             time_dataselection = time.time()
             self.bandavg_dataset['coh_ex'] = (
@@ -1021,11 +1035,11 @@ class MainWindow(QMainWindow):
             self.bandavg_dataset['alpha_h'], self.bandavg_dataset[
                 'alpha_e'] = dataselectiontools.pd_values(
                 self.bandavg_dataset)
-            print(f'Time taken for data selection tool: ' + str(time.time() - time_dataselection))
+            print(f'Time taken for data selection tool: {str(time.time() - time_dataselection)}')
             qapp_instance.processEvents()
-            QMessageBox.information(self, "Done", f"Band averaging done!")
+            QMessageBox.information(self, "Done", "Band averaging done!")
         else:
-            QMessageBox.critical(self, "Error", f"Please read time series again!!")
+            QMessageBox.critical(self, "Error", "Please read time series again!!")
 
     def plot_coh_all(self) -> None:
         """
