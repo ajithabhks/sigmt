@@ -218,42 +218,46 @@ def plot_coherencies_all(dataset: xr.Dataset) -> None:
         # Select data for the current frequency
         data_for_freq = dataset.sel(frequency=freq)
         if num_coh == 1:
-            x, y = _get_x_y_labels(coh_keys, 0)
+            tf_component = _get_tf_key(coh_keys, 0)
             plt.figure()
-            plt.scatter(data_for_freq[x].real, data_for_freq[y].imag, c=data_for_freq[coh_keys[0]], cmap=custom_colormap,
+            plt.scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag, c=data_for_freq[coh_keys[0]], cmap=custom_colormap,
                         vmin=0, vmax=1)
             plt.colorbar(label=coh_keys[0])  # Add color bar for reference
             plt.title(f"Coherency ({coh_keys[0]}) plot for {freq.values} Hz", fontsize=12)
-            plt.xlabel(x)
-            plt.ylabel(y)
+            plt.xlabel(f'Real ({tf_component})')
+            plt.ylabel(f'Imag ({tf_component})')
         elif num_coh == 2:
             fig, axes = plt.subplots(1, 2, figsize=(10, 5))
             for i in range(2):
-                x, y = _get_x_y_labels(coh_keys, i)
-                sc = axes[i].scatter(data_for_freq[x].real, data_for_freq[y].imag, c=data_for_freq[coh_keys[i]],
+                tf_component = _get_tf_key(coh_keys, i)
+                sc = axes[i].scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag, c=data_for_freq[coh_keys[i]],
                                      cmap=custom_colormap, vmin=0, vmax=1)
                 fig.colorbar(sc, ax=axes[i], label=coh_keys[i])
                 axes[i].set_title(coh_keys[i])
-                axes[i].set_xlabel(x)
-                axes[i].set_ylabel(y)
+                axes[i].set_xlabel(f'Real ({tf_component})')
+                axes[i].set_ylabel(f'Imag ({tf_component})')
             fig.suptitle(f"Coherency plots for {freq.values} Hz", fontsize=12)
         elif num_coh == 3:
             fig, axes = plt.subplots(1, 3, figsize=(15, 5))  # 3 horizontal subplots
             for i in range(3):
-                x, y = _get_x_y_labels(coh_keys, i)
-                sc = axes[i].scatter(data_for_freq[x].real, data_for_freq[y].imag, c=data_for_freq[coh_keys[i]],
+                tf_component = _get_tf_key(coh_keys, i)
+                sc = axes[i].scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag, c=data_for_freq[coh_keys[i]],
                                      cmap=custom_colormap, vmin=0, vmax=1)
                 fig.colorbar(sc, ax=axes[i], label=coh_keys[i])
                 axes[i].set_title(coh_keys[i])
-                axes[i].set_xlabel(x)
-                axes[i].set_ylabel(y)
+                axes[i].set_xlabel(f'Real ({tf_component})')
+                axes[i].set_ylabel(f'Imag ({tf_component})')
             fig.suptitle(f"Coherency plots for {freq.values} Hz", fontsize=12)
 
         plt.tight_layout()
         plt.show()
 
 
-def _get_x_y_labels(coh_keys, i) -> tuple :
+def _get_tf_key(coh_keys, i) -> str:
+    """
+    Get transfer function key.
+
+    """
     key = ""
     if coh_keys[i] == 'coh_ex':
         key = 'zxy_single'
@@ -261,7 +265,7 @@ def _get_x_y_labels(coh_keys, i) -> tuple :
         key = 'zyx_single'
     if coh_keys[i] == 'coh_hz':
         key = 'tzx_single'
-    return key, key
+    return key
 
 def plot_pd_all(dataset: xr.Dataset) -> None:
     """
