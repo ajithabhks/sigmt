@@ -28,10 +28,10 @@ def parzen(f: np.ndarray, ft: float, cr: float) -> np.ndarray:
         cond = abs(ft - f[i])
         if cond == 0:
             pf[i] = 1
-        elif (cond > 0) and (cond < fr):
+        elif 0 < cond < fr:
             u = (np.pi * abs(cond)) / fr
             pf[i] = (np.sin(u) / u) ** 4
-        elif (cond > fr) or (cond == fr):
+        elif cond >= fr:
             pf[i] = 0
     pf = pf.reshape(-1, 1)
     return pf
