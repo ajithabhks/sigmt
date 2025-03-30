@@ -23,6 +23,19 @@ class BandAvg:
     def __init__(self, procinfo: dict, bandavg_msg: dict) -> None:
         """
         Constructor
+
+        :param procinfo: Dictionary containing information for processing such as target
+                        frequency, local and remote station details, FFT length, parzen radius,
+                        location, etc.
+                        :TODO make it instrument independent
+        :type procinfo: dict
+        :param bandavg_msg: Dict containing header information of XML, calibration data,
+                            time series.
+        :type bandavg_msg: dict
+
+        :return: None
+        :rtype: NoneType
+
         """
         self.channels = None
         self.fft_freqs = None
@@ -45,7 +58,8 @@ class BandAvg:
         self.header = bandavg_msg['header']
         self.cal_data = bandavg_msg['caldata']
         #
-        self.ftlist = utils.targetfreq(self.fs, self.parzen_radius, self.fft_length, freq_per_decade)
+        self.ftlist = utils.targetfreq(self.fs, self.parzen_radius, self.fft_length,
+                                       freq_per_decade)
         self.getchannels()  # Get ts channel info, 'Ex', 'Ey', ....
         self.calibrate_electric()
         if self.notch_status == 'on':
@@ -61,6 +75,10 @@ class BandAvg:
     def getchannels(self) -> None:
         """
         Get details of channels in the received data.
+
+        :return: None
+        :rtype: NoneType
+
         """
 
         self.channels = list(self.ts.keys())
@@ -68,6 +86,10 @@ class BandAvg:
     def calibrate_electric(self) -> None:
         """
         Calibrate electric field data
+
+        :return: None
+        :rtype: NoneType
+
         """
         print('Calibrating electric field channels.')
         if 'ex' in self.channels:
@@ -80,6 +102,10 @@ class BandAvg:
     def apply_notch(self) -> None:
         """
         Apply the notch filter
+
+        :return: None
+        :rtype: NoneType
+
         """
         print("Applying notch filter...")
         with ThreadPoolExecutor(max_workers=len(self.ts)) as executor:
@@ -88,7 +114,8 @@ class BandAvg:
 
             # Submit each task to the executor
             for channel in self.channels:
-                futures[channel] = executor.submit(sp.notchfilsos, self.ts[channel], self.fs, self.notch_frequency)
+                futures[channel] = executor.submit(sp.notchfilsos, self.ts[channel], self.fs,
+                                                   self.notch_frequency)
 
             # Retrieve the results when needed
             for channel, future in futures.items():
@@ -98,6 +125,10 @@ class BandAvg:
     def detrend_ts(self) -> None:
         """
         Detrend time series
+
+        :return: None
+        :rtype: NoneType
+
         """
         print('Applying detrend to the time series.')
         for channel in self.channels:
@@ -106,15 +137,24 @@ class BandAvg:
     def perform_fft(self) -> None:
         """
         Perform FFT
+
+        :return: None
+        :rtype: NoneType
+
         """
         print('Performing FFT.')
         self.xfft = {}
         for channel in self.channels:
-            self.fft_freqs, self.xfft[channel] = sp.do_fft(self.ts[channel], self.fs, self.fft_length)
+            self.fft_freqs, self.xfft[channel] = sp.do_fft(self.ts[channel], self.fs,
+                                                           self.fft_length)
 
     def calibrate_mag(self) -> None:
         """
-        Calibrates the magnetic field channels
+        Calibrates the magnetic field channels.
+
+        :return: None
+        :rtype: NoneType
+
         """
         print('Calibrating magnetic field channels.')
         desired_elements = ['hx', 'hy', 'hz', 'rx', 'ry']
@@ -127,18 +167,24 @@ class BandAvg:
             elif self.header[channel]['bychopper'][0] == 0:
                 stat = "ChoppOff"
             calibration_data = self.cal_data[str(self.header[channel]['sensor_no'][0])][stat]
-            calibration_object = Calibration(self.xfft[channel], self.fft_freqs, sensor_type, stat, calibration_data)
+            calibration_object = Calibration(self.xfft[channel], self.fft_freqs, sensor_type, stat,
+                                             calibration_data)
             self.xfft[channel] = calibration_object.calibrated_data
 
     def perform_bandavg(self) -> None:
         """
         Perform band averaging.
+
+        :return: None
+        :rtype: NoneType
+
         """
         print('Starting band averaging.')
         self.dof = np.empty(self.ftlist.shape[0], dtype=int)
         self.avgf = np.empty(self.ftlist.shape[0], dtype=int)
 
-        parzen_window = np.empty((self.xfft[next(iter(self.xfft))].shape[0], 1, self.ftlist.shape[0]), dtype=float)
+        parzen_window = np.empty(
+            (self.xfft[next(iter(self.xfft))].shape[0], 1, self.ftlist.shape[0]), dtype=float)
 
         for i in range(self.ftlist.shape[0]):
             ft = self.ftlist[i]
@@ -195,42 +241,56 @@ class BandAvg:
                 hy_conj = np.conj(self.xfft['hy'])
 
             self.bandavg_ds['exex'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ex'][:, :, np.newaxis] * ex_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                self.xfft['ex'][:, :, np.newaxis] * ex_conj[:, :, np.newaxis] * parzen_window,
+                axis=0) / sum_parzen)
             self.bandavg_ds['eyey'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ey'][:, :, np.newaxis] * ey_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                self.xfft['ey'][:, :, np.newaxis] * ey_conj[:, :, np.newaxis] * parzen_window,
+                axis=0) / sum_parzen)
             self.bandavg_ds['hxhx'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['hx'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                self.xfft['hx'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
+                axis=0) / sum_parzen)
             self.bandavg_ds['hyhy'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['hy'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                self.xfft['hy'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
+                axis=0) / sum_parzen)
             if not self.processing_mode == "MT Only":
                 self.bandavg_ds['hzhz'] = (('time_window', 'frequency'), np.sum(
-                    self.xfft['hz'][:, :, np.newaxis] * hz_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                    self.xfft['hz'][:, :, np.newaxis] * hz_conj[:, :, np.newaxis] * parzen_window,
+                    axis=0) / sum_parzen)
             #
             self.bandavg_ds['exey'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ex'][:, :, np.newaxis] * ey_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                self.xfft['ex'][:, :, np.newaxis] * ey_conj[:, :, np.newaxis] * parzen_window,
+                axis=0) / sum_parzen)
             self.bandavg_ds['hxhy'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['hx'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                self.xfft['hx'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
+                axis=0) / sum_parzen)
             self.bandavg_ds['hyhx'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['hy'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                self.xfft['hy'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
+                axis=0) / sum_parzen)
 
             # Ex output =====
             self.bandavg_ds['exhx'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ex'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                self.xfft['ex'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
+                axis=0) / sum_parzen)
             self.bandavg_ds['exhy'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ex'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                self.xfft['ex'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
+                axis=0) / sum_parzen)
 
             # Ey output =====
             self.bandavg_ds['eyhx'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ey'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                self.xfft['ey'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
+                axis=0) / sum_parzen)
             self.bandavg_ds['eyhy'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ey'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                self.xfft['ey'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
+                axis=0) / sum_parzen)
 
             if not self.processing_mode == "MT Only":
                 # Hz output =====
                 self.bandavg_ds['hzhx'] = (('time_window', 'frequency'), np.sum(
-                    self.xfft['hz'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                    self.xfft['hz'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
+                    axis=0) / sum_parzen)
                 self.bandavg_ds['hzhy'] = (('time_window', 'frequency'), np.sum(
-                    self.xfft['hz'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                    self.xfft['hz'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
+                    axis=0) / sum_parzen)
 
             z_deno = (self.bandavg_ds['hxhx'] * self.bandavg_ds['hyhy']) - (
                     self.bandavg_ds['hxhy'] * self.bandavg_ds['hyhx'])
@@ -252,10 +312,14 @@ class BandAvg:
             if not self.processing_mode == "MT Only":
                 t_deno = (self.bandavg_ds['hxhx'] * self.bandavg_ds['hyhy']) - (
                         self.bandavg_ds['hxhy'] * self.bandavg_ds['hyhx'])
-                self.bandavg_ds['tzx_single'] = ((self.bandavg_ds['hzhx'] * self.bandavg_ds['hyhy']) - (
-                        self.bandavg_ds['hzhy'] * self.bandavg_ds['hyhx'])) / t_deno
-                self.bandavg_ds['tzy_single'] = ((self.bandavg_ds['hzhy'] * self.bandavg_ds['hxhx']) - (
-                        self.bandavg_ds['hzhx'] * self.bandavg_ds['hxhy'])) / t_deno
+                self.bandavg_ds['tzx_single'] = ((self.bandavg_ds['hzhx'] * self.bandavg_ds[
+                    'hyhy']) - (
+                                                         self.bandavg_ds['hzhy'] * self.bandavg_ds[
+                                                     'hyhx'])) / t_deno
+                self.bandavg_ds['tzy_single'] = ((self.bandavg_ds['hzhy'] * self.bandavg_ds[
+                    'hxhx']) - (
+                                                         self.bandavg_ds['hzhx'] * self.bandavg_ds[
+                                                     'hxhy'])) / t_deno
 
             # Preparing selection arrays
 
