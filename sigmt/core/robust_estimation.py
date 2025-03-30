@@ -18,6 +18,18 @@ class RobustEstimation:
     def __init__(self, procinfo: dict, dataset: xr.Dataset) -> None:
         """
         Constructor
+
+        :param procinfo: Dictionary containing information for processing such as target
+                        frequency, local and remote station details, FFT length, parzen radius,
+                        location, etc.
+                        :TODO make it instrument independent
+        :type procinfo: dict
+        :param dataset: xarray dataset containing required numpy arrays for the regression.
+                        Cross powers, Selection booleans, TF estimates for all time windows.
+
+        :return: None
+        :rtype: NoneType
+
         """
         self.ft = None
         self.output_channels = None
@@ -50,6 +62,10 @@ class RobustEstimation:
         """
         Creates output channels based on processing mode.
         SigMT can support MT+Tipper, MT Only and Tipper Only mode.
+
+        :return: None
+        :rtype: NoneType
+
         """
         if self.processing_mode == "MT + Tipper":
             self.output_channels = ['ex', 'ey', 'hz']
@@ -64,6 +80,10 @@ class RobustEstimation:
         This method loops over available output channels and target frequencies.
         It rejects noisy windows and pass data to robust estimation and variance
         calculation methods and saves data in an xarray.
+
+        :return: None
+        :rtype: NoneType
+
         """
         estimate = {}
         estimation_time = time.time()
@@ -80,16 +100,21 @@ class RobustEstimation:
                 # Filtering based on a selection array for ex/ey/hz
                 self.get_selection_array()
                 selected_windows = \
-                    np.where(self.filtered_dataset[f'selection_array_{self.channel}'].values.astype(bool))[0]
-                print(f'Channel: {self.channel}, ft: {self.ft} Hz. Applying data selection conditions.')
+                    np.where(self.filtered_dataset[f'selection_array_{self.channel}'].values.astype(
+                        bool))[0]
+                print(
+                    f'Channel: {self.channel}, ft: {self.ft} Hz. Applying data selection conditions.')
                 self.filtered_dataset = self.filtered_dataset.isel(time_window=selected_windows)
                 # Filtering based on mahalanobis distance
                 self.get_mahalanobis_distance()
-                mahalanobis_selection = self.filtered_dataset['maha_dist'] < self.procinfo['md_thresh']
+                mahalanobis_selection = self.filtered_dataset['maha_dist'] < self.procinfo[
+                    'md_thresh']
                 selected_windows = np.where(mahalanobis_selection.astype(bool))[0]
-                print(f'Channel: {self.channel}, ft: {self.ft} Hz. Applying Mahalanobis distance condition.')
+                print(
+                    f'Channel: {self.channel}, ft: {self.ft} Hz. Applying Mahalanobis distance condition.')
                 self.filtered_dataset = self.filtered_dataset.isel(time_window=selected_windows)
-                print(f'Channel: {self.channel}, ft: {self.ft} Hz. Getting Jackknife initial guess.')
+                print(
+                    f'Channel: {self.channel}, ft: {self.ft} Hz. Getting Jackknife initial guess.')
                 self.get_jackknife_initial_guess()
                 print(f'Channel: {self.channel}, ft: {self.ft} Hz. Performing robust estimation.')
                 self.perform_robust_estimation()
@@ -146,6 +171,10 @@ class RobustEstimation:
     def get_selection_array(self) -> None:
         """
         Prepare an array of boolean suggesting selected time windows.
+
+        :return: None
+        :rtype: NoneType
+
         """
         self.filtered_dataset['selection_array_ex'] = (
                 self.filtered_dataset['ex_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
@@ -175,11 +204,16 @@ class RobustEstimation:
                 print(
                     f'Skipping polarization direction selection for ft:{self.ft} Hz (hz) '
                     f'due to insufficient data for robust regression. Try with different min and max values.')
-                self.filtered_dataset['selection_array_hz'] = self.filtered_dataset['hz_selection_coh']
+                self.filtered_dataset['selection_array_hz'] = self.filtered_dataset[
+                    'hz_selection_coh']
 
     def get_mahalanobis_distance(self) -> None:
         """
         Method to calculate the mahalanobis distance
+
+        :return: None
+        :rtype: NoneType
+
         """
         if self.channel == 'ex':
             z1 = self.filtered_dataset['zxx_single'].values
@@ -203,6 +237,10 @@ class RobustEstimation:
     def get_jackknife_initial_guess(self) -> None:
         """
         Prepares jackknife initial guess from transfer function values from selected time windows.
+
+        :return: None
+        :rtype: NoneType
+
         """
         if self.channel == 'ex':
             self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['zxx_single'])
@@ -230,6 +268,9 @@ class RobustEstimation:
 
         3.  Chave, A., Jones, A. (Eds.), 2012. The Magnetotelluric Method: Theory and Practice.
             Cambridge University Press, Cambridge. Pages: 188-189
+
+        :return: None
+        :rtype: NoneType
 
         """
         self.z1_robust_huber = None
@@ -270,7 +311,8 @@ class RobustEstimation:
                 # Number of windows in which weight = 1
                 lc = np.sum((self.huber_weights == 1) * 1)
                 # Weighted sum of squared residuals
-                sum_squared = (n_time_windows / (lc ** 2)) * (np.sum(self.huber_weights * (self.residuals ** 2)))
+                sum_squared = (n_time_windows / (lc ** 2)) * (
+                    np.sum(self.huber_weights * (self.residuals ** 2)))
                 if prev_sum_squared is not None:
                     change = abs(prev_sum_squared - sum_squared) / prev_sum_squared
                     if change < 0.01:  # 1%
@@ -292,14 +334,20 @@ class RobustEstimation:
             element_dict = {}
             element_avg_dict = {}
             for i in range(4):
-                element_dict[f'z1_num_{i}'] = self.filtered_dataset[self.z1_num_keys[i]].values * self.huber_weights
-                element_dict[f'z2_num_{i}'] = self.filtered_dataset[self.z2_num_keys[i]].values * self.huber_weights
-                element_dict[f'z_deno_{i}'] = self.filtered_dataset[self.z_deno_keys[i]].values * self.huber_weights
+                element_dict[f'z1_num_{i}'] = self.filtered_dataset[
+                                                  self.z1_num_keys[i]].values * self.huber_weights
+                element_dict[f'z2_num_{i}'] = self.filtered_dataset[
+                                                  self.z2_num_keys[i]].values * self.huber_weights
+                element_dict[f'z_deno_{i}'] = self.filtered_dataset[
+                                                  self.z_deno_keys[i]].values * self.huber_weights
             # Weighted mean of cross-spectra
             for i in range(4):
-                element_avg_dict[f'z1_num_avg_{i}'] = np.sum(element_dict[f'z1_num_{i}']) / np.sum(self.huber_weights)
-                element_avg_dict[f'z2_num_avg_{i}'] = np.sum(element_dict[f'z2_num_{i}']) / np.sum(self.huber_weights)
-                element_avg_dict[f'z_deno_avg_{i}'] = np.sum(element_dict[f'z_deno_{i}']) / np.sum(self.huber_weights)
+                element_avg_dict[f'z1_num_avg_{i}'] = np.sum(element_dict[f'z1_num_{i}']) / np.sum(
+                    self.huber_weights)
+                element_avg_dict[f'z2_num_avg_{i}'] = np.sum(element_dict[f'z2_num_{i}']) / np.sum(
+                    self.huber_weights)
+                element_avg_dict[f'z_deno_avg_{i}'] = np.sum(element_dict[f'z_deno_{i}']) / np.sum(
+                    self.huber_weights)
 
             #
             z_deno = ((element_avg_dict['z_deno_avg_0'] * element_avg_dict['z_deno_avg_1']) -
@@ -322,6 +370,10 @@ class RobustEstimation:
     def get_keys(self) -> None:
         """
         Prepares keys based on the current channel of processing.
+
+        :return: None
+        :rtype: NoneType
+
         """
         self.z_deno_keys = ["hxhx", "hyhy", "hxhy", "hyhx"]
         if self.channel == 'ex':
@@ -350,24 +402,41 @@ class RobustEstimation:
         """
         Parametric estimation of variances. Based on the predicted coherency and degree of freedom.
         Dr. Manoj C. Nair helped with this computation.
+
+        :return: None
+        :rtype: NoneType
+
         """
         if self.channel == 'ex':
-            outout = np.sum(self.filtered_dataset['exex'].values * self.huber_weights) / np.sum(self.huber_weights)
-            outhx = np.sum(self.filtered_dataset['exhx'].values * self.huber_weights) / np.sum(self.huber_weights)
-            outhy = np.sum(self.filtered_dataset['exhy'].values * self.huber_weights) / np.sum(self.huber_weights)
+            outout = np.sum(self.filtered_dataset['exex'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
+            outhx = np.sum(self.filtered_dataset['exhx'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
+            outhy = np.sum(self.filtered_dataset['exhy'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
         if self.channel == 'ey':
-            outout = np.sum(self.filtered_dataset['eyey'].values * self.huber_weights) / np.sum(self.huber_weights)
-            outhx = np.sum(self.filtered_dataset['eyhx'].values * self.huber_weights) / np.sum(self.huber_weights)
-            outhy = np.sum(self.filtered_dataset['eyhy'].values * self.huber_weights) / np.sum(self.huber_weights)
+            outout = np.sum(self.filtered_dataset['eyey'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
+            outhx = np.sum(self.filtered_dataset['eyhx'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
+            outhy = np.sum(self.filtered_dataset['eyhy'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
         if self.channel == 'hz':
-            outout = np.sum(self.filtered_dataset['hzhz'].values * self.huber_weights) / np.sum(self.huber_weights)
-            outhx = np.sum(self.filtered_dataset['hzhx'].values * self.huber_weights) / np.sum(self.huber_weights)
-            outhy = np.sum(self.filtered_dataset['hzhy'].values * self.huber_weights) / np.sum(self.huber_weights)
+            outout = np.sum(self.filtered_dataset['hzhz'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
+            outhx = np.sum(self.filtered_dataset['hzhx'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
+            outhy = np.sum(self.filtered_dataset['hzhy'].values * self.huber_weights) / np.sum(
+                self.huber_weights)
 
-        hxhx = np.sum(self.filtered_dataset['hxhx'].values * self.huber_weights) / np.sum(self.huber_weights)
-        hxhy = np.sum(self.filtered_dataset['hxhy'].values * self.huber_weights) / np.sum(self.huber_weights)
-        hyhx = np.sum(self.filtered_dataset['hyhx'].values * self.huber_weights) / np.sum(self.huber_weights)
-        hyhy = np.sum(self.filtered_dataset['hyhy'].values * self.huber_weights) / np.sum(self.huber_weights)
+        hxhx = np.sum(self.filtered_dataset['hxhx'].values * self.huber_weights) / np.sum(
+            self.huber_weights)
+        hxhy = np.sum(self.filtered_dataset['hxhy'].values * self.huber_weights) / np.sum(
+            self.huber_weights)
+        hyhx = np.sum(self.filtered_dataset['hyhx'].values * self.huber_weights) / np.sum(
+            self.huber_weights)
+        hyhy = np.sum(self.filtered_dataset['hyhy'].values * self.huber_weights) / np.sum(
+            self.huber_weights)
 
         zpz = self.z1_robust_huber * np.conj(outhx) + self.z2_robust_huber * np.conj(outhy)
         zpx = self.z1_robust_huber * hxhx + self.z2_robust_huber * hyhx
