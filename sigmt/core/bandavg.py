@@ -311,15 +311,11 @@ class BandAvg:
 
             if not self.processing_mode == "MT Only":
                 t_deno = (self.bandavg_ds['hxhx'] * self.bandavg_ds['hyhy']) - (
-                        self.bandavg_ds['hxhy'] * self.bandavg_ds['hyhx'])
-                self.bandavg_ds['tzx_single'] = ((self.bandavg_ds['hzhx'] * self.bandavg_ds[
-                    'hyhy']) - (
-                                                         self.bandavg_ds['hzhy'] * self.bandavg_ds[
-                                                     'hyhx'])) / t_deno
+                            self.bandavg_ds['hxhy'] * self.bandavg_ds['hyhx'])
+                self.bandavg_ds['tzx_single'] = ((self.bandavg_ds['hzhx'] * self.bandavg_ds['hyhy']) - (
+                            self.bandavg_ds['hzhy'] * self.bandavg_ds['hyhx'])) / t_deno
                 self.bandavg_ds['tzy_single'] = ((self.bandavg_ds['hzhy'] * self.bandavg_ds[
-                    'hxhx']) - (
-                                                         self.bandavg_ds['hzhx'] * self.bandavg_ds[
-                                                     'hxhy'])) / t_deno
+                    'hxhx']) - (self.bandavg_ds['hzhx'] * self.bandavg_ds['hxhy'])) / t_deno
 
             # Preparing selection arrays
 

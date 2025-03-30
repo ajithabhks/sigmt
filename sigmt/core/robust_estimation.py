@@ -177,17 +177,14 @@ class RobustEstimation:
 
         """
         self.filtered_dataset['selection_array_ex'] = (
-                self.filtered_dataset['ex_selection_coh'] * self.filtered_dataset[
-            'alpha_e_selection'] *
+                self.filtered_dataset['ex_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
                 self.filtered_dataset['alpha_h_selection'])
         self.filtered_dataset['selection_array_ey'] = (
-                self.filtered_dataset['ey_selection_coh'] * self.filtered_dataset[
-            'alpha_e_selection'] *
+                self.filtered_dataset['ey_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
                 self.filtered_dataset['alpha_h_selection'])
         if not self.processing_mode == "MT Only":
             self.filtered_dataset['selection_array_hz'] = (
-                    self.filtered_dataset['hz_selection_coh'] * self.filtered_dataset[
-                'alpha_e_selection'] *
+                    self.filtered_dataset['hz_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
                     self.filtered_dataset['alpha_h_selection'])
         # Avoiding GUI from crashing due to insufficient data
         if np.sum(self.filtered_dataset['selection_array_ex']) < 10:
