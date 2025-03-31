@@ -60,7 +60,7 @@ class BandAvg:
 
         # Class related attributes
         self.channels = None
-        self.fft_freqs = None
+        self.fft_frequencies = None
         self.bandavg_ds = None
         self.avgf = None
         self.dof = None
@@ -71,7 +71,7 @@ class BandAvg:
         self.time_series = _reshape_time_series_with_overlap(time_series=time_series, fft_length=fft_length, overlap=overlap)
         del time_series
 
-        self.ftlist = utils.targetfreq(self.sampling_frequency, self.parzen_radius, self.fft_length,
+        self.ft_list = utils.targetfreq(self.sampling_frequency, self.parzen_radius, self.fft_length,
                                        frequencies_per_decade)
         self.get_channels()  # Get list of available ts channel. 'Ex', 'Ey', ....
         if calibrate_electric:
@@ -138,7 +138,7 @@ class BandAvg:
                     chopper_status = None
                 calibration_data = self.calibration_data_magnetic[channel]['calibration_data'][sensor_serial_number][
                     chopper_status]
-                calibration_object = calibration.MetronixCalibration(self.xfft[channel], self.fft_freqs, sensor_type,
+                calibration_object = calibration.MetronixCalibration(self.xfft[channel], self.fft_frequencies, sensor_type,
                                                                      chopper_status, calibration_data)
                 self.xfft[channel] = calibration_object.calibrated_data
             else:
@@ -192,7 +192,7 @@ class BandAvg:
         print('Performing FFT.')
         self.xfft = {}
         for channel in self.channels:
-            self.fft_freqs, self.xfft[channel] = sp.do_fft(self.time_series[channel], self.sampling_frequency,
+            self.fft_frequencies, self.xfft[channel] = sp.do_fft(self.time_series[channel], self.sampling_frequency,
                                                            self.fft_length)
 
     def perform_bandavg(self) -> None:
@@ -204,22 +204,22 @@ class BandAvg:
 
         """
         print('Starting band averaging.')
-        self.dof = np.empty(self.ftlist.shape[0], dtype=int)
-        self.avgf = np.empty(self.ftlist.shape[0], dtype=int)
+        self.dof = np.empty(self.ft_list.shape[0], dtype=int)
+        self.avgf = np.empty(self.ft_list.shape[0], dtype=int)
 
         parzen_window = np.empty(
-            (self.xfft[next(iter(self.xfft))].shape[0], 1, self.ftlist.shape[0]), dtype=float)
+            (self.xfft[next(iter(self.xfft))].shape[0], 1, self.ft_list.shape[0]), dtype=float)
 
-        for i in range(self.ftlist.shape[0]):
-            ft = self.ftlist[i]
-            parzen_window[:, :, i] = stats.parzen(self.fft_freqs, ft, self.parzen_radius)
+        for i in range(self.ft_list.shape[0]):
+            ft = self.ft_list[i]
+            parzen_window[:, :, i] = stats.parzen(self.fft_frequencies, ft, self.parzen_radius)
             self.dof[i] = (2 * 2 * np.sum(parzen_window[:, :, i] != 0)) - 4
             self.avgf[i] = np.sum(parzen_window[:, :, i] != 0)
 
         self.bandavg_ds = xr.Dataset(
             coords={
                 'time_window': np.arange(self.xfft[next(iter(self.xfft))].shape[1]),
-                'frequency': self.ftlist
+                'frequency': self.ft_list
             }
         )
 
