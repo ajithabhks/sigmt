@@ -25,19 +25,19 @@ class BandAvg:
                  header,
                  time_series: dict,
                  sampling_frequency: float,
-                 overlap: Optional[int] = 50,
-                 calibrate_magnetic: Optional[bool] = True,
-                 calibrate_electric: Optional[bool] = True,
-                 calibration_data_electric: Optional[dict] = None,
-                 calibration_data_magnetic: Optional[dict] = None,
                  fft_length: Optional[int] = 1024,
                  parzen_radius: Optional[float] = 0.25,
-                 frequencies_per_decade: Optional[int]= 12,
+                 overlap: Optional[int] = 50,
+                 frequencies_per_decade: Optional[int] = 12,
+                 remote_reference: Optional[bool] = False,
+                 calibrate_magnetic: Optional[bool] = False,
+                 calibrate_electric: Optional[bool] = False,
+                 calibration_data_electric: Optional[dict] = None,
+                 calibration_data_magnetic: Optional[dict] = None,
                  notch_filter_apply: Optional[bool]= False,
                  notch_frequency: Optional[float]= None,
                  process_mt: Optional[bool]= True,
-                 process_tipper: Optional[bool] = True,
-                 remote_reference: Optional[bool] = False) -> None:
+                 process_tipper: Optional[bool] = True) -> None:
         """
         Constructor
 
@@ -47,12 +47,13 @@ class BandAvg:
         """
         # Set attributes from parameters
         self.sampling_frequency = sampling_frequency
-        self.overlap = overlap
-        self.calibration_data_electric = calibration_data_electric
         self.fft_length = fft_length
         self.parzen_radius = parzen_radius
-        self.notch_frequency = notch_frequency
+        self.overlap = overlap
         self.remote_reference = remote_reference
+        self.calibration_data_electric = calibration_data_electric
+        self.calibration_data_magnetic = calibration_data_magnetic
+        self.notch_frequency = notch_frequency
         self.process_mt = process_mt
         self.process_tipper = process_tipper
 
@@ -65,7 +66,7 @@ class BandAvg:
         self.data_dict = None
         self.mag_channels = None
         self.xfft = None
-        self.cal_data = calibration_data_magnetic
+
 
         self.header = header
 
@@ -85,7 +86,7 @@ class BandAvg:
         self.perform_fft()
         if calibrate_magnetic:
             self.calibrate_mag()
-        del self.cal_data
+        del self.calibration_data_magnetic
         del self.time_series
         gc.collect()
         self.perform_bandavg()
@@ -184,7 +185,7 @@ class BandAvg:
                 stat = "ChoppOn"
             elif self.header[channel]['bychopper'][0] == 0:
                 stat = "ChoppOff"
-            calibration_data = self.cal_data[str(self.header[channel]['sensor_no'][0])][stat]
+            calibration_data = self.calibration_data_magnetic[str(self.header[channel]['sensor_no'][0])][stat]
             calibration_object = Calibration(self.xfft[channel], self.fft_freqs, sensor_type, stat,
                                              calibration_data)
             self.xfft[channel] = calibration_object.calibrated_data
