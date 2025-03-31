@@ -1070,16 +1070,16 @@ class MainWindow(QMainWindow):
                 # TODO: Replace this with a better strategy later
                 calibration_data_electric = {}
 
-                # Initialize 'ex' and 'ey' dictionaries if they don't exist in header
+                # TODO: Replace this with a better strategy later
                 if 'ex' in self.header[ts]:
                     calibration_data_electric['ex'] = {}
-                    calibration_data_electric['ex']['x1'] = self.header[ts]['ex']['x1']
-                    calibration_data_electric['ex']['x2'] = self.header[ts]['ex']['x2']
+                    calibration_data_electric['ex']['x1'] = self.header[ts]['ex']['x1'][0]
+                    calibration_data_electric['ex']['x2'] = self.header[ts]['ex']['x2'][0]
 
                 if 'ey' in self.header[ts]:
                     calibration_data_electric['ey'] = {}
-                    calibration_data_electric['ey']['y1'] = self.header[ts]['ey']['y1']
-                    calibration_data_electric['ey']['y2'] = self.header[ts]['ey']['y2']
+                    calibration_data_electric['ey']['y1'] = self.header[ts]['ey']['y1'][0]
+                    calibration_data_electric['ey']['y2'] = self.header[ts]['ey']['y2'][0]
 
                 calibration_data_magnetic = self.xml_caldata[ts]
 

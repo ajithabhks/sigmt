@@ -105,10 +105,10 @@ class BandAvg:
         """
         print('Calibrating electric field channels.')
         if 'ex' in self.channels:
-            dipole_ns = abs(self.calibration_data_electric['ex']['x1'][0]) + abs(self.calibration_data_electric['ex']['x2'][0])
+            dipole_ns = abs(self.calibration_data_electric['ex']['x1']) + abs(self.calibration_data_electric['ex']['x2'])
             self.time_series['ex'] = self.time_series['ex'] / (1 * dipole_ns / 1000)
         if 'ey' in self.channels:
-            dipole_ew = abs(self.calibration_data_electric['ey']['y1'][0]) + abs(self.calibration_data_electric['ey']['y2'][0])
+            dipole_ew = abs(self.calibration_data_electric['ey']['y1']) + abs(self.calibration_data_electric['ey']['y2'])
             self.time_series['ey'] = self.time_series['ey'] / (1 * dipole_ew / 1000)
 
     def apply_notch(self) -> None:
