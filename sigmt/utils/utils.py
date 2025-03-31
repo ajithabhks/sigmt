@@ -1,7 +1,7 @@
 """
 Place to store utility functions.
 """
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import numpy as np
 import yaml
@@ -126,53 +126,59 @@ def reshape_array_with_overlap(window_length: int, overlap: int, data: np.ndarra
     return result_array
 
 
-def targetfreq(fs, cr, fftlength, periods_per_decade):
+def get_target_frequency_list(sampling_frequency: float,
+                              parzen_window_radius: float,
+                              fft_length: int,
+                              periods_per_decade: int,
+                              start_period: int = -5,
+                              stop_period: int = 5
+                              ) -> np.ndarray:
     """
-    It returns target frequencies corresponding to sampling frequency.
+    Computes a list of target frequencies based on the given processing parameters.
 
-    :param fs: Sampling frequency of measurement
-    :type fs: float
-    :param cr: Parzen window radius
-    :type cr: float
-    :param fftlength: FFT length
-    :type fftlength: int
-    :param freq_per_decade: Frequencies per decade required
-    :type freq_per_decade: int
+    :param sampling_frequency: Sampling frequency of the measurement (Hz).
+    :type sampling_frequency: float
+    :param parzen_window_radius: Radius of the Parzen window.
+    :type parzen_window_radius: float
+    :param fft_length: Length of the FFT (Fast Fourier Transform).
+    :type fft_length: int
+    :param periods_per_decade: Number of period/frequency points per decade.
+    :type periods_per_decade: int
+    :param start_period: Exponent for the start of the period range (10^start_period).
+                         Default is -5, corresponding to 10⁻⁵ Hz.
+    :type start_period: int
+    :param stop_period: Exponent for the end of the period range (10^stop_period).
+                        Default is 5, corresponding to 10⁵ Hz.
+    :type stop_period: int
 
-    :returns: A numpy array (1D) of float (shape: n,) which is a list of target frequencies.
+    :returns: A numpy array (1D) of float (shape: n, ) which is a list of target frequencies.
     :rtype: np.ndarray
 
     """
-    start_period = -5
-    stop_period = 5
-    periods_per_decade = 12
+
     ftable = np.logspace(start_period, stop_period, int(
         (stop_period - start_period) * periods_per_decade + 1))
     ftable = 1 / ftable
 
-    fr = cr * ftable  # bandwidth of parzen window - oneside from ft
-    totalbandwidth = fr * 2  # bandwidth of parzen window - two side from ft
+    fr = parzen_window_radius * ftable  # bandwidth of parzen window - oneside from ft
+    total_bandwidth = fr * 2  # bandwidth of parzen window - two side from ft
     # nof spectra in parzen window for each ft
-    dof = totalbandwidth / (fs / fftlength)
+    dof = total_bandwidth / (sampling_frequency / fft_length)
 
-    maximum = fs / 2
+    maximum = sampling_frequency / 2
     if maximum > 15000:
         maximum = 15000
-    fmax = max(ftable[ftable < maximum])  # ft_max, following nyquist
+    f_max = max(ftable[ftable < maximum])  # ft_max, following nyquist
 
-    fmaxindex = np.where(ftable == fmax)[0][0]  # index in ftable
-    min_required = dof[fmaxindex] * .01  # min dof required for ft_min
+    f_max_index = np.where(ftable == f_max)[0][0]  # index in ftable
+    min_required = dof[f_max_index] * .01  # min dof required for ft_min
 
-    dofmin = min(dof[dof > min_required])  # finding in dof
-    dofminindex = np.where(dof == dofmin)[0][0]  # finding index
+    dof_min = min(dof[dof > min_required])  # finding in dof
+    dof_min_index = np.where(dof == dof_min)[0][0]  # finding index
 
-    # fmin = ftable[dofminindex] #ft_min
+    while dof[dof_min_index] < 10:  # Making sure, atleast 10 spectral lines are averaged
+        dof_min_index = dof_min_index - 1
 
-    while dof[dofminindex] < 10:  # Making sure, atleast 10 spectral lines are averaged
-        dofminindex = dofminindex - 1
+    ft_list = ftable[f_max_index:dof_min_index + 1]  # Making ft_list
 
-    # fmin = ftable[dofminindex] #Fixing ft_min
-
-    ftlist = ftable[fmaxindex:dofminindex + 1]  # Making ftlist
-
-    return ftlist
+    return ft_list
