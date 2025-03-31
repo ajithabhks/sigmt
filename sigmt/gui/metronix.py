@@ -1037,16 +1037,66 @@ class MainWindow(QMainWindow):
             num = 0
             bandavg_time = time.time()
             for ts in self.header:
-                bandavg_msg['header'] = self.header[ts]
-                bandavg_msg['caldata'] = self.xml_caldata[ts]
-                bandavg_msg['ts'] = metronix_utils.prepare_ts_from_h5(self.h5file, ts)
-                for ts_channel in bandavg_msg['ts']:
-                    bandavg_msg['ts'][ts_channel] = utils.reshape_array_with_overlap(
+                ts_dict = metronix_utils.prepare_ts_from_h5(self.h5file, ts)
+                for ts_channel in ts_dict:
+                    ts_dict[ts_channel] = utils.reshape_array_with_overlap(
                         window_length=self.procinfo['fft_length'],
                         overlap=50,
-                        data=bandavg_msg['ts'][ts_channel])
-                bandavg = BandAvg(self.procinfo, bandavg_msg) # Get the bandavg object
-                datasets.append(bandavg.bandavg_ds) # appends xarray dataset for a run
+                        data=ts_dict[ts_channel])
+
+                # TODO: Replace this with a better strategy later
+                if self.procinfo['notch'] == 'on':
+                    notch_filter_apply = True
+                else:
+                    notch_filter_apply = False
+
+                # TODO: Replace this with a better strategy later
+                if self.procinfo['processing_mode'] == 'MT + Tipper':
+                    process_mt = True
+                    process_tipper = True
+                elif self.procinfo['processing_mode'] == 'MT Only':
+                    process_mt = True
+                    process_tipper = False
+                else:
+                    process_mt = None
+                    process_tipper = None
+
+                # TODO: Replace this with a better strategy later
+                if self.procinfo['remotesite'] is not None:
+                    remote_reference = True
+                else:
+                    remote_reference = False
+
+                # TODO: Replace this with a better strategy later
+                calibration_data_electric = {}
+
+                # Initialize 'ex' and 'ey' dictionaries if they don't exist in header
+                if 'ex' in self.header[ts]:
+                    calibration_data_electric['ex'] = {}
+                    calibration_data_electric['ex']['x1'] = self.header[ts]['ex']['x1']
+                    calibration_data_electric['ex']['x2'] = self.header[ts]['ex']['x2']
+
+                if 'ey' in self.header[ts]:
+                    calibration_data_electric['ey'] = {}
+                    calibration_data_electric['ey']['y1'] = self.header[ts]['ey']['y1']
+                    calibration_data_electric['ey']['y2'] = self.header[ts]['ey']['y2']
+
+                calibration_data_magnetic = self.xml_caldata[ts]
+
+                # Get the bandavg object
+                bandavg = BandAvg(header=self.header[ts],
+                                  time_series=ts_dict, sampling_frequency=self.procinfo['fs'],
+                                  calibrate_magnetic=True, calibrate_electric=True,
+                                  calibration_data_electric=calibration_data_electric,
+                                  calibration_data_magnetic=calibration_data_magnetic,
+                                  fft_length=self.procinfo['fft_length'], parzen_radius=self.procinfo['parzen_radius'],
+                                  frequencies_per_decade=self.procinfo['frequencies_per_decade'],
+                                  notch_filter_apply=notch_filter_apply,
+                                  notch_frequency=self.procinfo['notch_frequency'],
+                                  process_mt=process_mt, process_tipper=process_tipper,
+                                  remote_reference=remote_reference
+                                  )
+                datasets.append(bandavg.bandavg_ds) # appends xarray dataset (for a run)
                 num += 1
                 progress_dialog.setValue(num)
             self.bandavg_dataset = xr.concat(datasets, dim='time_window').assign_coords(

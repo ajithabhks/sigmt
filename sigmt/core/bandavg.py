@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import xarray as xr
 from scipy import signal
+from typing import Optional
 
 import sigmt.core.sigproc as sp
 import sigmt.core.statistics as stats
@@ -20,23 +21,41 @@ class BandAvg:
     Class to perform band averaging
     """
 
-    def __init__(self, procinfo: dict, bandavg_msg: dict) -> None:
+    def __init__(self,
+                 header,
+                 time_series: dict,
+                 sampling_frequency: float,
+                 calibrate_magnetic: Optional[bool] = True,
+                 calibrate_electric: Optional[bool] = True,
+                 calibration_data_electric: Optional[dict] = None,
+                 calibration_data_magnetic: Optional[dict] = None,
+                 fft_length: Optional[int] = None,
+                 parzen_radius: Optional[float] = 0.25,
+                 frequencies_per_decade: Optional[int]= 12,
+                 notch_filter_apply: Optional[bool]= False,
+                 notch_frequency: Optional[float]= None,
+                 process_mt: Optional[bool]= True,
+                 process_tipper: Optional[bool] = True,
+                 remote_reference: Optional[bool] = False) -> None:
         """
         Constructor
-
-        :param procinfo: Dictionary containing information for processing such as target
-                        frequency, local and remote station details, FFT length, parzen radius,
-                        location, etc.
-                        :TODO make it instrument independent
-        :type procinfo: dict
-        :param bandavg_msg: Dict containing header information of XML, calibration data,
-                            time series.
-        :type bandavg_msg: dict
 
         :return: None
         :rtype: NoneType
 
         """
+        # Set attributes from parameters
+        self.time_series = time_series
+        self.sampling_frequency = sampling_frequency
+        self.calibration_data_electric = calibration_data_electric
+        self.fft_length = fft_length
+        self.parzen_radius = parzen_radius
+        self.notch_frequency = notch_frequency
+        self.remote_reference = remote_reference
+        self.process_mt = process_mt
+        self.process_tipper = process_tipper
+
+        # Class related attributes
         self.channels = None
         self.fft_freqs = None
         self.bandavg_ds = None
@@ -45,34 +64,27 @@ class BandAvg:
         self.data_dict = None
         self.mag_channels = None
         self.xfft = None
-        self.procinfo = procinfo
-        self.processing_mode = self.procinfo['processing_mode']
-        self.fs = procinfo['fs']
-        self.fft_length = procinfo['fft_length']
-        self.parzen_radius = procinfo['parzen_radius']
-        self.notch_status = procinfo['notch']
-        self.notch_frequency = procinfo['notch_frequency']
-        freq_per_decade = procinfo['frequencies_per_decade']
-        #
-        self.ts = bandavg_msg['ts']
-        self.header = bandavg_msg['header']
-        self.cal_data = bandavg_msg['caldata']
-        #
-        self.ftlist = utils.targetfreq(self.fs, self.parzen_radius, self.fft_length,
-                                       freq_per_decade)
-        self.getchannels()  # Get ts channel info, 'Ex', 'Ey', ....
-        self.calibrate_electric()
-        if self.notch_status == 'on':
+        self.cal_data = calibration_data_magnetic
+
+        self.header = header
+
+        self.ftlist = utils.targetfreq(self.sampling_frequency, self.parzen_radius, self.fft_length,
+                                       frequencies_per_decade)
+        self.get_channels()  # Get list of available ts channel. 'Ex', 'Ey', ....
+        if calibrate_electric:
+            self.calibrate_electric()
+        if notch_filter_apply:
             self.apply_notch()
-        self.detrend_ts()
+        self.detrend_time_series()
         self.perform_fft()
-        self.calibrate_mag()
+        if calibrate_magnetic:
+            self.calibrate_mag()
         del self.cal_data
-        del self.ts
+        del self.time_series
         gc.collect()
         self.perform_bandavg()
 
-    def getchannels(self) -> None:
+    def get_channels(self) -> None:
         """
         Get details of channels in the received data.
 
@@ -81,7 +93,7 @@ class BandAvg:
 
         """
 
-        self.channels = list(self.ts.keys())
+        self.channels = list(self.time_series.keys())
 
     def calibrate_electric(self) -> None:
         """
@@ -93,11 +105,11 @@ class BandAvg:
         """
         print('Calibrating electric field channels.')
         if 'ex' in self.channels:
-            dipole_ns = abs(self.header['ex']['x1'][0]) + abs(self.header['ex']['x2'][0])
-            self.ts['ex'] = self.ts['ex'] / (1 * dipole_ns / 1000)
+            dipole_ns = abs(self.calibration_data_electric['ex']['x1'][0]) + abs(self.calibration_data_electric['ex']['x2'][0])
+            self.time_series['ex'] = self.time_series['ex'] / (1 * dipole_ns / 1000)
         if 'ey' in self.channels:
-            dipole_ew = abs(self.header['ey']['y1'][0]) + abs(self.header['ey']['y2'][0])
-            self.ts['ey'] = self.ts['ey'] / (1 * dipole_ew / 1000)
+            dipole_ew = abs(self.calibration_data_electric['ey']['y1'][0]) + abs(self.calibration_data_electric['ey']['y2'][0])
+            self.time_series['ey'] = self.time_series['ey'] / (1 * dipole_ew / 1000)
 
     def apply_notch(self) -> None:
         """
@@ -108,21 +120,21 @@ class BandAvg:
 
         """
         print("Applying notch filter...")
-        with ThreadPoolExecutor(max_workers=len(self.ts)) as executor:
+        with ThreadPoolExecutor(max_workers=len(self.time_series)) as executor:
             # Dictionary to hold futures
             futures = {}
 
             # Submit each task to the executor
             for channel in self.channels:
-                futures[channel] = executor.submit(sp.notchfilsos, self.ts[channel], self.fs,
+                futures[channel] = executor.submit(sp.notchfilsos, self.time_series[channel], self.sampling_frequency,
                                                    self.notch_frequency)
 
             # Retrieve the results when needed
             for channel, future in futures.items():
-                self.ts[channel] = future.result()
+                self.time_series[channel] = future.result()
         print("Notch filter applied")
 
-    def detrend_ts(self) -> None:
+    def detrend_time_series(self) -> None:
         """
         Detrend time series
 
@@ -132,7 +144,7 @@ class BandAvg:
         """
         print('Applying detrend to the time series.')
         for channel in self.channels:
-            self.ts[channel] = signal.detrend(self.ts[channel], axis=0)
+            self.time_series[channel] = signal.detrend(self.time_series[channel], axis=0)
 
     def perform_fft(self) -> None:
         """
@@ -145,7 +157,7 @@ class BandAvg:
         print('Performing FFT.')
         self.xfft = {}
         for channel in self.channels:
-            self.fft_freqs, self.xfft[channel] = sp.do_fft(self.ts[channel], self.fs,
+            self.fft_freqs, self.xfft[channel] = sp.do_fft(self.time_series[channel], self.sampling_frequency,
                                                            self.fft_length)
 
     def calibrate_mag(self) -> None:
@@ -199,7 +211,7 @@ class BandAvg:
             }
         )
 
-        if self.processing_mode == "MT + Tipper" or self.processing_mode == "MT Only":
+        if self.process_mt:
             sum_parzen = np.sum(parzen_window, axis=0)
 
             # Compute the weighted sums
@@ -215,12 +227,12 @@ class BandAvg:
             self.bandavg_ds['hy'] = (
                 ('time_window', 'frequency'),
                 np.sum(self.xfft['hy'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
-            if not self.processing_mode == "MT Only":
+            if self.process_tipper:
                 self.bandavg_ds['hz'] = (
                     ('time_window', 'frequency'),
                     np.sum(self.xfft['hz'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
 
-            if self.procinfo['remotesite'] is not None:
+            if self.remote_reference:
                 self.bandavg_ds['rx'] = (
                     ('time_window', 'frequency'),
                     np.sum(self.xfft['rx'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
@@ -231,9 +243,9 @@ class BandAvg:
             # Compute the auto- and cross-spectra
             ex_conj = np.conj(self.xfft['ex'])
             ey_conj = np.conj(self.xfft['ey'])
-            if not self.processing_mode == "MT Only":
+            if self.process_tipper:
                 hz_conj = np.conj(self.xfft['hz'])
-            if self.procinfo['remotesite'] is not None:
+            if self.remote_reference:
                 hx_conj = np.conj(self.xfft['rx'])
                 hy_conj = np.conj(self.xfft['ry'])
             else:
@@ -252,7 +264,7 @@ class BandAvg:
             self.bandavg_ds['hyhy'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['hy'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
-            if not self.processing_mode == "MT Only":
+            if self.process_tipper:
                 self.bandavg_ds['hzhz'] = (('time_window', 'frequency'), np.sum(
                     self.xfft['hz'][:, :, np.newaxis] * hz_conj[:, :, np.newaxis] * parzen_window,
                     axis=0) / sum_parzen)
@@ -283,7 +295,7 @@ class BandAvg:
                 self.xfft['ey'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
 
-            if not self.processing_mode == "MT Only":
+            if self.process_tipper:
                 # Hz output =====
                 self.bandavg_ds['hzhx'] = (('time_window', 'frequency'), np.sum(
                     self.xfft['hz'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
@@ -309,7 +321,7 @@ class BandAvg:
             self.bandavg_ds['zyx_single'] = zyx_num / z_deno
             self.bandavg_ds['zyy_single'] = zyy_num / z_deno
 
-            if not self.processing_mode == "MT Only":
+            if self.process_tipper:
                 t_deno = (self.bandavg_ds['hxhx'] * self.bandavg_ds['hyhy']) - (
                             self.bandavg_ds['hxhy'] * self.bandavg_ds['hyhx'])
                 self.bandavg_ds['tzx_single'] = ((self.bandavg_ds['hzhx'] * self.bandavg_ds['hyhy']) - (
@@ -331,7 +343,7 @@ class BandAvg:
                 dims=self.bandavg_ds.dims
             )
 
-            if not self.processing_mode == "MT Only":
+            if self.process_tipper:
                 self.bandavg_ds['hz_selection_coh'] = xr.DataArray(
                     np.full(self.bandavg_ds['hz'].shape, True),
                     coords=self.bandavg_ds.coords,
