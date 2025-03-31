@@ -1,7 +1,7 @@
 """
 Place to store utility functions.
 """
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 import numpy as np
 import yaml
