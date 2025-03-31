@@ -19,7 +19,7 @@ class MetronixCalibration:
         :type fft_freqs: np.ndarray
         :param sensor_type: Type of sensor, Eg: MFS06e
         :type sensor_type: str
-        :param stat: Chopper status. Either 'ChoppOn' or 'ChoppOff'
+        :param stat: Chopper status. Either 'chopper_on' or 'chopper_off'
         :type stat: str
         :param calibration_data: Calibration data as array. shape: (length(43), 3).
         :type calibration_data: np.ndarray
@@ -49,11 +49,11 @@ class MetronixCalibration:
         phase = np.radians(self.calibration_data[:, 2])
         calt = (magnitude * np.cos(phase) + (1j * magnitude * np.sin(phase))) * 1000
         # If Chopper is Off
-        if self.chopper_status == 'ChoppOff':
+        if self.chopper_status == 'chopper_off':
             cal_all_band = np.interp(self.fft_freqs, self.calibration_data[:, 0], calt)
             self.calibrated_data = self.xfft / cal_all_band[:, np.newaxis]
         # If Chopper is On
-        if self.chopper_status == 'ChoppOn':
+        if self.chopper_status == 'chopper_on':
             minfindx = np.where(self.fft_freqs < 0.1)[0]
             cal_all_band = np.interp(self.fft_freqs[np.max(minfindx) + 1:np.shape(self.fft_freqs)[0]],
                                      self.calibration_data[:, 0], calt)
@@ -73,11 +73,11 @@ class MetronixCalibration:
         phase = np.radians(self.calibration_data[:, 2])
         calt = (magnitude * np.cos(phase) + (1j * magnitude * np.sin(phase))) * 1000
         # If Chopper is Off
-        if self.chopper_status == 'ChoppOff':
+        if self.chopper_status == 'chopper_off':
             cal_all_band = np.interp(self.fft_freqs, self.calibration_data[:, 0], calt)
             self.calibrated_data = self.xfft / cal_all_band[:, np.newaxis]
         # If Chopper is On
-        if self.chopper_status == 'ChoppOn':
+        if self.chopper_status == 'chopper_on':
             minfindx = np.where(self.fft_freqs < 0.4)[0]
             cal_all_band = np.interp(self.fft_freqs[np.max(minfindx) + 1:np.shape(self.fft_freqs)[0]],
                                      self.calibration_data[:, 0], calt)

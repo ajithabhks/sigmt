@@ -131,9 +131,9 @@ class BandAvg:
                 sensor_type = self.calibration_data_magnetic[channel]['sensor_type']
                 sensor_serial_number = str(self.calibration_data_magnetic[channel]['sensor_serial_number'])
                 if self.calibration_data_magnetic[channel]['chopper_status'] == 1:
-                    chopper_status = "ChoppOn"
+                    chopper_status = "chopper_on"
                 elif self.calibration_data_magnetic[channel]['chopper_status'] == 0:
-                    chopper_status = "ChoppOff"
+                    chopper_status = "chopper_off"
                 else:
                     chopper_status = None
                 calibration_data = self.calibration_data_magnetic[channel]['calibration_data'][sensor_serial_number][

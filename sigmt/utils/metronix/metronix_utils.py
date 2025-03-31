@@ -97,10 +97,12 @@ def get_sampling_frequency_from_xml(meas_paths: list) -> tuple:
             sampfreq.append(sample_freq)
             hchopper_value = int(root.find(".//hchopper").text)
             if hchopper_value == 1:
-                choppstat = "ChoppOn"
+                chopper_status = "chopper_on"
             elif hchopper_value == 0:
-                choppstat = "ChoppOff"
-            chopper_value.append(choppstat)
+                chopper_status = "chopper_off"
+            else:
+                chopper_status = "unknown"
+            chopper_value.append(chopper_status)
         except Exception as e:
             QMessageBox.critical(None, "Error", str(e))
     return sampfreq, chopper_value
