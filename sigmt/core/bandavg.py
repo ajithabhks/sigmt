@@ -25,11 +25,12 @@ class BandAvg:
                  header,
                  time_series: dict,
                  sampling_frequency: float,
+                 overlap: Optional[int] = 50,
                  calibrate_magnetic: Optional[bool] = True,
                  calibrate_electric: Optional[bool] = True,
                  calibration_data_electric: Optional[dict] = None,
                  calibration_data_magnetic: Optional[dict] = None,
-                 fft_length: Optional[int] = None,
+                 fft_length: Optional[int] = 1024,
                  parzen_radius: Optional[float] = 0.25,
                  frequencies_per_decade: Optional[int]= 12,
                  notch_filter_apply: Optional[bool]= False,
@@ -45,8 +46,8 @@ class BandAvg:
 
         """
         # Set attributes from parameters
-        self.time_series = time_series
         self.sampling_frequency = sampling_frequency
+        self.overlap = overlap
         self.calibration_data_electric = calibration_data_electric
         self.fft_length = fft_length
         self.parzen_radius = parzen_radius
@@ -67,6 +68,11 @@ class BandAvg:
         self.cal_data = calibration_data_magnetic
 
         self.header = header
+
+        # Dividing time series into several time windows of length equals to fft length. Number of windows will
+        # depend on the time series overlap.
+        self.time_series = _reshape_time_series_with_overlap(time_series=time_series, fft_length=fft_length, overlap=overlap)
+        del time_series
 
         self.ftlist = utils.targetfreq(self.sampling_frequency, self.parzen_radius, self.fft_length,
                                        frequencies_per_decade)
@@ -362,3 +368,18 @@ class BandAvg:
                 dims=self.bandavg_ds.dims
             )
             print('Band averaging finished.')
+
+def _reshape_time_series_with_overlap(time_series, fft_length, overlap):
+    """
+    Reshape array with overlap.
+
+    :return: None
+    :rtype: NoneType
+
+    """
+    for channel in time_series:
+        time_series[channel] = utils.reshape_array_with_overlap(window_length=fft_length,
+                                                                overlap=overlap,
+                                                                data=time_series[channel])
+
+    return time_series

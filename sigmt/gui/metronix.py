@@ -1023,7 +1023,6 @@ class MainWindow(QMainWindow):
         #
         if 'localsite' in self.procinfo and self.procinfo['localsite'] == self.localsite:
             datasets = []
-            bandavg_msg = {}
             #
             progress_dialog = QProgressDialog("Performing band averaging...", None, 0,
                                               len(self.header), self)
@@ -1037,13 +1036,8 @@ class MainWindow(QMainWindow):
             num = 0
             bandavg_time = time.time()
             for ts in self.header:
-                ts_dict = metronix_utils.prepare_ts_from_h5(self.h5file, ts)
-                for ts_channel in ts_dict:
-                    ts_dict[ts_channel] = utils.reshape_array_with_overlap(
-                        window_length=self.procinfo['fft_length'],
-                        overlap=50,
-                        data=ts_dict[ts_channel])
 
+                # Preparing inputs for band averaging
                 # TODO: Replace this with a better strategy later
                 if self.procinfo['notch'] == 'on':
                     notch_filter_apply = True
@@ -1085,7 +1079,8 @@ class MainWindow(QMainWindow):
 
                 # Get the bandavg object
                 bandavg = BandAvg(header=self.header[ts],
-                                  time_series=ts_dict, sampling_frequency=self.procinfo['fs'],
+                                  time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
+                                  sampling_frequency=self.procinfo['fs'], overlap=50,
                                   calibrate_magnetic=True, calibrate_electric=True,
                                   calibration_data_electric=calibration_data_electric,
                                   calibration_data_magnetic=calibration_data_magnetic,
