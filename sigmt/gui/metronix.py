@@ -1087,12 +1087,13 @@ class MainWindow(QMainWindow):
                 # Get the bandavg object
                 bandavg = BandAvg(time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
                                   sampling_frequency=self.procinfo['fs'], overlap=50,
-                                  calibrate_magnetic=True, calibrate_electric=True,
+                                  calibrate_electric=True, calibrate_magnetic=True,
                                   calibration_data_electric=calibration_data_electric,
                                   calibration_data_magnetic=calibration_data_magnetic,
-                                  fft_length=self.procinfo['fft_length'], parzen_radius=self.procinfo['parzen_radius'],
+                                  fft_length=self.procinfo['fft_length'],
+                                  parzen_window_radius=self.procinfo['parzen_radius'],
                                   frequencies_per_decade=self.procinfo['frequencies_per_decade'],
-                                  notch_filter_apply=notch_filter_apply,
+                                  apply_notch_filter=notch_filter_apply,
                                   notch_frequency=self.procinfo['notch_frequency'],
                                   process_mt=process_mt, process_tipper=process_tipper,
                                   remote_reference=remote_reference

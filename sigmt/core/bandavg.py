@@ -24,23 +24,90 @@ class BandAvg:
     """
 
     def __init__(self,
-                 time_series: dict,
+                 time_series: dict[str, np.ndarray],
                  sampling_frequency: float,
-                 fft_length: Optional[int] = 1024,
-                 parzen_radius: Optional[float] = 0.25,
-                 overlap: Optional[int] = 50,
-                 frequencies_per_decade: Optional[int] = 12,
-                 remote_reference: Optional[bool] = False,
-                 calibrate_magnetic: Optional[bool] = False,
-                 calibrate_electric: Optional[bool] = False,
-                 calibration_data_electric: Optional[dict] = None,
+                 fft_length: int = 1024,
+                 parzen_window_radius: float = 0.25,
+                 overlap: int = 50,
+                 frequencies_per_decade: int = 12,
+                 remote_reference: bool = False,
+                 calibrate_electric: bool = False,
+                 calibrate_magnetic: bool = False,
+                 calibration_data_electric: Optional[dict[str, dict[str, float]]] = None,
                  calibration_data_magnetic: Optional[dict] = None,
-                 notch_filter_apply: Optional[bool] = False,
+                 apply_notch_filter: bool = False,
                  notch_frequency: Optional[float] = None,
-                 process_mt: Optional[bool] = True,
-                 process_tipper: Optional[bool] = True) -> None:
+                 process_mt: bool = True,
+                 process_tipper: bool = True) -> None:
         """
         Constructor
+
+        :param time_series: A dictionary containing time series data as 1D numpy arrays.
+                    Each key represents a component of the data, and the corresponding
+                    value is a numpy array of time series values. The dictionary should
+                    include the following keys and associated units:
+                    - 'ex': Electric field component in the x-direction
+                        - Unit: mV/km (if calibrated), mV (Metronix, if not calibrated)
+                    - 'ey': Electric field component in the y-direction
+                        - Unit: mV/km (if calibrated), mV (Metronix, if not calibrated)
+                    - 'hx': Magnetic field component in the x-direction
+                        - Unit: nT (if calibrated), mV (Metronix, if not calibrated)
+                    - 'hy': Magnetic field component in the y-direction
+                        - Unit: nT (if calibrated), mV (Metronix, if not calibrated)
+                    - 'hz': Magnetic field component in the z-direction
+                        - Unit: nT (if calibrated), mV (Metronix, if not calibrated)
+                    - 'rx': Remote magnetic field component in the x-direction
+                        - Unit: nT (if calibrated), mV (Metronix, if not calibrated)
+                    - 'ry': Remote magnetic field component in the y-direction
+                        - Unit: nT (if calibrated), mV (Metronix, if not calibrated)
+
+        :type time_series: dict[str, numpy.ndarray]
+        :param sampling_frequency: Sampling frequency of the time_series.
+        :type sampling_frequency: float
+        :param fft_length: The length of the Fast Fourier Transform (FFT) to be applied.
+                           The default value is 1024.
+        :type fft_length: int
+        :param parzen_window_radius: The radius of the Parzen window used for band averaging.
+                                     The default value is 0.25.
+        :type parzen_window_radius: float
+        :param overlap: The percentage of overlap between consecutive time windows when segmenting the time series.
+                        The default value is 50%.
+        :type overlap: int
+        :param frequencies_per_decade: The number of target frequencies to be used per decade for band averaging.
+                                       The default value is 12.
+        :type frequencies_per_decade: int
+        :param remote_reference: A boolean flag indicating whether remote reference is used for processing.
+                                 Set to True if a remote reference is used. The default is False.
+        :type remote_reference: bool
+        :param calibrate_electric: A boolean flag that specifies whether the electric channels should be calibrated
+                                   from units of mV to mv/km. This needs dipole length details. The default is False.
+        :type calibrate_electric: bool
+        :param calibrate_magnetic: A boolean flag that specifies whether the magnetic channels should be calibrated
+                                   to units of mV to nT. The calibration process currently supports Metronix sensor
+                                   coils. The default is False.
+        :type calibrate_magnetic: bool
+        :param calibration_data_electric: A dictionary containing the distances from the center to each electrode.
+                                          It should include two sub-dictionaries with the following distances:
+                                          - 'ex':
+                                              - 'x1': Distance (float) from the center to the North electrode
+                                              - 'x2': Distance (float) from the center to the South electrode
+                                          - 'ey':
+                                              - 'y1': Distance (float) from the center to the East electrode
+                                              - 'y2': Distance (float) from the center to the West electrode
+        :type calibration_data_electric: dict[str, dict[str, float]]
+        :param calibration_data_magnetic: TODO
+        :type calibration_data_magnetic: dict
+        :param apply_notch_filter: A boolean flag indicating whether a notch filter should be applied. Default is False.
+        :type apply_notch_filter: bool
+        :param notch_frequency: The frequency to be removed using the notch filter. TODO: Harmonics. Default is None.
+        :type notch_frequency: float
+        :param process_mt: A boolean flag indicating whether the MT impedance is estimated during processing.
+                           Default is True. Set to False to skip MT impedance calculations if only Tipper is
+                           being estimated.
+        :type process_mt: bool
+        :param process_tipper: A boolean flag indicating whether the Tipper is estimated during processing.
+                               Default is True. Set to False if Tipper is not part of the survey to avoid unnecessary
+                               calculations.
 
         :return: None
         :rtype: NoneType
@@ -49,7 +116,7 @@ class BandAvg:
         # Set attributes from parameters
         self.sampling_frequency = sampling_frequency
         self.fft_length = fft_length
-        self.parzen_radius = parzen_radius
+        self.parzen_window_radius = parzen_window_radius
         self.overlap = overlap
         self.remote_reference = remote_reference
         self.calibration_data_electric = calibration_data_electric
@@ -71,12 +138,12 @@ class BandAvg:
         self.time_series = _reshape_time_series_with_overlap(time_series=time_series, fft_length=fft_length, overlap=overlap)
         del time_series
 
-        self.ft_list = utils.targetfreq(self.sampling_frequency, self.parzen_radius, self.fft_length,
+        self.ft_list = utils.targetfreq(self.sampling_frequency, self.parzen_window_radius, self.fft_length,
                                        frequencies_per_decade)
         self.get_channels()  # Get list of available ts channel. 'Ex', 'Ey', ....
         if calibrate_electric:
             self.calibrate_electric()
-        if notch_filter_apply:
+        if apply_notch_filter:
             self.apply_notch()
         self.detrend_time_series()
         self.perform_fft()
@@ -212,7 +279,7 @@ class BandAvg:
 
         for i in range(self.ft_list.shape[0]):
             ft = self.ft_list[i]
-            parzen_window[:, :, i] = stats.parzen(self.fft_frequencies, ft, self.parzen_radius)
+            parzen_window[:, :, i] = stats.parzen(self.fft_frequencies, ft, self.parzen_window_radius)
             self.dof[i] = (2 * 2 * np.sum(parzen_window[:, :, i] != 0)) - 4
             self.avgf[i] = np.sum(parzen_window[:, :, i] != 0)
 
