@@ -1063,8 +1063,6 @@ class MainWindow(QMainWindow):
 
                 # TODO: Replace this with a better strategy later
                 calibration_data_electric = {}
-
-                # TODO: Replace this with a better strategy later
                 if 'ex' in self.header[ts]:
                     calibration_data_electric['ex'] = {}
                     calibration_data_electric['ex']['x1'] = self.header[ts]['ex']['x1'][0]
@@ -1075,11 +1073,19 @@ class MainWindow(QMainWindow):
                     calibration_data_electric['ey']['y1'] = self.header[ts]['ey']['y1'][0]
                     calibration_data_electric['ey']['y2'] = self.header[ts]['ey']['y2'][0]
 
-                calibration_data_magnetic = self.xml_caldata[ts]
+                # TODO: Replace this with a better strategy later
+                calibration_data_magnetic = {'instrument': 'metronix'}
+                possible_magnetic_channels = ['hx', 'hy', 'hz', 'rx', 'ry']
+                available_magnetic_channels = [element for element in possible_magnetic_channels if element in list(self.header[ts].keys())]
+                for magnetic_channel in available_magnetic_channels:
+                    calibration_data_magnetic[magnetic_channel] = {}
+                    calibration_data_magnetic[magnetic_channel]['sensor_type'] = self.header[ts][magnetic_channel]['sensor']
+                    calibration_data_magnetic[magnetic_channel]['sensor_serial_number'] = self.header[ts][magnetic_channel]['sensor_no'][0]
+                    calibration_data_magnetic[magnetic_channel]['chopper_status'] = self.header[ts][magnetic_channel]['bychopper'][0]
+                    calibration_data_magnetic[magnetic_channel]['calibration_data'] = self.xml_caldata[ts]
 
                 # Get the bandavg object
-                bandavg = BandAvg(header=self.header[ts],
-                                  time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
+                bandavg = BandAvg(time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
                                   sampling_frequency=self.procinfo['fs'], overlap=50,
                                   calibrate_magnetic=True, calibrate_electric=True,
                                   calibration_data_electric=calibration_data_electric,

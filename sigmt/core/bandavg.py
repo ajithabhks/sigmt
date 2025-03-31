@@ -2,27 +2,28 @@
 Class for band averaging. Here, auto and cross spectra are calculated for
 each target frequencies and transfer functions are computed for all events.
 """
+
 import gc
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
 
 import numpy as np
 import xarray as xr
 from scipy import signal
-from typing import Optional
 
 import sigmt.core.sigproc as sp
 import sigmt.core.statistics as stats
+import sigmt.utils.metronix.calibration as calibration
 import sigmt.utils.utils as utils
-from sigmt.utils.metronix.calibration import Calibration
 
 
 class BandAvg:
     """
-    Class to perform band averaging
+    Class to perform band averaging.
+
     """
 
     def __init__(self,
-                 header,
                  time_series: dict,
                  sampling_frequency: float,
                  fft_length: Optional[int] = 1024,
@@ -34,9 +35,9 @@ class BandAvg:
                  calibrate_electric: Optional[bool] = False,
                  calibration_data_electric: Optional[dict] = None,
                  calibration_data_magnetic: Optional[dict] = None,
-                 notch_filter_apply: Optional[bool]= False,
-                 notch_frequency: Optional[float]= None,
-                 process_mt: Optional[bool]= True,
+                 notch_filter_apply: Optional[bool] = False,
+                 notch_frequency: Optional[float] = None,
+                 process_mt: Optional[bool] = True,
                  process_tipper: Optional[bool] = True) -> None:
         """
         Constructor
@@ -63,12 +64,7 @@ class BandAvg:
         self.bandavg_ds = None
         self.avgf = None
         self.dof = None
-        self.data_dict = None
-        self.mag_channels = None
         self.xfft = None
-
-
-        self.header = header
 
         # Dividing time series into several time windows of length equals to fft length. Number of windows will
         # depend on the time series overlap.
@@ -118,6 +114,38 @@ class BandAvg:
             dipole_ew = abs(self.calibration_data_electric['ey']['y1']) + abs(self.calibration_data_electric['ey']['y2'])
             self.time_series['ey'] = self.time_series['ey'] / (1 * dipole_ew / 1000)
 
+    def calibrate_mag(self) -> None:
+        """
+        Calibrates the magnetic field channels.
+
+        :return: None
+        :rtype: NoneType
+
+        """
+        print('Calibrating magnetic field channels.')
+        desired_elements = ['hx', 'hy', 'hz', 'rx', 'ry']
+        # Create a list mag channels out of desired elements if existing in self.channels
+        magnetic_channels = [element for element in desired_elements if element in self.channels]
+        for channel in magnetic_channels:
+            if self.calibration_data_magnetic['instrument'] == 'metronix':
+                sensor_type = self.calibration_data_magnetic[channel]['sensor_type']
+                sensor_serial_number = str(self.calibration_data_magnetic[channel]['sensor_serial_number'])
+                if self.calibration_data_magnetic[channel]['chopper_status'] == 1:
+                    chopper_status = "ChoppOn"
+                elif self.calibration_data_magnetic[channel]['chopper_status'] == 0:
+                    chopper_status = "ChoppOff"
+                else:
+                    chopper_status = None
+                calibration_data = self.calibration_data_magnetic[channel]['calibration_data'][sensor_serial_number][
+                    chopper_status]
+                calibration_object = calibration.MetronixCalibration(self.xfft[channel], self.fft_freqs, sensor_type,
+                                                                     chopper_status, calibration_data)
+                self.xfft[channel] = calibration_object.calibrated_data
+            else:
+                raise NotImplementedError(
+                    f'Calibration for {self.calibration_data_magnetic["instrument"]} instruments is not implemented as of now.'
+                )
+
     def apply_notch(self) -> None:
         """
         Apply the notch filter
@@ -166,29 +194,6 @@ class BandAvg:
         for channel in self.channels:
             self.fft_freqs, self.xfft[channel] = sp.do_fft(self.time_series[channel], self.sampling_frequency,
                                                            self.fft_length)
-
-    def calibrate_mag(self) -> None:
-        """
-        Calibrates the magnetic field channels.
-
-        :return: None
-        :rtype: NoneType
-
-        """
-        print('Calibrating magnetic field channels.')
-        desired_elements = ['hx', 'hy', 'hz', 'rx', 'ry']
-        # Create a list mag channels out of desired elements if existing in self.channels
-        self.mag_channels = [element for element in desired_elements if element in self.channels]
-        for channel in self.mag_channels:
-            sensor_type = self.header[channel]['sensor']
-            if self.header[channel]['bychopper'][0] == 1:
-                stat = "ChoppOn"
-            elif self.header[channel]['bychopper'][0] == 0:
-                stat = "ChoppOff"
-            calibration_data = self.calibration_data_magnetic[str(self.header[channel]['sensor_no'][0])][stat]
-            calibration_object = Calibration(self.xfft[channel], self.fft_freqs, sensor_type, stat,
-                                             calibration_data)
-            self.xfft[channel] = calibration_object.calibrated_data
 
     def perform_bandavg(self) -> None:
         """
@@ -330,9 +335,9 @@ class BandAvg:
 
             if self.process_tipper:
                 t_deno = (self.bandavg_ds['hxhx'] * self.bandavg_ds['hyhy']) - (
-                            self.bandavg_ds['hxhy'] * self.bandavg_ds['hyhx'])
+                        self.bandavg_ds['hxhy'] * self.bandavg_ds['hyhx'])
                 self.bandavg_ds['tzx_single'] = ((self.bandavg_ds['hzhx'] * self.bandavg_ds['hyhy']) - (
-                            self.bandavg_ds['hzhy'] * self.bandavg_ds['hyhx'])) / t_deno
+                        self.bandavg_ds['hzhy'] * self.bandavg_ds['hyhx'])) / t_deno
                 self.bandavg_ds['tzy_single'] = ((self.bandavg_ds['hzhy'] * self.bandavg_ds[
                     'hxhx']) - (self.bandavg_ds['hzhx'] * self.bandavg_ds['hxhy'])) / t_deno
 
@@ -369,6 +374,7 @@ class BandAvg:
                 dims=self.bandavg_ds.dims
             )
             print('Band averaging finished.')
+
 
 def _reshape_time_series_with_overlap(time_series, fft_length, overlap):
     """

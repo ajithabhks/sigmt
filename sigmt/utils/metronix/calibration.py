@@ -4,7 +4,11 @@ Class for the metronix coil calibration
 import numpy as np
 
 
-class Calibration:
+class MetronixCalibration:
+    """
+    Class to perform Metronix specific calibration.
+    """
+
     def __init__(self, xfft, fft_freqs, sensor_type, stat, calibration_data):
         """
         Constructor
