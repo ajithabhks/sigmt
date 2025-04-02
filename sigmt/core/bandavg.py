@@ -128,7 +128,7 @@ class BandAvg:
         # Class related attributes
         self.channels = None
         self.fft_frequencies = None
-        self.bandavg_ds = None
+        self.band_averaged_dataset = None
         self.avgf = None
         self.dof = None
         self.xfft = None
@@ -143,7 +143,7 @@ class BandAvg:
                                                        fft_length=self.fft_length,
                                                        table_type='default',
                                                        frequencies_per_decade=frequencies_per_decade)
-        
+
         self.get_channels()  # Get list of available ts channel. 'Ex', 'Ey', ....
         if calibrate_electric:
             self.calibrate_electric()
@@ -264,7 +264,7 @@ class BandAvg:
         self.xfft = {}
         for channel in self.channels:
             self.fft_frequencies, self.xfft[channel] = sp.do_fft(self.time_series[channel], self.sampling_frequency,
-                                                           self.fft_length)
+                                                                 self.fft_length)
 
     def perform_bandavg(self) -> None:
         """
@@ -282,12 +282,12 @@ class BandAvg:
             (self.xfft[next(iter(self.xfft))].shape[0], 1, self.ft_list.shape[0]), dtype=float)
 
         for i in range(self.ft_list.shape[0]):
-            ft = self.ft_list[i]
+            ft = float(self.ft_list[i])
             parzen_window[:, :, i] = stats.parzen(self.fft_frequencies, ft, self.parzen_window_radius)
             self.dof[i] = (2 * 2 * np.sum(parzen_window[:, :, i] != 0)) - 4
             self.avgf[i] = np.sum(parzen_window[:, :, i] != 0)
 
-        self.bandavg_ds = xr.Dataset(
+        self.band_averaged_dataset = xr.Dataset(
             coords={
                 'time_window': np.arange(self.xfft[next(iter(self.xfft))].shape[1]),
                 'frequency': self.ft_list
@@ -298,28 +298,28 @@ class BandAvg:
             sum_parzen = np.sum(parzen_window, axis=0)
 
             # Compute the weighted sums
-            self.bandavg_ds['ex'] = (
+            self.band_averaged_dataset['ex'] = (
                 ('time_window', 'frequency'),
                 np.sum(self.xfft['ex'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
-            self.bandavg_ds['ey'] = (
+            self.band_averaged_dataset['ey'] = (
                 ('time_window', 'frequency'),
                 np.sum(self.xfft['ey'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
-            self.bandavg_ds['hx'] = (
+            self.band_averaged_dataset['hx'] = (
                 ('time_window', 'frequency'),
                 np.sum(self.xfft['hx'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
-            self.bandavg_ds['hy'] = (
+            self.band_averaged_dataset['hy'] = (
                 ('time_window', 'frequency'),
                 np.sum(self.xfft['hy'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
             if self.process_tipper:
-                self.bandavg_ds['hz'] = (
+                self.band_averaged_dataset['hz'] = (
                     ('time_window', 'frequency'),
                     np.sum(self.xfft['hz'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
 
             if self.remote_reference:
-                self.bandavg_ds['rx'] = (
+                self.band_averaged_dataset['rx'] = (
                     ('time_window', 'frequency'),
                     np.sum(self.xfft['rx'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
-                self.bandavg_ds['ry'] = (
+                self.band_averaged_dataset['ry'] = (
                     ('time_window', 'frequency'),
                     np.sum(self.xfft['ry'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
 
@@ -335,114 +335,116 @@ class BandAvg:
                 hx_conj = np.conj(self.xfft['hx'])
                 hy_conj = np.conj(self.xfft['hy'])
 
-            self.bandavg_ds['exex'] = (('time_window', 'frequency'), np.sum(
+            self.band_averaged_dataset['exex'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['ex'][:, :, np.newaxis] * ex_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
-            self.bandavg_ds['eyey'] = (('time_window', 'frequency'), np.sum(
+            self.band_averaged_dataset['eyey'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['ey'][:, :, np.newaxis] * ey_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
-            self.bandavg_ds['hxhx'] = (('time_window', 'frequency'), np.sum(
+            self.band_averaged_dataset['hxhx'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['hx'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
-            self.bandavg_ds['hyhy'] = (('time_window', 'frequency'), np.sum(
+            self.band_averaged_dataset['hyhy'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['hy'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
             if self.process_tipper:
-                self.bandavg_ds['hzhz'] = (('time_window', 'frequency'), np.sum(
+                self.band_averaged_dataset['hzhz'] = (('time_window', 'frequency'), np.sum(
                     self.xfft['hz'][:, :, np.newaxis] * hz_conj[:, :, np.newaxis] * parzen_window,
                     axis=0) / sum_parzen)
             #
-            self.bandavg_ds['exey'] = (('time_window', 'frequency'), np.sum(
+            self.band_averaged_dataset['exey'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['ex'][:, :, np.newaxis] * ey_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
-            self.bandavg_ds['hxhy'] = (('time_window', 'frequency'), np.sum(
+            self.band_averaged_dataset['hxhy'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['hx'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
-            self.bandavg_ds['hyhx'] = (('time_window', 'frequency'), np.sum(
+            self.band_averaged_dataset['hyhx'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['hy'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
 
             # Ex output =====
-            self.bandavg_ds['exhx'] = (('time_window', 'frequency'), np.sum(
+            self.band_averaged_dataset['exhx'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['ex'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
-            self.bandavg_ds['exhy'] = (('time_window', 'frequency'), np.sum(
+            self.band_averaged_dataset['exhy'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['ex'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
 
             # Ey output =====
-            self.bandavg_ds['eyhx'] = (('time_window', 'frequency'), np.sum(
+            self.band_averaged_dataset['eyhx'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['ey'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
-            self.bandavg_ds['eyhy'] = (('time_window', 'frequency'), np.sum(
+            self.band_averaged_dataset['eyhy'] = (('time_window', 'frequency'), np.sum(
                 self.xfft['ey'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
 
             if self.process_tipper:
                 # Hz output =====
-                self.bandavg_ds['hzhx'] = (('time_window', 'frequency'), np.sum(
+                self.band_averaged_dataset['hzhx'] = (('time_window', 'frequency'), np.sum(
                     self.xfft['hz'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
                     axis=0) / sum_parzen)
-                self.bandavg_ds['hzhy'] = (('time_window', 'frequency'), np.sum(
+                self.band_averaged_dataset['hzhy'] = (('time_window', 'frequency'), np.sum(
                     self.xfft['hz'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
                     axis=0) / sum_parzen)
 
-            z_deno = (self.bandavg_ds['hxhx'] * self.bandavg_ds['hyhy']) - (
-                    self.bandavg_ds['hxhy'] * self.bandavg_ds['hyhx'])
+            z_deno = (self.band_averaged_dataset['hxhx'] * self.band_averaged_dataset['hyhy']) - (
+                    self.band_averaged_dataset['hxhy'] * self.band_averaged_dataset['hyhx'])
             #
-            zxx_num = (self.bandavg_ds['hyhy'] * self.bandavg_ds['exhx']) - (
-                    self.bandavg_ds['hyhx'] * self.bandavg_ds['exhy'])
-            zxy_num = (self.bandavg_ds['hxhx'] * self.bandavg_ds['exhy']) - (
-                    self.bandavg_ds['hxhy'] * self.bandavg_ds['exhx'])
-            self.bandavg_ds['zxx_single'] = zxx_num / z_deno
-            self.bandavg_ds['zxy_single'] = zxy_num / z_deno
+            zxx_num = (self.band_averaged_dataset['hyhy'] * self.band_averaged_dataset['exhx']) - (
+                    self.band_averaged_dataset['hyhx'] * self.band_averaged_dataset['exhy'])
+            zxy_num = (self.band_averaged_dataset['hxhx'] * self.band_averaged_dataset['exhy']) - (
+                    self.band_averaged_dataset['hxhy'] * self.band_averaged_dataset['exhx'])
+            self.band_averaged_dataset['zxx_single'] = zxx_num / z_deno
+            self.band_averaged_dataset['zxy_single'] = zxy_num / z_deno
             #
-            zyx_num = (self.bandavg_ds['hyhy'] * self.bandavg_ds['eyhx']) - (
-                    self.bandavg_ds['hyhx'] * self.bandavg_ds['eyhy'])
-            zyy_num = (self.bandavg_ds['hxhx'] * self.bandavg_ds['eyhy']) - (
-                    self.bandavg_ds['hxhy'] * self.bandavg_ds['eyhx'])
-            self.bandavg_ds['zyx_single'] = zyx_num / z_deno
-            self.bandavg_ds['zyy_single'] = zyy_num / z_deno
+            zyx_num = (self.band_averaged_dataset['hyhy'] * self.band_averaged_dataset['eyhx']) - (
+                    self.band_averaged_dataset['hyhx'] * self.band_averaged_dataset['eyhy'])
+            zyy_num = (self.band_averaged_dataset['hxhx'] * self.band_averaged_dataset['eyhy']) - (
+                    self.band_averaged_dataset['hxhy'] * self.band_averaged_dataset['eyhx'])
+            self.band_averaged_dataset['zyx_single'] = zyx_num / z_deno
+            self.band_averaged_dataset['zyy_single'] = zyy_num / z_deno
 
             if self.process_tipper:
-                t_deno = (self.bandavg_ds['hxhx'] * self.bandavg_ds['hyhy']) - (
-                        self.bandavg_ds['hxhy'] * self.bandavg_ds['hyhx'])
-                self.bandavg_ds['tzx_single'] = ((self.bandavg_ds['hzhx'] * self.bandavg_ds['hyhy']) - (
-                        self.bandavg_ds['hzhy'] * self.bandavg_ds['hyhx'])) / t_deno
-                self.bandavg_ds['tzy_single'] = ((self.bandavg_ds['hzhy'] * self.bandavg_ds[
-                    'hxhx']) - (self.bandavg_ds['hzhx'] * self.bandavg_ds['hxhy'])) / t_deno
+                t_deno = (self.band_averaged_dataset['hxhx'] * self.band_averaged_dataset['hyhy']) - (
+                        self.band_averaged_dataset['hxhy'] * self.band_averaged_dataset['hyhx'])
+                self.band_averaged_dataset['tzx_single'] = ((self.band_averaged_dataset['hzhx'] * self.band_averaged_dataset[
+                    'hyhy']) - (
+                                                                    self.band_averaged_dataset['hzhy'] *
+                                                                    self.band_averaged_dataset['hyhx'])) / t_deno
+                self.band_averaged_dataset['tzy_single'] = ((self.band_averaged_dataset['hzhy'] * self.band_averaged_dataset[
+                    'hxhx']) - (self.band_averaged_dataset['hzhx'] * self.band_averaged_dataset['hxhy'])) / t_deno
 
             # Preparing selection arrays
 
-            self.bandavg_ds['ex_selection_coh'] = xr.DataArray(
-                np.full(self.bandavg_ds['ex'].shape, True),
-                coords=self.bandavg_ds.coords,
-                dims=self.bandavg_ds.dims
+            self.band_averaged_dataset['ex_selection_coh'] = xr.DataArray(
+                np.full(self.band_averaged_dataset['ex'].shape, True),
+                coords=self.band_averaged_dataset.coords,
+                dims=self.band_averaged_dataset.dims
             )
 
-            self.bandavg_ds['ey_selection_coh'] = xr.DataArray(
-                np.full(self.bandavg_ds['ey'].shape, True),
-                coords=self.bandavg_ds.coords,
-                dims=self.bandavg_ds.dims
+            self.band_averaged_dataset['ey_selection_coh'] = xr.DataArray(
+                np.full(self.band_averaged_dataset['ey'].shape, True),
+                coords=self.band_averaged_dataset.coords,
+                dims=self.band_averaged_dataset.dims
             )
 
             if self.process_tipper:
-                self.bandavg_ds['hz_selection_coh'] = xr.DataArray(
-                    np.full(self.bandavg_ds['hz'].shape, True),
-                    coords=self.bandavg_ds.coords,
-                    dims=self.bandavg_ds.dims
+                self.band_averaged_dataset['hz_selection_coh'] = xr.DataArray(
+                    np.full(self.band_averaged_dataset['hz'].shape, True),
+                    coords=self.band_averaged_dataset.coords,
+                    dims=self.band_averaged_dataset.dims
                 )
 
-            self.bandavg_ds['alpha_e_selection'] = xr.DataArray(
-                np.full(self.bandavg_ds['ex'].shape, True),
-                coords=self.bandavg_ds.coords,
-                dims=self.bandavg_ds.dims
+            self.band_averaged_dataset['alpha_e_selection'] = xr.DataArray(
+                np.full(self.band_averaged_dataset['ex'].shape, True),
+                coords=self.band_averaged_dataset.coords,
+                dims=self.band_averaged_dataset.dims
             )
 
-            self.bandavg_ds['alpha_h_selection'] = xr.DataArray(
-                np.full(self.bandavg_ds['hx'].shape, True),
-                coords=self.bandavg_ds.coords,
-                dims=self.bandavg_ds.dims
+            self.band_averaged_dataset['alpha_h_selection'] = xr.DataArray(
+                np.full(self.band_averaged_dataset['hx'].shape, True),
+                coords=self.band_averaged_dataset.coords,
+                dims=self.band_averaged_dataset.dims
             )
             print('Band averaging finished.')
 

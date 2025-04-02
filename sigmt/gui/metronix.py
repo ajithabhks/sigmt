@@ -1098,7 +1098,7 @@ class MainWindow(QMainWindow):
                                   process_mt=process_mt, process_tipper=process_tipper,
                                   remote_reference=remote_reference
                                   )
-                datasets.append(bandavg.bandavg_ds) # appends xarray dataset (for a run)
+                datasets.append(bandavg.band_averaged_dataset) # appends xarray dataset (for a run)
                 num += 1
                 progress_dialog.setValue(num)
             self.bandavg_dataset = xr.concat(datasets, dim='time_window').assign_coords(
