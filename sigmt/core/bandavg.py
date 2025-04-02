@@ -37,6 +37,7 @@ class BandAvg:
                  calibration_data_magnetic: Optional[dict] = None,
                  apply_notch_filter: bool = False,
                  notch_frequency: Optional[float] = None,
+                 notch_harmonics: Optional[int] = None,
                  process_mt: bool = True,
                  process_tipper: bool = True) -> None:
         """
@@ -105,6 +106,11 @@ class BandAvg:
         :type apply_notch_filter: bool
         :param notch_frequency: The frequency to be removed using the notch filter. TODO: Harmonics. Default is None.
         :type notch_frequency: float
+        :param notch_harmonics: Defines the number of harmonics to be filtered using a notch filter.
+                                If set to `None` (default), all harmonics up to the highest frequency of interest
+                                will be removed. Else, if `notch_frequency` is 50 Hz and `notch_harmonics`
+                                is 3, the harmonics at 100 Hz, 150 Hz and 200 Hz will be filtered out.
+        :type notch_harmonics: Optional[int]
         :param process_mt: A boolean flag indicating whether the MT impedance is estimated during processing.
                            Default is True. Set to False to skip MT impedance calculations if only Tipper is
                            being estimated.
@@ -126,6 +132,7 @@ class BandAvg:
         self.calibration_data_electric = calibration_data_electric
         self.calibration_data_magnetic = calibration_data_magnetic
         self.notch_frequency = notch_frequency
+        self.notch_harmonics = notch_harmonics
         self.process_mt = process_mt
         self.process_tipper = process_tipper
 
@@ -238,13 +245,16 @@ class BandAvg:
 
             # Submit each task to the executor
             for channel in self.channels:
-                futures[channel] = executor.submit(sp.notchfilsos, self.time_series[channel], self.sampling_frequency,
-                                                   self.notch_frequency)
+                futures[channel] = executor.submit(sp.notch_filter_sos,
+                                                   time_series=self.time_series[channel],
+                                                   sampling_frequency=self.sampling_frequency,
+                                                   notch_frequency=self.notch_frequency,
+                                                   harmonics=self.notch_harmonics)
 
             # Retrieve the results when needed
             for channel, future in futures.items():
                 self.time_series[channel] = future.result()
-        print("Notch filter applied")
+        print("Notch filter applied.")
 
     def detrend_time_series(self) -> None:
         """
