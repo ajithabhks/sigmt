@@ -58,8 +58,12 @@ class BandAvg:
         self.header = bandavg_msg['header']
         self.cal_data = bandavg_msg['caldata']
         #
-        self.ftlist = utils.targetfreq(self.fs, self.parzen_radius, self.fft_length,
-                                       freq_per_decade)
+        self.ftlist = utils.get_target_frequency_list(sampling_frequency=self.fs,
+                                                      parzen_window_radius=self.parzen_radius,
+                                                      fft_length=self.fft_length,
+                                                      table_type='default',
+                                                      frequencies_per_decade=freq_per_decade)
+
         self.getchannels()  # Get ts channel info, 'Ex', 'Ey', ....
         self.calibrate_electric()
         if self.notch_status == 'on':
