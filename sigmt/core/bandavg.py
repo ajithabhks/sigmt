@@ -135,7 +135,7 @@ class BandAvg:
         self.band_averaged_dataset = None
         self.avgf = None
         self.dof = None
-        self.xfft = None
+        self.spectra = None
 
         # Dividing time series into several time windows of length equals to fft length. Number of windows will
         # depend on the time series overlap.
@@ -213,9 +213,10 @@ class BandAvg:
                     chopper_status = None
                 calibration_data = self.calibration_data_magnetic[channel]['calibration_data'][sensor_serial_number][
                     chopper_status]
-                calibration_object = calibration.MetronixCalibration(self.xfft[channel], self.fft_frequencies, sensor_type,
+                calibration_object = calibration.MetronixCalibration(self.spectra[channel], self.fft_frequencies,
+                                                                     sensor_type,
                                                                      chopper_status, calibration_data)
-                self.xfft[channel] = calibration_object.calibrated_data
+                self.spectra[channel] = calibration_object.calibrated_data
             else:
                 raise NotImplementedError(
                     f'Calibration for {self.calibration_data_magnetic["instrument"]} instruments is not implemented as of now.'
@@ -266,10 +267,10 @@ class BandAvg:
 
         """
         print('Performing FFT.')
-        self.xfft = {}
+        self.spectra = {}
         for channel in self.channels:
-            self.fft_frequencies, self.xfft[channel] = sp.do_fft(self.time_series[channel], self.sampling_frequency,
-                                                                 self.fft_length)
+            self.fft_frequencies, self.spectra[channel] = sp.do_fft(self.time_series[channel], self.sampling_frequency,
+                                                                    self.fft_length)
 
     def perform_band_averaging(self) -> None:
         """
@@ -282,12 +283,12 @@ class BandAvg:
         print('Starting band averaging.')
 
         # Creating empty arrays
-        self.dof = np.empty(self.ft_list.shape[0], dtype=int) # Degree of freedom
-        self.avgf = np.empty(self.ft_list.shape[0], dtype=int) # Number of frequencies used for averaging
+        self.dof = np.empty(self.ft_list.shape[0], dtype=int)  # Degree of freedom
+        self.avgf = np.empty(self.ft_list.shape[0], dtype=int)  # Number of frequencies used for averaging
 
         # Create a 3D array for parzen window for all target frequencies
         parzen_window = np.empty(
-            (self.xfft[next(iter(self.xfft))].shape[0], 1, self.ft_list.shape[0]), dtype=float)
+            (self.spectra[next(iter(self.spectra))].shape[0], 1, self.ft_list.shape[0]), dtype=float)
 
         # Populating parzen window arrays based on target frequency and window radius
         for i in range(self.ft_list.shape[0]):
@@ -299,7 +300,7 @@ class BandAvg:
         # Create an empty xarray dataset
         self.band_averaged_dataset = xr.Dataset(
             coords={
-                'time_window': np.arange(self.xfft[next(iter(self.xfft))].shape[1]),
+                'time_window': np.arange(self.spectra[next(iter(self.spectra))].shape[1]),
                 'frequency': self.ft_list
             }
         )
@@ -308,48 +309,48 @@ class BandAvg:
         # by avoiding redundant calculations during subsequent operations.
         sum_parzen = np.sum(parzen_window, axis=0)
 
-        #=========== Band averaging ===============================
+        # =========== Band averaging ===============================
 
         # Calculate the cross-power spectra for Hx and Hy, which are common for both MT and Tipper.
         self.band_averaged_dataset['hx'] = (
             ('time_window', 'frequency'),
-            np.sum(self.xfft['hx'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+            np.sum(self.spectra['hx'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
         self.band_averaged_dataset['hy'] = (
             ('time_window', 'frequency'),
-            np.sum(self.xfft['hy'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+            np.sum(self.spectra['hy'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
 
         if self.remote_reference:
             # If remote referencing is requested, assign the conjugate term to the remote channels.
             self.band_averaged_dataset['rx'] = (
                 ('time_window', 'frequency'),
-                np.sum(self.xfft['rx'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                np.sum(self.spectra['rx'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
             self.band_averaged_dataset['ry'] = (
                 ('time_window', 'frequency'),
-                np.sum(self.xfft['ry'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
-            hx_conj = np.conj(self.xfft['rx'])
-            hy_conj = np.conj(self.xfft['ry'])
+                np.sum(self.spectra['ry'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+            hx_conj = np.conj(self.spectra['rx'])
+            hy_conj = np.conj(self.spectra['ry'])
         else:
             # Else, local channels
-            hx_conj = np.conj(self.xfft['hx'])
-            hy_conj = np.conj(self.xfft['hy'])
+            hx_conj = np.conj(self.spectra['hx'])
+            hy_conj = np.conj(self.spectra['hy'])
 
         self.band_averaged_dataset['hxhx'] = (('time_window', 'frequency'), np.sum(
-            self.xfft['hx'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
+            self.spectra['hx'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
             axis=0) / sum_parzen)
         self.band_averaged_dataset['hyhy'] = (('time_window', 'frequency'), np.sum(
-            self.xfft['hy'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
+            self.spectra['hy'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
             axis=0) / sum_parzen)
 
         self.band_averaged_dataset['hxhy'] = (('time_window', 'frequency'), np.sum(
-            self.xfft['hx'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
+            self.spectra['hx'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
             axis=0) / sum_parzen)
         self.band_averaged_dataset['hyhx'] = (('time_window', 'frequency'), np.sum(
-            self.xfft['hy'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
+            self.spectra['hy'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
             axis=0) / sum_parzen)
 
         # Common for MT and Tipper
-        denominator = (self.band_averaged_dataset['hxhx'] * self.band_averaged_dataset['hyhy']) - (
-                       self.band_averaged_dataset['hxhy'] * self.band_averaged_dataset['hyhx'])
+        denominator = ((self.band_averaged_dataset['hxhx'] * self.band_averaged_dataset['hyhy']) -
+                       (self.band_averaged_dataset['hxhy'] * self.band_averaged_dataset['hyhx']))
 
         # TODO: This may not be created in this class
         self.band_averaged_dataset['alpha_h_selection'] = xr.DataArray(
@@ -362,51 +363,51 @@ class BandAvg:
         if self.process_mt:
             self.band_averaged_dataset['ex'] = (
                 ('time_window', 'frequency'),
-                np.sum(self.xfft['ex'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                np.sum(self.spectra['ex'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
             self.band_averaged_dataset['ey'] = (
                 ('time_window', 'frequency'),
-                np.sum(self.xfft['ey'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                np.sum(self.spectra['ey'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
 
             # Compute the auto- and cross-spectra
-            ex_conj = np.conj(self.xfft['ex'])
-            ey_conj = np.conj(self.xfft['ey'])
+            ex_conj = np.conj(self.spectra['ex'])
+            ey_conj = np.conj(self.spectra['ey'])
 
             self.band_averaged_dataset['exex'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ex'][:, :, np.newaxis] * ex_conj[:, :, np.newaxis] * parzen_window,
+                self.spectra['ex'][:, :, np.newaxis] * ex_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
             self.band_averaged_dataset['eyey'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ey'][:, :, np.newaxis] * ey_conj[:, :, np.newaxis] * parzen_window,
+                self.spectra['ey'][:, :, np.newaxis] * ey_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
             self.band_averaged_dataset['exey'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ex'][:, :, np.newaxis] * ey_conj[:, :, np.newaxis] * parzen_window,
+                self.spectra['ex'][:, :, np.newaxis] * ey_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
 
             self.band_averaged_dataset['exhx'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ex'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
+                self.spectra['ex'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
             self.band_averaged_dataset['exhy'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ex'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
+                self.spectra['ex'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
 
             self.band_averaged_dataset['eyhx'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ey'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
+                self.spectra['ey'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
             self.band_averaged_dataset['eyhy'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['ey'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
+                self.spectra['ey'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
 
             # Computing the MT impedance for all time windows
-            zxx_num = (self.band_averaged_dataset['hyhy'] * self.band_averaged_dataset['exhx']) - (
-                    self.band_averaged_dataset['hyhx'] * self.band_averaged_dataset['exhy'])
-            zxy_num = (self.band_averaged_dataset['hxhx'] * self.band_averaged_dataset['exhy']) - (
-                    self.band_averaged_dataset['hxhy'] * self.band_averaged_dataset['exhx'])
+            zxx_num = ((self.band_averaged_dataset['hyhy'] * self.band_averaged_dataset['exhx']) -
+                       (self.band_averaged_dataset['hyhx'] * self.band_averaged_dataset['exhy']))
+            zxy_num = ((self.band_averaged_dataset['hxhx'] * self.band_averaged_dataset['exhy']) -
+                       (self.band_averaged_dataset['hxhy'] * self.band_averaged_dataset['exhx']))
             self.band_averaged_dataset['zxx_single'] = zxx_num / denominator
             self.band_averaged_dataset['zxy_single'] = zxy_num / denominator
             #
-            zyx_num = (self.band_averaged_dataset['hyhy'] * self.band_averaged_dataset['eyhx']) - (
-                    self.band_averaged_dataset['hyhx'] * self.band_averaged_dataset['eyhy'])
-            zyy_num = (self.band_averaged_dataset['hxhx'] * self.band_averaged_dataset['eyhy']) - (
-                    self.band_averaged_dataset['hxhy'] * self.band_averaged_dataset['eyhx'])
+            zyx_num = ((self.band_averaged_dataset['hyhy'] * self.band_averaged_dataset['eyhx']) -
+                       (self.band_averaged_dataset['hyhx'] * self.band_averaged_dataset['eyhy']))
+            zyy_num = ((self.band_averaged_dataset['hxhx'] * self.band_averaged_dataset['eyhy']) -
+                       (self.band_averaged_dataset['hxhy'] * self.band_averaged_dataset['eyhx']))
             self.band_averaged_dataset['zyx_single'] = zyx_num / denominator
             self.band_averaged_dataset['zyy_single'] = zyy_num / denominator
 
@@ -434,18 +435,18 @@ class BandAvg:
         if self.process_tipper:
             self.band_averaged_dataset['hz'] = (
                 ('time_window', 'frequency'),
-                np.sum(self.xfft['hz'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
+                np.sum(self.spectra['hz'][:, :, np.newaxis] * parzen_window, axis=0) / sum_parzen)
 
-            hz_conj = np.conj(self.xfft['hz'])
+            hz_conj = np.conj(self.spectra['hz'])
 
             self.band_averaged_dataset['hzhz'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['hz'][:, :, np.newaxis] * hz_conj[:, :, np.newaxis] * parzen_window,
+                self.spectra['hz'][:, :, np.newaxis] * hz_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
             self.band_averaged_dataset['hzhx'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['hz'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
+                self.spectra['hz'][:, :, np.newaxis] * hx_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
             self.band_averaged_dataset['hzhy'] = (('time_window', 'frequency'), np.sum(
-                self.xfft['hz'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
+                self.spectra['hz'][:, :, np.newaxis] * hy_conj[:, :, np.newaxis] * parzen_window,
                 axis=0) / sum_parzen)
 
             # Computing the Tipper transfer function for all time windows
