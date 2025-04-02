@@ -1,7 +1,7 @@
 """
 Place to store utility functions.
 """
-from typing import Dict, Any
+from typing import Dict, Any, Literal, Optional, Union
 
 import numpy as np
 import yaml
@@ -129,9 +129,11 @@ def reshape_array_with_overlap(window_length: int, overlap: int, data: np.ndarra
 def get_target_frequency_list(sampling_frequency: float,
                               parzen_window_radius: float,
                               fft_length: int,
-                              periods_per_decade: int,
-                              start_period: int = -5,
-                              stop_period: int = 5
+                              table_type: Literal['default', 'metronix', 'explicit'] = 'default',
+                              frequencies_per_decade: int = 12,
+                              lowest_frequency: int = -5,
+                              highest_frequency: int = 5,
+                              explicit_table: Optional[Union[list, np.ndarray]] = None,
                               ) -> np.ndarray:
     """
     Computes a list of target frequencies based on the given processing parameters.
@@ -142,25 +144,48 @@ def get_target_frequency_list(sampling_frequency: float,
     :type parzen_window_radius: float
     :param fft_length: Length of the FFT (Fast Fourier Transform).
     :type fft_length: int
-    :param periods_per_decade: Number of period/frequency points per decade.
-    :type periods_per_decade: int
-    :param start_period: Exponent for the start of the period range (10^start_period).
-                         Default is -5, corresponding to 10⁻⁵ Hz.
-    :type start_period: int
-    :param stop_period: Exponent for the end of the period range (10^stop_period).
-                        Default is 5, corresponding to 10⁵ Hz.
-    :type stop_period: int
+    :param table_type: Specifies the type of frequency table to generate.
+                       - 'default': Generates the default SigMT frequency table based on `np.logspace`, taking
+                                    the frequencies_per_decade, lowest_frequency and highest_frequency parameters.
+                       - 'metronix': Generates the Metronix frequency table.
+                       - 'explicit': Uses a user-provided explicit list of frequencies.
+    :type table_type: Literal['default', 'metronix', 'explicit']
+    :param frequencies_per_decade: Number of period/frequency points per decade. This works only for 'default'
+                                   table_type.
+    :type frequencies_per_decade: int
+    :param lowest_frequency: Exponent for the start of the period range (10^start_period).
+                         Default is -5, corresponding to 10⁻⁵ Hz. This works only for 'default' table_type.
+    :type lowest_frequency: int
+    :param highest_frequency: Exponent for the end of the period range (10^stop_period).
+                        Default is 5, corresponding to 10⁵ Hz. This works only for 'default' table_type.
+    :type highest_frequency: int
+    :param explicit_table: A user-provided list or numpy array of target frequencies.
+                           This parameter is used only when `table_type` is set to `explicit`.
+    :type explicit_table: Optional[Union[list, np.ndarray]]
 
     :returns: A numpy array (1D) of float (shape: n, ) which is a list of target frequencies.
     :rtype: np.ndarray
 
     """
 
-    ftable = np.logspace(start_period, stop_period, int(
-        (stop_period - start_period) * periods_per_decade + 1))
-    ftable = 1 / ftable
+    if table_type == 'default':
+        frequency_table = np.flip(np.logspace(lowest_frequency, highest_frequency,
+                                              int((highest_frequency - lowest_frequency) * frequencies_per_decade + 1)))
+    elif table_type == 'explicit':
+        if explicit_table is None:
+            raise ValueError("explicit_table must be provided when table_type is 'explicit'")
+        frequency_table = np.array(explicit_table, dtype=float)
+    elif table_type == 'metronix':
+        # TODO: Implement this in next version.
+        print('Currently Metronix frequency table is not implemented. Switching to default.')
+        frequency_table = np.flip(np.logspace(lowest_frequency, highest_frequency,
+                                              int((highest_frequency - lowest_frequency) * frequencies_per_decade + 1)))
+    else:
+        print('table_type provided is not supported. Switching to default.')
+        frequency_table = np.flip(np.logspace(lowest_frequency, highest_frequency,
+                                              int((highest_frequency - lowest_frequency) * frequencies_per_decade + 1)))
 
-    fr = parzen_window_radius * ftable  # bandwidth of parzen window - oneside from ft
+    fr = parzen_window_radius * frequency_table  # bandwidth of parzen window - oneside from ft
     total_bandwidth = fr * 2  # bandwidth of parzen window - two side from ft
     # nof spectra in parzen window for each ft
     dof = total_bandwidth / (sampling_frequency / fft_length)
@@ -168,9 +193,9 @@ def get_target_frequency_list(sampling_frequency: float,
     maximum = sampling_frequency / 2
     if maximum > 15000:
         maximum = 15000
-    f_max = max(ftable[ftable < maximum])  # ft_max, following nyquist
+    f_max = max(frequency_table[frequency_table < maximum])  # ft_max, following nyquist
 
-    f_max_index = np.where(ftable == f_max)[0][0]  # index in ftable
+    f_max_index = np.where(frequency_table == f_max)[0][0]  # index in ftable
     min_required = dof[f_max_index] * .01  # min dof required for ft_min
 
     dof_min = min(dof[dof > min_required])  # finding in dof
@@ -179,6 +204,6 @@ def get_target_frequency_list(sampling_frequency: float,
     while dof[dof_min_index] < 10:  # Making sure, atleast 10 spectral lines are averaged
         dof_min_index = dof_min_index - 1
 
-    ft_list = ftable[f_max_index:dof_min_index + 1]  # Making ft_list
+    ft_list = frequency_table[f_max_index:dof_min_index + 1]  # Making ft_list
 
     return ft_list
