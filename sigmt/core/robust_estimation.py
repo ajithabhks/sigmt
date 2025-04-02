@@ -216,14 +216,14 @@ class RobustEstimation:
 
         """
         if self.channel == 'ex':
-            z1 = self.filtered_dataset['zxx_single'].values
-            z2 = self.filtered_dataset['zxy_single'].values
+            z1 = self.filtered_dataset['zxx'].values
+            z2 = self.filtered_dataset['zxy'].values
         if self.channel == 'ey':
-            z1 = self.filtered_dataset['zyx_single'].values
-            z2 = self.filtered_dataset['zyy_single'].values
+            z1 = self.filtered_dataset['zyx'].values
+            z2 = self.filtered_dataset['zyy'].values
         if self.channel == 'hz':
-            z1 = self.filtered_dataset['tzx_single'].values
-            z2 = self.filtered_dataset['tzy_single'].values
+            z1 = self.filtered_dataset['tzx'].values
+            z2 = self.filtered_dataset['tzy'].values
         data = np.transpose(np.vstack((z1.real, z1.imag, z2.real, z2.imag)))
         robust_cov = MinCovDet(random_state=0).fit(data)
         self.filtered_dataset['maha_dist'] = xr.DataArray(
@@ -243,14 +243,14 @@ class RobustEstimation:
 
         """
         if self.channel == 'ex':
-            self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['zxx_single'])
-            self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['zxy_single'])
+            self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['zxx'])
+            self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['zxy'])
         if self.channel == 'ey':
-            self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['zyx_single'])
-            self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['zyy_single'])
+            self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['zyx'])
+            self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['zyy'])
         if self.channel == 'hz':
-            self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['tzx_single'])
-            self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['tzy_single'])
+            self.z1_initial_jackknife = stats.jackknife(self.filtered_dataset['tzx'])
+            self.z2_initial_jackknife = stats.jackknife(self.filtered_dataset['tzy'])
 
     def perform_robust_estimation(self) -> None:
         """

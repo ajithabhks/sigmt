@@ -401,15 +401,15 @@ class BandAvg:
                        (self.band_averaged_dataset['hyhx'] * self.band_averaged_dataset['exhy']))
             zxy_num = ((self.band_averaged_dataset['hxhx'] * self.band_averaged_dataset['exhy']) -
                        (self.band_averaged_dataset['hxhy'] * self.band_averaged_dataset['exhx']))
-            self.band_averaged_dataset['zxx_single'] = zxx_num / denominator
-            self.band_averaged_dataset['zxy_single'] = zxy_num / denominator
+            self.band_averaged_dataset['zxx'] = zxx_num / denominator
+            self.band_averaged_dataset['zxy'] = zxy_num / denominator
             #
             zyx_num = ((self.band_averaged_dataset['hyhy'] * self.band_averaged_dataset['eyhx']) -
                        (self.band_averaged_dataset['hyhx'] * self.band_averaged_dataset['eyhy']))
             zyy_num = ((self.band_averaged_dataset['hxhx'] * self.band_averaged_dataset['eyhy']) -
                        (self.band_averaged_dataset['hxhy'] * self.band_averaged_dataset['eyhx']))
-            self.band_averaged_dataset['zyx_single'] = zyx_num / denominator
-            self.band_averaged_dataset['zyy_single'] = zyy_num / denominator
+            self.band_averaged_dataset['zyx'] = zyx_num / denominator
+            self.band_averaged_dataset['zyy'] = zyy_num / denominator
 
             # Preparing selection arrays, this may be used for data selection later.
             # TODO: This may not be created in this class
@@ -450,9 +450,9 @@ class BandAvg:
                 axis=0) / sum_parzen)
 
             # Computing the Tipper transfer function for all time windows
-            self.band_averaged_dataset['tzx_single'] = ((self.band_averaged_dataset['hzhx'] * self.band_averaged_dataset[
+            self.band_averaged_dataset['tzx'] = ((self.band_averaged_dataset['hzhx'] * self.band_averaged_dataset[
                 'hyhy']) - (self.band_averaged_dataset['hzhy'] * self.band_averaged_dataset['hyhx'])) / denominator
-            self.band_averaged_dataset['tzy_single'] = ((self.band_averaged_dataset['hzhy'] * self.band_averaged_dataset[
+            self.band_averaged_dataset['tzy'] = ((self.band_averaged_dataset['hzhy'] * self.band_averaged_dataset[
                 'hxhx']) - (self.band_averaged_dataset['hzhx'] * self.band_averaged_dataset['hxhy'])) / denominator
 
             # TODO: This may not be created in this class
