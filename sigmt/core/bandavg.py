@@ -138,8 +138,12 @@ class BandAvg:
         self.time_series = _reshape_time_series_with_overlap(time_series=time_series, fft_length=fft_length, overlap=overlap)
         del time_series
 
-        self.ft_list = utils.targetfreq(self.sampling_frequency, self.parzen_window_radius, self.fft_length,
-                                       frequencies_per_decade)
+        self.ft_list = utils.get_target_frequency_list(sampling_frequency=self.sampling_frequency,
+                                                       parzen_window_radius=self.parzen_window_radius,
+                                                       fft_length=self.fft_length,
+                                                       table_type='default',
+                                                       frequencies_per_decade=frequencies_per_decade)
+        
         self.get_channels()  # Get list of available ts channel. 'Ex', 'Ey', ....
         if calibrate_electric:
             self.calibrate_electric()
