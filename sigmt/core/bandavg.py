@@ -13,8 +13,8 @@ from scipy import signal
 
 import sigmt.core.sigproc as sp
 import sigmt.core.statistics as stats
-import sigmt.utils.metronix.calibration as calibration
 import sigmt.utils.utils as utils
+from sigmt.utils.metronix.calibration import MetronixCalibration
 
 
 class BandAvg:
@@ -220,9 +220,9 @@ class BandAvg:
                     chopper_status = None
                 calibration_data = self.calibration_data_magnetic[channel]['calibration_data'][sensor_serial_number][
                     chopper_status]
-                calibration_object = calibration.MetronixCalibration(self.spectra[channel], self.fft_frequencies,
-                                                                     sensor_type,
-                                                                     chopper_status, calibration_data)
+                calibration_object = MetronixCalibration(self.spectra[channel], self.fft_frequencies,
+                                                         sensor_type,
+                                                         chopper_status, calibration_data)
                 self.spectra[channel] = calibration_object.calibrated_data
             else:
                 raise NotImplementedError(
