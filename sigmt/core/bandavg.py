@@ -118,6 +118,11 @@ class BandAvg:
                                                            First column: Frequency (Hz)
                                                            Second column: Magnitude (V/nT*Hz)
                                                            Third column: Phase  (deg)
+                                                        - 'chopper_off' (ndarray, shape: n,3)
+                                                           n - number of frequencies
+                                                           First column: Frequency (Hz)
+                                                           Second column: Magnitude (V/nT*Hz)
+                                                           Third column: Phase  (deg)
                                           - 'hy' (dict) details of hx coil
                                                 - 'sensor_type': 'MFS06e' (str)
                                                 - 'sensor_serial_number': 301 (int)
@@ -129,6 +134,11 @@ class BandAvg:
                                                            First column: Frequency (Hz)
                                                            Second column: Magnitude (V/nT*Hz)
                                                            Third column: Phase  (deg)
+                                                        - 'chopper_off' (ndarray, shape: n,3)
+                                                           n - number of frequencies
+                                                           First column: Frequency (Hz)
+                                                           Second column: Magnitude (V/nT*Hz)
+                                                           Third column: Phase  (deg)
                                           - 'hz' (dict) details of hx coil
                                                 - 'sensor_type': 'MFS06e' (str)
                                                 - 'sensor_serial_number': 301 (int)
@@ -136,6 +146,11 @@ class BandAvg:
                                                 - 'calibration_data' (dict)
                                                     - '302' (dict) - key is coil number
                                                         - 'chopper_on' (ndarray, shape: n,3)
+                                                           n - number of frequencies
+                                                           First column: Frequency (Hz)
+                                                           Second column: Magnitude (V/nT*Hz)
+                                                           Third column: Phase  (deg)
+                                                        - 'chopper_off' (ndarray, shape: n,3)
                                                            n - number of frequencies
                                                            First column: Frequency (Hz)
                                                            Second column: Magnitude (V/nT*Hz)
