@@ -43,9 +43,11 @@ class BandAvg:
         """
         Constructor
 
-        TODO: Add docs
-            - No separate cross powers for local and remote.
-            - Hx and Hy must be given as input.
+        This class performs band averaging. It divides the time series into different time
+        windows or segments, applies notch filtering, calibration (if required), averages
+        the cross powers for the target frequencies using a parzen window.
+
+        TODO: Improve error handling
 
         :param time_series: A dictionary containing time series data as 1D numpy arrays.
                     Each key represents a component of the data, and the corresponding
@@ -100,11 +102,48 @@ class BandAvg:
                                               - 'y1': Distance (float) from the center to the East electrode
                                               - 'y2': Distance (float) from the center to the West electrode
         :type calibration_data_electric: dict[str, dict[str, float]]
-        :param calibration_data_magnetic: TODO
+        :param calibration_data_magnetic: A dictionary containing all information about the coil details.
+                                          Currently supports only Metronix.
+                                          # TODO: Add more instrument support
+                                          Mandatory keys:
+                                          - 'instrument': 'metronix' (str)
+                                          - 'hx' (dict) details of hx coil
+                                                - 'sensor_type': 'MFS06e' (str)
+                                                - 'sensor_serial_number': 300 (int)
+                                                - 'chopper_status': 1 (int) 1 means 0N, 0 means OFF
+                                                - 'calibration_data' (dict)
+                                                    - '300' (dict) - key is coil number
+                                                        - 'chopper_on' (ndarray, shape: n,3)
+                                                           n - number of frequencies
+                                                           First column: Frequency (Hz)
+                                                           Second column: Magnitude (V/nT*Hz)
+                                                           Third column: Phase  (deg)
+                                          - 'hy' (dict) details of hx coil
+                                                - 'sensor_type': 'MFS06e' (str)
+                                                - 'sensor_serial_number': 301 (int)
+                                                - 'chopper_status': 1 (int) 1 means 0N, 0 means OFF
+                                                - 'calibration_data' (dict)
+                                                    - '301' (dict) - key is coil number
+                                                        - 'chopper_on' (ndarray, shape: n,3)
+                                                           n - number of frequencies
+                                                           First column: Frequency (Hz)
+                                                           Second column: Magnitude (V/nT*Hz)
+                                                           Third column: Phase  (deg)
+                                          - 'hz' (dict) details of hx coil
+                                                - 'sensor_type': 'MFS06e' (str)
+                                                - 'sensor_serial_number': 301 (int)
+                                                - 'chopper_status': 1 (int) 1 means 0N, 0 means OFF
+                                                - 'calibration_data' (dict)
+                                                    - '302' (dict) - key is coil number
+                                                        - 'chopper_on' (ndarray, shape: n,3)
+                                                           n - number of frequencies
+                                                           First column: Frequency (Hz)
+                                                           Second column: Magnitude (V/nT*Hz)
+                                                           Third column: Phase  (deg)
         :type calibration_data_magnetic: dict
         :param apply_notch_filter: A boolean flag indicating whether a notch filter should be applied. Default is False.
         :type apply_notch_filter: bool
-        :param notch_frequency: The frequency to be removed using the notch filter. TODO: Harmonics. Default is None.
+        :param notch_frequency: The frequency to be removed using the notch filter. Default is None.
         :type notch_frequency: float
         :param notch_harmonics: Defines the number of harmonics to be filtered using a notch filter.
                                 If set to `None` (default), all harmonics up to the highest frequency of interest
