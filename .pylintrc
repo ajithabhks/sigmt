@@ -1,0 +1,7 @@
+[MESSAGES CONTROL]
+disable=all
+enable=missing-docstring,docstring-first-line-empty,docstring-missing-raises,docstring-missing-param,docstring-missing-return
+
+[REPORTS]
+output-format=colorized
+reports=no
