@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import (QMainWindow, QAction, QFileDialog, QMessageBox,
                              QApplication, QProgressDialog)
 from scipy import signal
 
-from sigmt.core import dataselectiontools
+from sigmt.core import data_selection_tools as dstools
 from sigmt.core import perform_data_selection as pds
 from sigmt.core import plots
 from sigmt.core.band_averaging import BandAveraging
@@ -1117,14 +1117,14 @@ class MainWindow(QMainWindow):
             # Calculating data selection parameters
             time_dataselection = time.time()
             self.bandavg_dataset['coh_ex'] = (
-                ('time_window', 'frequency'), dataselectiontools.cohex(self.bandavg_dataset))
+                ('time_window', 'frequency'), dstools.cohex(self.bandavg_dataset))
             self.bandavg_dataset['coh_ey'] = (
-                ('time_window', 'frequency'), dataselectiontools.cohey(self.bandavg_dataset))
+                ('time_window', 'frequency'), dstools.cohey(self.bandavg_dataset))
             if not self.project_setup['processing_mode'] == "MT Only":
                 self.bandavg_dataset['coh_hz'] = (
-                    ('time_window', 'frequency'), dataselectiontools.cohhz(self.bandavg_dataset))
+                    ('time_window', 'frequency'), dstools.cohhz(self.bandavg_dataset))
             self.bandavg_dataset['alpha_h'], self.bandavg_dataset[
-                'alpha_e'] = dataselectiontools.pdvalues(
+                'alpha_e'] = dstools.pdvalues(
                 self.bandavg_dataset)
             print(f'Time taken for data selection tool: ' + str(time.time() - time_dataselection))
             qapp_instance.processEvents()
