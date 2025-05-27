@@ -1023,7 +1023,6 @@ class MainWindow(QMainWindow):
         #
         if 'localsite' in self.procinfo and self.procinfo['localsite'] == self.localsite:
             datasets = []
-            bandavg_msg = {}
             #
             progress_dialog = QProgressDialog("Performing band averaging...", None, 0,
                                               len(self.header), self)
@@ -1037,16 +1036,69 @@ class MainWindow(QMainWindow):
             num = 0
             bandavg_time = time.time()
             for ts in self.header:
-                bandavg_msg['header'] = self.header[ts]
-                bandavg_msg['caldata'] = self.xml_caldata[ts]
-                bandavg_msg['ts'] = metronix_utils.prepare_ts_from_h5(self.h5file, ts)
-                for ts_channel in bandavg_msg['ts']:
-                    bandavg_msg['ts'][ts_channel] = utils.reshape_array_with_overlap(
-                        window_length=self.procinfo['fft_length'],
-                        overlap=50,
-                        data=bandavg_msg['ts'][ts_channel])
-                bandavg = BandAvg(self.procinfo, bandavg_msg) # Get the bandavg object
-                datasets.append(bandavg.bandavg_ds) # appends xarray dataset for a run
+
+                # Preparing inputs for band averaging
+                # TODO: Replace this with a better strategy later
+                if self.procinfo['notch'] == 'on':
+                    notch_filter_apply = True
+                else:
+                    notch_filter_apply = False
+
+                # TODO: Replace this with a better strategy later
+                if self.procinfo['processing_mode'] == 'MT + Tipper':
+                    process_mt = True
+                    process_tipper = True
+                elif self.procinfo['processing_mode'] == 'MT Only':
+                    process_mt = True
+                    process_tipper = False
+                else:
+                    process_mt = None
+                    process_tipper = None
+
+                # TODO: Replace this with a better strategy later
+                if self.procinfo['remotesite'] is not None:
+                    remote_reference = True
+                else:
+                    remote_reference = False
+
+                # TODO: Replace this with a better strategy later
+                calibration_data_electric = {}
+                if 'ex' in self.header[ts]:
+                    calibration_data_electric['ex'] = {}
+                    calibration_data_electric['ex']['x1'] = self.header[ts]['ex']['x1'][0]
+                    calibration_data_electric['ex']['x2'] = self.header[ts]['ex']['x2'][0]
+
+                if 'ey' in self.header[ts]:
+                    calibration_data_electric['ey'] = {}
+                    calibration_data_electric['ey']['y1'] = self.header[ts]['ey']['y1'][0]
+                    calibration_data_electric['ey']['y2'] = self.header[ts]['ey']['y2'][0]
+
+                # TODO: Replace this with a better strategy later
+                calibration_data_magnetic = {'instrument': 'metronix'}
+                possible_magnetic_channels = ['hx', 'hy', 'hz', 'rx', 'ry']
+                available_magnetic_channels = [element for element in possible_magnetic_channels if element in list(self.header[ts].keys())]
+                for magnetic_channel in available_magnetic_channels:
+                    calibration_data_magnetic[magnetic_channel] = {}
+                    calibration_data_magnetic[magnetic_channel]['sensor_type'] = self.header[ts][magnetic_channel]['sensor']
+                    calibration_data_magnetic[magnetic_channel]['sensor_serial_number'] = self.header[ts][magnetic_channel]['sensor_no'][0]
+                    calibration_data_magnetic[magnetic_channel]['chopper_status'] = self.header[ts][magnetic_channel]['bychopper'][0]
+                    calibration_data_magnetic[magnetic_channel]['calibration_data'] = self.xml_caldata[ts]
+
+                # Get the bandavg object
+                bandavg = BandAvg(time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
+                                  sampling_frequency=self.procinfo['fs'], overlap=50,
+                                  calibrate_electric=True, calibrate_magnetic=True,
+                                  calibration_data_electric=calibration_data_electric,
+                                  calibration_data_magnetic=calibration_data_magnetic,
+                                  fft_length=self.procinfo['fft_length'],
+                                  parzen_window_radius=self.procinfo['parzen_radius'],
+                                  frequencies_per_decade=self.procinfo['frequencies_per_decade'],
+                                  apply_notch_filter=notch_filter_apply,
+                                  notch_frequency=self.procinfo['notch_frequency'],
+                                  process_mt=process_mt, process_tipper=process_tipper,
+                                  remote_reference=remote_reference
+                                  )
+                datasets.append(bandavg.band_averaged_dataset) # appends xarray dataset (for a run)
                 num += 1
                 progress_dialog.setValue(num)
             self.bandavg_dataset = xr.concat(datasets, dim='time_window').assign_coords(

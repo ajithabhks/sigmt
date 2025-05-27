@@ -260,11 +260,11 @@ def _get_tf_key(coh_keys, i) -> str:
     """
     key = ""
     if coh_keys[i] == 'coh_ex':
-        key = 'zxy_single'
+        key = 'zxy'
     if coh_keys[i] == 'coh_ey':
-        key = 'zyx_single'
+        key = 'zyx'
     if coh_keys[i] == 'coh_hz':
-        key = 'tzx_single'
+        key = 'tzx'
     return key
 
 def plot_pd_all(dataset: xr.Dataset) -> None:

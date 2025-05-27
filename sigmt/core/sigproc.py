@@ -2,40 +2,50 @@
 Module for signal processing operations
 """
 
+from typing import Optional
+
 import numpy as np
 from scipy import signal
 
 
-def notchfilsos(ts: np.ndarray, fs: float, notchfreq: float) -> np.ndarray:
+def notch_filter_sos(time_series: np.ndarray,
+                     sampling_frequency: float,
+                     notch_frequency: float,
+                     harmonics: Optional[int] = None) -> np.ndarray:
     """
-    SOS filter for notch filtering. Given frequency and all harmonics.
+    SOS filter for notch filtering. Filters out the requested notch frequency and harmonics.
 
-    :param ts: Time series data
-    :type ts: np.ndarray
-    :param fs: Sampling frequency
-    :type fs: float
-    :param notchfreq: Frequency to be filtered
-    :type notchfreq: float
+    :param time_series: Time series data
+    :type time_series: np.ndarray
+    :param sampling_frequency: Sampling frequency
+    :type sampling_frequency: float
+    :param notch_frequency: Frequency to be filtered
+    :type notch_frequency: float
+    :param harmonics: Number of harmonics to be filtered out.
+    :type harmonics: Optional[int]
+
     :return: Filtered time series data
     :rtype: np.ndarray
 
     """
-    min_fs = (notchfreq + 5) * 2
-    if fs > min_fs:
-        har = int((fs / 2.5) / notchfreq) + 1
-        if har > int(14000 / notchfreq):
-            har = int(14000 / notchfreq)
-        print('No. of harmonics: ' + str(har))
-        sos = signal.butter(4, [notchfreq - 5, notchfreq + 5], btype='bandstop', fs=fs, output='sos')
-        for n in range(2, har):
-            f0 = n * notchfreq
-            sos_new = signal.butter(4, [f0 - 5, f0 + 5], btype='bandstop', fs=fs, output='sos')
+    min_fs = (notch_frequency + 5) * 2
+    if sampling_frequency > min_fs:
+        if harmonics is None:
+            harmonics = int((sampling_frequency / 2.5) / notch_frequency) + 1
+        if harmonics > int(14000 / notch_frequency):
+            harmonics = int(14000 / notch_frequency)
+        print('No. of harmonics: ' + str(harmonics))
+        sos = signal.butter(4, [notch_frequency - 5, notch_frequency + 5], btype='bandstop', fs=sampling_frequency,
+                            output='sos')
+        for n in range(2, harmonics + 1):
+            f0 = n * notch_frequency
+            sos_new = signal.butter(4, [f0 - 5, f0 + 5], btype='bandstop', fs=sampling_frequency, output='sos')
             sos = np.concatenate((sos, sos_new), axis=0)
-        ts = signal.sosfilt(sos, ts, axis=0)
+        time_series = signal.sosfilt(sos, time_series, axis=0)
     else:
         print("Skipping notch filter as it cannot be performed for this sampling frequency")
 
-    return ts
+    return time_series
 
 
 def do_fft(ts: np.ndarray, fs: float, fft_length: int) -> tuple:

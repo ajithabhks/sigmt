@@ -58,7 +58,7 @@ def read_cal_data(xmlfile: str, channel_id: str) -> dict:
     :param channel_id: Channel id
     :type channel_id: str
 
-    :return: Dictionary containing 'ChoppOn' and 'ChoppOff' data.
+    :return: Dictionary containing 'chopper_on' and 'chopper_off' data.
     :rtype: dict
     """
     mytree = ET.parse(xmlfile)
@@ -85,7 +85,7 @@ def read_cal_data(xmlfile: str, channel_id: str) -> dict:
     freq = np.asarray(freq).reshape(-1, 1)
     mag = np.asarray(mag).reshape(-1, 1)
     phase = np.asarray(phase).reshape(-1, 1)
-    caldata['ChoppOn'] = np.concatenate((freq, mag, phase), axis=1)
+    caldata['chopper_on'] = np.concatenate((freq, mag, phase), axis=1)
 
     freq = []
     for x in calsensors.findall(f".//channel[@id='{channel_id}']//caldata[@chopper='off']/c1"):
@@ -102,6 +102,6 @@ def read_cal_data(xmlfile: str, channel_id: str) -> dict:
     freq = np.asarray(freq).reshape(-1, 1)
     mag = np.asarray(mag).reshape(-1, 1)
     phase = np.asarray(phase).reshape(-1, 1)
-    caldata['ChoppOff'] = np.concatenate((freq, mag, phase), axis=1)
+    caldata['chopper_off'] = np.concatenate((freq, mag, phase), axis=1)
 
     return caldata

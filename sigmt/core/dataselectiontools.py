@@ -14,8 +14,8 @@ def cohex(bandavg: xr.Dataset) -> np.ndarray:
 
     """
     # Ex predicted
-    zxx = bandavg['zxx_single']
-    zxy = bandavg['zxy_single']
+    zxx = bandavg['zxx']
+    zxy = bandavg['zxy']
     zpz = zxx * np.conj(bandavg['exhx']) + zxy * np.conj(bandavg['exhy'])
     zpx = zxx * bandavg['hxhx'] + zxy * bandavg['hyhx']
     zpy = zxx * bandavg['hxhy'] + zxy * bandavg['hyhy']
@@ -41,8 +41,8 @@ def cohey(bandavg: xr.Dataset) -> np.ndarray:
 
     """
     # Ey predicted
-    zyx = bandavg['zyx_single']
-    zyy = bandavg['zyy_single']
+    zyx = bandavg['zyx']
+    zyy = bandavg['zyy']
     zpz = zyx * np.conj(bandavg['eyhx']) + zyy * np.conj(bandavg['eyhy'])
     zpx = zyx * bandavg['hxhx'] + zyy * bandavg['hyhx']
     zpy = zyx * bandavg['hxhy'] + zyy * bandavg['hyhy']
@@ -68,8 +68,8 @@ def cohhz(bandavg: xr.Dataset) -> np.ndarray:
 
     """
     # Ex predicted
-    tzx = bandavg['tzx_single']
-    tzy = bandavg['tzy_single']
+    tzx = bandavg['tzx']
+    tzy = bandavg['tzy']
     zpz = tzx * np.conj(bandavg['hzhx']) + tzy * np.conj(bandavg['hzhy'])
     zpx = tzx * bandavg['hxhx'] + tzy * bandavg['hyhx']
     zpy = tzx * bandavg['hxhy'] + tzy * bandavg['hyhy']
