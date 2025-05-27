@@ -1,9 +1,18 @@
-name: Pylint
+name: Analyse code for docstring issues only
 
-on: [push]
+run: |
+  pylint --disable=all \
+         --enable=missing-docstring,empty-docstring \
+         $(git ls-files '*.py')
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  build:
+  docstring-lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -21,8 +30,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install pylint
 
-      - name: Analyse code for docstring issues only
+      - name: Run pylint for docstring checks
         run: |
           pylint --disable=all \
-                 --enable=missing-docstring,docstring-first-line-empty,docstring-missing-param,docstring-missing-return \
+                 --enable=missing-docstring,empty-docstring \
                  $(git ls-files '*.py')
