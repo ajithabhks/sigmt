@@ -23,7 +23,7 @@ from scipy import signal
 from sigmt.core import dataselectiontools
 from sigmt.core import perform_data_selection as pds
 from sigmt.core import plots
-from sigmt.core.bandavg import BandAvg
+from sigmt.core.band_averaging import BandAveraging
 from sigmt.core.robust_estimation import RobustEstimation
 from sigmt.gui.about_dialog import AboutDialog
 from sigmt.gui.edi_merger import EDIMerger
@@ -1076,29 +1076,32 @@ class MainWindow(QMainWindow):
                 # TODO: Replace this with a better strategy later
                 calibration_data_magnetic = {'instrument': 'metronix'}
                 possible_magnetic_channels = ['hx', 'hy', 'hz', 'rx', 'ry']
-                available_magnetic_channels = [element for element in possible_magnetic_channels if element in list(self.header[ts].keys())]
+                available_magnetic_channels = [element for element in possible_magnetic_channels if
+                                               element in list(self.header[ts].keys())]
                 for magnetic_channel in available_magnetic_channels:
                     calibration_data_magnetic[magnetic_channel] = {}
                     calibration_data_magnetic[magnetic_channel]['sensor_type'] = self.header[ts][magnetic_channel]['sensor']
-                    calibration_data_magnetic[magnetic_channel]['sensor_serial_number'] = self.header[ts][magnetic_channel]['sensor_no'][0]
-                    calibration_data_magnetic[magnetic_channel]['chopper_status'] = self.header[ts][magnetic_channel]['bychopper'][0]
+                    calibration_data_magnetic[magnetic_channel]['sensor_serial_number'] = \
+                    self.header[ts][magnetic_channel]['sensor_no'][0]
+                    calibration_data_magnetic[magnetic_channel]['chopper_status'] = \
+                    self.header[ts][magnetic_channel]['bychopper'][0]
                     calibration_data_magnetic[magnetic_channel]['calibration_data'] = self.xml_caldata[ts]
 
                 # Get the bandavg object
-                bandavg = BandAvg(time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
-                                  sampling_frequency=self.procinfo['fs'], overlap=50,
-                                  calibrate_electric=True, calibrate_magnetic=True,
-                                  calibration_data_electric=calibration_data_electric,
-                                  calibration_data_magnetic=calibration_data_magnetic,
-                                  fft_length=self.procinfo['fft_length'],
-                                  parzen_window_radius=self.procinfo['parzen_radius'],
-                                  frequencies_per_decade=self.procinfo['frequencies_per_decade'],
-                                  apply_notch_filter=notch_filter_apply,
-                                  notch_frequency=self.procinfo['notch_frequency'],
-                                  process_mt=process_mt, process_tipper=process_tipper,
-                                  remote_reference=remote_reference
-                                  )
-                datasets.append(bandavg.band_averaged_dataset) # appends xarray dataset (for a run)
+                bandavg = BandAveraging(time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
+                                        sampling_frequency=self.procinfo['fs'], overlap=50,
+                                        calibrate_electric=True, calibrate_magnetic=True,
+                                        calibration_data_electric=calibration_data_electric,
+                                        calibration_data_magnetic=calibration_data_magnetic,
+                                        fft_length=self.procinfo['fft_length'],
+                                        parzen_window_radius=self.procinfo['parzen_radius'],
+                                        frequencies_per_decade=self.procinfo['frequencies_per_decade'],
+                                        apply_notch_filter=notch_filter_apply,
+                                        notch_frequency=self.procinfo['notch_frequency'],
+                                        process_mt=process_mt, process_tipper=process_tipper,
+                                        remote_reference=remote_reference
+                                        )
+                datasets.append(bandavg.band_averaged_dataset)  # appends xarray dataset (for a run)
                 num += 1
                 progress_dialog.setValue(num)
             self.bandavg_dataset = xr.concat(datasets, dim='time_window').assign_coords(

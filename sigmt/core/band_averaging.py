@@ -17,7 +17,7 @@ import sigmt.utils.utils as utils
 from sigmt.utils.metronix.calibration import MetronixCalibration
 
 
-class BandAvg:
+class BandAveraging:
     """
     Class to perform band averaging.
 
