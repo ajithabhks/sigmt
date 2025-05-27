@@ -4,7 +4,8 @@
 
 🔧 These updates may temporarily affect stability or introduce minor breaking changes.
 
-📦 If you rely on a stable version for processing or production use, please use the latest release available on PyPI until the refactoring is complete.
+📦 If you rely on a stable version for processing or production use, please use the latest release available on PyPI or ([GitHub v2.0.4](https://github.com/ajithabhks/sigmt/tree/v2.0.4)
+) until the refactoring is complete.
 
 Sorry for any inconvenience.
 
