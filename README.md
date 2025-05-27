@@ -1,5 +1,15 @@
 [![PyPI version](https://img.shields.io/pypi/v/sigmt)](https://pypi.org/project/sigmt/)
 
+⚠️ Note: I’m currently in the process of updating module and variable names throughout the codebase to make them more descriptive and easier to understand.
+
+🔧 These updates may temporarily affect stability or introduce minor breaking changes.
+
+📦 If you rely on a stable version for processing or production use, please use the latest release available on PyPI or ([GitHub v2.0.4](https://github.com/ajithabhks/sigmt/tree/v2.0.4)) until the refactoring is complete.
+
+Sorry for any inconvenience.
+
+---
+
 # SigMT: An open-source python package for magnetotelluric data processing
 
 SigMT is a python package designed for the processing of the raw magnetotelluric (MT) data to obtain the MT impedance and tipper estimates. It works in an automated way, so that manual time series inspection and editing are not required. Mahalanobis based data selection tool is implemented in the package to avoid the manual editing of time series. The final impedance estimation is done using the robust estimation method. Different data selection tools such as coherency threshold, polarization direction are included in this package.
