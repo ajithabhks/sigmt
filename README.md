@@ -1,10 +1,10 @@
 [![PyPI version](https://img.shields.io/pypi/v/sigmt)](https://pypi.org/project/sigmt/)
 
-⚠️ Note: I’m currently in the process of updating module and variable names throughout the codebase to make them more descriptive and easier to understand.
+Note: I’m currently in the process of updating module and variable names throughout the codebase to make them more descriptive and easier to understand.
 
-🔧 These updates may temporarily affect stability or introduce minor breaking changes.
+These updates may temporarily affect stability or introduce minor breaking changes.
 
-📦 If you rely on a stable version for processing or production use, please use the latest release available on PyPI or ([GitHub v2.0.4](https://github.com/ajithabhks/sigmt/tree/v2.0.4)) until the refactoring is complete.
+If you rely on a stable version for processing or production use, please use the latest release available on PyPI (`pip install sigmt`) or ([GitHub v2.0.4](https://github.com/ajithabhks/sigmt/tree/v2.0.4)) until the refactoring is complete.
 
 Sorry for any inconvenience.
 
