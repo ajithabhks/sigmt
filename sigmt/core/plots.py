@@ -7,6 +7,7 @@ import numpy as np
 import xarray as xr
 from matplotlib import pyplot as plt
 
+matplotlib.use("Qt5Agg")
 plt.rcParams['figure.max_open_warning'] = 50
 
 
