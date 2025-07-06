@@ -56,8 +56,8 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict) -> None:
     plt.errorbar(ftlist, rho_yx, yerr=err_ryx, ecolor='b', fmt="none")
     plt.xscale('log')
     plt.yscale('log')
-    if max(ftlist) < 15000 and min(ftlist) > 0.001:
-        plt.xlim((15000, 0.001))
+    if max(ftlist) < 15000 and min(ftlist) > 0.0001:
+        plt.xlim((15000, 0.0001))
     else:
         plt.xlim((max(ftlist) + 10, min(ftlist) - 10))
         if min(ftlist) > 0.001:
@@ -76,8 +76,8 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict) -> None:
     plt.errorbar(ftlist, phase_xy, yerr=err_pxy, ecolor='r', fmt="none")
     plt.errorbar(ftlist, phase_yx, yerr=err_pyx, ecolor='b', fmt="none")
     plt.xscale('log')
-    if max(ftlist) < 15000 and min(ftlist) > 0.001:
-        plt.xlim((15000, 0.001))
+    if max(ftlist) < 15000 and min(ftlist) > 0.0001:
+        plt.xlim((15000, 0.0001))
     else:
         plt.xlim((max(ftlist) + 10, min(ftlist) - 10))
         if min(ftlist) > 0.001:
@@ -126,8 +126,8 @@ def plot_tipper(dataset: xr.Dataset, procinfo: dict) -> None:
     plt.scatter(ftlist, ty_a, c='b', s=10, label='Ty')
     plt.ylim(0, 1)
     plt.xscale('log')
-    if max(ftlist) < 15000 and min(ftlist) > 0.001:
-        plt.xlim((15000, 0.001))
+    if max(ftlist) < 15000 and min(ftlist) > 0.0001:
+        plt.xlim((15000, 0.0001))
     else:
         plt.xlim((max(ftlist) + 10, min(ftlist) - 10))
         if min(ftlist) > 0.001:
@@ -140,8 +140,8 @@ def plot_tipper(dataset: xr.Dataset, procinfo: dict) -> None:
     plt.scatter(ftlist, tx_p, c='r', s=10)
     plt.scatter(ftlist, ty_p, c='b', s=10)
     plt.xscale('log')
-    if max(ftlist) < 15000 and min(ftlist) > 0.001:
-        plt.xlim((15000, 0.001))
+    if max(ftlist) < 15000 and min(ftlist) > 0.0001:
+        plt.xlim((15000, 0.0001))
     else:
         plt.xlim((max(ftlist) + 10, min(ftlist) - 10))
         if min(ftlist) > 0.001:
@@ -176,7 +176,7 @@ def plot_coherency(dataset: xr.Dataset, procinfo: dict) -> None:
     if 'coh_hz' in dataset:
         plt.scatter(frequency_values, dataset['coh_hz'].values, c='g', label='Hz')
     plt.xscale('log')
-    plt.xlim((10000, 0.001))
+    plt.xlim((10000, 0.0001))
     plt.ylim(0, 1)
     # generate tick values for y
     y_ticks = np.arange(0.1, 1.1, 0.1)
