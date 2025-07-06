@@ -217,7 +217,7 @@ class BandAveraging:
         self.detrend_time_series()
         self.perform_fft()
         if calibrate_magnetic:
-            self.calibrate_mag()
+            self.calibrate_magnetic()
         del self.calibration_data_magnetic
         del self.time_series
         gc.collect()
@@ -250,7 +250,7 @@ class BandAveraging:
             dipole_ew = abs(self.calibration_data_electric['ey']['y1']) + abs(self.calibration_data_electric['ey']['y2'])
             self.time_series['ey'] = self.time_series['ey'] / (1 * dipole_ew / 1000)
 
-    def calibrate_mag(self) -> None:
+    def calibrate_magnetic(self) -> None:
         """
         Calibrates the magnetic field channels.
 

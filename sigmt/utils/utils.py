@@ -187,23 +187,27 @@ def get_target_frequency_list(sampling_frequency: float,
 
     fr = parzen_window_radius * frequency_table  # bandwidth of parzen window - oneside from ft
     total_bandwidth = fr * 2  # bandwidth of parzen window - two side from ft
-    # nof spectra in parzen window for each ft
+
+    # No. of spectral bins in the parzen window for each ft
     dof = total_bandwidth / (sampling_frequency / fft_length)
 
     maximum = sampling_frequency / 2
+
+    # Hardcoding maximum frequency to 15000
     if maximum > 15000:
         maximum = 15000
     f_max = max(frequency_table[frequency_table < maximum])  # ft_max, following nyquist
-
     f_max_index = np.where(frequency_table == f_max)[0][0]  # index in ftable
-    min_required = dof[f_max_index] * .01  # min dof required for ft_min
 
-    dof_min = min(dof[dof > min_required])  # finding in dof
-    dof_min_index = np.where(dof == dof_min)[0][0]  # finding index
+    # Finding minimum frequency bin used for a parzen window used.
+    parzen_lower_extend = frequency_table - (frequency_table * parzen_window_radius)
+    # Find the index of the target frequency whose lower Parzen window boundary is
+    # closest to the frequency resolution
+    f_min_index = np.argmin(abs(parzen_lower_extend - (sampling_frequency / fft_length)))
 
-    while dof[dof_min_index] < 10:  # Making sure, atleast 10 spectral lines are averaged
-        dof_min_index = dof_min_index - 1
+    # Looks for minimum dof=10
+    f_min_index = np.min([f_min_index, np.argmin(abs(dof-10))])
 
-    ft_list = frequency_table[f_max_index:dof_min_index + 1]  # Making ft_list
+    ft_list = frequency_table[f_max_index:f_min_index]  # Making ft_list
 
     return ft_list
