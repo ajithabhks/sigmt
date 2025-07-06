@@ -230,7 +230,7 @@ class EDIMerger(QWidget):
         Save merged EDI
         """
         data_frame = self.data.to_dataframe().reset_index()
-        data_frame = data_frame.sort_values(by=["frequency"], ascending=[False])
+        data_frame = data_frame.sort_values(by=["frequency"], ascending=False).reset_index(drop=True)
 
         file_formats = "EDI Files (*.edi);;All Files (*)"
         save_path, _ = QFileDialog.getSaveFileName(None, "Save File", "", file_formats)
