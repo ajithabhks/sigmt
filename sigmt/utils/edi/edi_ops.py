@@ -1,5 +1,7 @@
 import math
-from datetime import date
+import os
+from datetime import date, datetime
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -9,7 +11,7 @@ from PyQt5.QtWidgets import QFileDialog
 from sigmt.__version__ import __version__
 
 
-def save_edi(estimates: xr.Dataset, procinfo: dict, project_setup: dict) -> None:
+def save_edi(estimates: xr.Dataset, procinfo: dict, project_setup: dict, save_path: Optional[str]= None) -> None:
     """
     Saves EDI after processing is done.
 
@@ -19,6 +21,10 @@ def save_edi(estimates: xr.Dataset, procinfo: dict, project_setup: dict) -> None
     :type procinfo: dict
     :param project_setup: Dictionary containing project setup.
     :type project_setup: dict
+    :param save_path: Optional path to the output folder. If this is provided, plots will be saved to this folder.
+    :type save_path: str
+    :return: None
+    :rtype: NoneType
 
     """
 
@@ -89,9 +95,12 @@ def save_edi(estimates: xr.Dataset, procinfo: dict, project_setup: dict) -> None
 
     today = date.today()
     today = today.strftime("%m/%d/%Y")
-    #
-    file_formats = "EDI Files (*.edi);;All Files (*)"
-    edi_file, _ = QFileDialog.getSaveFileName(None, "Save File", "", file_formats)
+
+    if save_path:
+        edi_file = os.path.join(save_path, f"edi_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.edi")
+    else:
+        file_formats = "EDI Files (*.edi);;All Files (*)"
+        edi_file, _ = QFileDialog.getSaveFileName(None, "Save File", "", file_formats)
     if edi_file:  # If user selects a path
         with open(edi_file, 'w', encoding='utf-8') as file_handle:
             file_handle.write(">HEAD\n")
