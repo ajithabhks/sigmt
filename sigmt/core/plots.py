@@ -3,6 +3,7 @@ Functions to plot output curves
 """
 
 import os
+from datetime import datetime
 from typing import Optional
 
 import matplotlib
@@ -98,7 +99,8 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str
     plt.grid(which='both', linestyle='-.', linewidth=0.4)
 
     if save_path:
-        plt.savefig(os.path.join(save_path, "mt_impedance.png"), dpi=300)  # Save figure to file
+        plt.savefig(os.path.join(save_path, f"mt_impedance_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"),
+                    dpi=300)  # Save figure to file
         plt.close()
     else:
         plt.show()
@@ -162,7 +164,8 @@ def plot_tipper(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str] = 
     plt.grid(which='both', linestyle='-.', linewidth=0.4)
 
     if save_path:
-        plt.savefig(os.path.join(save_path, "tipper.png"), dpi=300)  # Save figure to file
+        plt.savefig(os.path.join(save_path, f"tipper_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"),
+                    dpi=300)  # Save figure to file
         plt.close()
     else:
         plt.show()
@@ -194,7 +197,7 @@ def plot_coherency(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str]
     if 'coh_hz' in dataset:
         plt.scatter(frequency_values, dataset['coh_hz'].values, c='g', label='Hz')
     plt.xscale('log')
-    plt.xlim((10000, 0.0001))
+    plt.xlim((15000, 0.0001))
     plt.ylim(0, 1)
     # generate tick values for y
     y_ticks = np.arange(0.1, 1.1, 0.1)
@@ -206,7 +209,8 @@ def plot_coherency(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str]
     plt.legend()
 
     if save_path:
-        plt.savefig(os.path.join(save_path, "predicted_coherency.png"), dpi=300)  # Save figure to file
+        plt.savefig(os.path.join(save_path, f"predicted_coherency_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"),
+                    dpi=300)  # Save figure to file
         plt.close()
     else:
         plt.show()
