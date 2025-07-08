@@ -2,16 +2,18 @@
 Functions to plot output curves
 """
 
+import os
+from typing import Optional
+
 import matplotlib
 import numpy as np
 import xarray as xr
 from matplotlib import pyplot as plt
 
-matplotlib.use("Qt5Agg")
 plt.rcParams['figure.max_open_warning'] = 50
 
 
-def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict) -> None:
+def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str] = None) -> None:
     """
     Plots apparent resistivity and phase
 
@@ -19,8 +21,10 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict) -> None:
     :type dataset: xr.Dataset
     :param procinfo: Dictionary containing processing information
     :type procinfo: dict
+    :param save_path: Optional path to the output folder. If this is provided, plots will be saved to this folder.
+    :type save_path: str
     :return: None
-    :rtype: None
+    :rtype: NoneType
 
     """
     if not dataset:
@@ -92,10 +96,15 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict) -> None:
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Phase (Deg.)')
     plt.grid(which='both', linestyle='-.', linewidth=0.4)
-    plt.show()
+
+    if save_path:
+        plt.savefig(os.path.join(save_path, "mt_impedance.png"), dpi=300)  # Save figure to file
+        plt.close()
+    else:
+        plt.show()
 
 
-def plot_tipper(dataset: xr.Dataset, procinfo: dict) -> None:
+def plot_tipper(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str] = None) -> None:
     """
     Plots tipper
 
@@ -103,8 +112,10 @@ def plot_tipper(dataset: xr.Dataset, procinfo: dict) -> None:
     :type dataset: xr.Dataset
     :param procinfo: Dictionary containing processing information
     :type procinfo: dict
+    :param save_path: Optional path to the output folder. If this is provided, plots will be saved to this folder.
+    :type save_path: str
     :return: None
-    :rtype: None
+    :rtype: NoneType
 
     """
     if not dataset:
@@ -149,10 +160,15 @@ def plot_tipper(dataset: xr.Dataset, procinfo: dict) -> None:
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Tipper Phase')
     plt.grid(which='both', linestyle='-.', linewidth=0.4)
-    plt.show()
+
+    if save_path:
+        plt.savefig(os.path.join(save_path, "tipper.png"), dpi=300)  # Save figure to file
+        plt.close()
+    else:
+        plt.show()
 
 
-def plot_coherency(dataset: xr.Dataset, procinfo: dict) -> None:
+def plot_coherency(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str] = None) -> None:
     """
     Plots coherencies
 
@@ -160,8 +176,10 @@ def plot_coherency(dataset: xr.Dataset, procinfo: dict) -> None:
     :type dataset: xr.Dataset
     :param procinfo: Dictionary containing processing information
     :type procinfo: dict
+    :param save_path: Optional path to the output folder. If this is provided, plots will be saved to this folder.
+    :type save_path: str
     :return: None
-    :rtype: None
+    :rtype: NoneType
 
     """
     if not dataset:
@@ -186,7 +204,13 @@ def plot_coherency(dataset: xr.Dataset, procinfo: dict) -> None:
     plt.title(f'{procinfo["localsite"]} - {procinfo["fs"]} Hz')
     plt.grid(which='both', linestyle='-.', linewidth=0.4)
     plt.legend()
-    plt.show()
+
+    if save_path:
+        plt.savefig(os.path.join(save_path, "predicted_coherency.png"), dpi=300)  # Save figure to file
+        plt.close()
+    else:
+        plt.show()
+
 
 def plot_coherencies_all(dataset: xr.Dataset) -> None:
     """
@@ -221,7 +245,8 @@ def plot_coherencies_all(dataset: xr.Dataset) -> None:
         if num_coh == 1:
             tf_component = _get_tf_key(coh_keys, 0)
             plt.figure()
-            plt.scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag, c=data_for_freq[coh_keys[0]], cmap=custom_colormap,
+            plt.scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag, c=data_for_freq[coh_keys[0]],
+                        cmap=custom_colormap,
                         vmin=0, vmax=1)
             plt.colorbar(label=coh_keys[0])  # Add color bar for reference
             plt.title(f"Coherency ({coh_keys[0]}) plot for {freq.values} Hz", fontsize=12)
@@ -231,7 +256,8 @@ def plot_coherencies_all(dataset: xr.Dataset) -> None:
             fig, axes = plt.subplots(1, 2, figsize=(10, 5))
             for i in range(2):
                 tf_component = _get_tf_key(coh_keys, i)
-                sc = axes[i].scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag, c=data_for_freq[coh_keys[i]],
+                sc = axes[i].scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag,
+                                     c=data_for_freq[coh_keys[i]],
                                      cmap=custom_colormap, vmin=0, vmax=1)
                 fig.colorbar(sc, ax=axes[i], label=coh_keys[i])
                 axes[i].set_title(coh_keys[i])
@@ -242,7 +268,8 @@ def plot_coherencies_all(dataset: xr.Dataset) -> None:
             fig, axes = plt.subplots(1, 3, figsize=(15, 5))  # 3 horizontal subplots
             for i in range(3):
                 tf_component = _get_tf_key(coh_keys, i)
-                sc = axes[i].scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag, c=data_for_freq[coh_keys[i]],
+                sc = axes[i].scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag,
+                                     c=data_for_freq[coh_keys[i]],
                                      cmap=custom_colormap, vmin=0, vmax=1)
                 fig.colorbar(sc, ax=axes[i], label=coh_keys[i])
                 axes[i].set_title(coh_keys[i])
@@ -267,6 +294,7 @@ def _get_tf_key(coh_keys, i) -> str:
     if coh_keys[i] == 'coh_hz':
         key = 'tzx'
     return key
+
 
 def plot_pd_all(dataset: xr.Dataset) -> None:
     """
@@ -307,6 +335,7 @@ def plot_pd_all(dataset: xr.Dataset) -> None:
 
         plt.show(block=False)
 
+
 def _get_custom_colormap() -> matplotlib.colors.LinearSegmentedColormap:
     """
        Creates and returns a custom colormap for coherency plots
@@ -314,24 +343,24 @@ def _get_custom_colormap() -> matplotlib.colors.LinearSegmentedColormap:
        :return: Custom colormap
     """
     color_dictionary = {'red': [(0.0, 0.0, 0.0),
-                     (0.1, 0.5, 0.5),
-                     (0.2, 0.0, 0.0),
-                     (0.4, 0.2, 0.2),
-                     (0.6, 0.0, 0.0),
-                     (0.8, 1.0, 1.0),
-                     (1.0, 1.0, 1.0)],
-             'green': [(0.0, 0.0, 0.0),
-                       (0.1, 0.0, 0.0),
-                       (0.2, 0.0, 0.0),
-                       (0.4, 1.0, 1.0),
-                       (0.6, 1.0, 1.0),
-                       (0.8, 1.0, 1.0),
-                       (1.0, 0.0, 0.0)],
-             'blue': [(0.0, 0.0, 0.0),
-                      (0.1, 0.5, 0.5),
-                      (0.2, 1.0, 1.0),
-                      (0.4, 1.0, 1.0),
-                      (0.6, 0.0, 0.0),
-                      (0.8, 0.0, 0.0),
-                      (1.0, 0.0, 0.0)]}
+                                (0.1, 0.5, 0.5),
+                                (0.2, 0.0, 0.0),
+                                (0.4, 0.2, 0.2),
+                                (0.6, 0.0, 0.0),
+                                (0.8, 1.0, 1.0),
+                                (1.0, 1.0, 1.0)],
+                        'green': [(0.0, 0.0, 0.0),
+                                  (0.1, 0.0, 0.0),
+                                  (0.2, 0.0, 0.0),
+                                  (0.4, 1.0, 1.0),
+                                  (0.6, 1.0, 1.0),
+                                  (0.8, 1.0, 1.0),
+                                  (1.0, 0.0, 0.0)],
+                        'blue': [(0.0, 0.0, 0.0),
+                                 (0.1, 0.5, 0.5),
+                                 (0.2, 1.0, 1.0),
+                                 (0.4, 1.0, 1.0),
+                                 (0.6, 0.0, 0.0),
+                                 (0.8, 0.0, 0.0),
+                                 (1.0, 0.0, 0.0)]}
     return matplotlib.colors.LinearSegmentedColormap('my_colormap', color_dictionary, 256)
