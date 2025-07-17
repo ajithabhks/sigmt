@@ -110,9 +110,12 @@ class RobustEstimation:
                 mahalanobis_selection = self.filtered_dataset['maha_dist'] < self.procinfo[
                     'md_thresh']
                 selected_windows = np.where(mahalanobis_selection.astype(bool))[0]
-                print(
-                    f'Channel: {self.channel}, ft: {self.ft} Hz. Applying Mahalanobis distance condition.')
-                self.filtered_dataset = self.filtered_dataset.isel(time_window=selected_windows)
+                if len(selected_windows) > 10:
+                    print(
+                        f'Channel: {self.channel}, ft: {self.ft} Hz. Applying Mahalanobis distance condition.')
+                    self.filtered_dataset = self.filtered_dataset.isel(time_window=selected_windows)
+                else:
+                    print('Skipping Mahalanobis distance condition due to insufficient windows.')
                 print(
                     f'Channel: {self.channel}, ft: {self.ft} Hz. Getting Jackknife initial guess.')
                 self.get_jackknife_initial_guess()
@@ -186,26 +189,40 @@ class RobustEstimation:
             self.filtered_dataset['selection_array_hz'] = (
                     self.filtered_dataset['hz_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
                     self.filtered_dataset['alpha_h_selection'])
-        # Avoiding GUI from crashing due to insufficient data
+
+        # Avoid crashing due to insufficient data
         if np.sum(self.filtered_dataset['selection_array_ex']) < 10:
-            print(
-                f'Skipping polarization direction selection for ft:{self.ft} Hz (ex) '
-                f'due to insufficient data for robust regression. Try with different min and max values.')
+            print('There is not enough data to continue the regression.')
+            print(f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (ex) if applied.')
             self.filtered_dataset['selection_array_ex'] = self.filtered_dataset['ex_selection_coh']
-        #
+            if np.sum(self.filtered_dataset['selection_array_ex']) <= 10:
+                print('There is still not enough data to continue the regression.')
+                print(f'Trying to remove coherency threshold related data rejection for ft:{self.ft} Hz (ex) if applied.')
+                self.filtered_dataset['selection_array_ex'] = xr.ones_like(self.filtered_dataset['selection_array_ex'],
+                                                                           dtype=bool)
+
         if np.sum(self.filtered_dataset['selection_array_ey']) < 10:
-            print(
-                f'Skipping polarization direction selection for ft:{self.ft} Hz (ey) '
-                f'due to insufficient data for robust regression. Try with different min and max values.')
+            print('There is not enough data to continue the regression.')
+            print(f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (ey) if applied.')
             self.filtered_dataset['selection_array_ey'] = self.filtered_dataset['ey_selection_coh']
-        #
+            if np.sum(self.filtered_dataset['selection_array_ey']) <= 10:
+                print('There is still not enough data to continue the regression.')
+                print(f'Trying to remove coherency threshold related data rejection for ft:{self.ft} Hz (ey) if applied.')
+                self.filtered_dataset['selection_array_ey'] = xr.ones_like(self.filtered_dataset['selection_array_ey'],
+                                                                           dtype=bool)
+
         if not self.processing_mode == "MT Only":
             if np.sum(self.filtered_dataset['selection_array_hz']) < 10:
+                print('There is not enough data to continue the regression.')
                 print(
-                    f'Skipping polarization direction selection for ft:{self.ft} Hz (hz) '
-                    f'due to insufficient data for robust regression. Try with different min and max values.')
-                self.filtered_dataset['selection_array_hz'] = self.filtered_dataset[
-                    'hz_selection_coh']
+                    f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (hz) if applied.')
+                self.filtered_dataset['selection_array_hz'] = self.filtered_dataset['hz_selection_coh']
+                if np.sum(self.filtered_dataset['selection_array_hz']) <= 10:
+                    print('There is still not enough data to continue the regression.')
+                    print(
+                        f'Trying to remove coherency threshold related data rejection for ft:{self.ft} Hz (hz) if applied.')
+                    self.filtered_dataset['selection_array_hz'] = xr.ones_like(self.filtered_dataset['selection_array_hz'],
+                                                                               dtype=bool)
 
     def get_mahalanobis_distance(self) -> None:
         """
@@ -302,9 +319,13 @@ class RobustEstimation:
                 # Allowing up to 5% of the data by adjusting scale_factor = 1.5.
                 # Because, in some cases, high residual values prevent Huber weight
                 # conditions from being met, causing the runtime error when Lc becomes zero.
+                i = 0
                 while int(np.sum(self.residuals <= km)) < int(np.ceil(len(self.residuals) * 0.05)):
+                    i = i + 1
                     scale_factor = scale_factor + 0.1
                     km = scale_factor * dm
+                    if i > 20:
+                        pass
                 # Get huber weights based on km
                 self.get_huber_weights(km)
             else:
