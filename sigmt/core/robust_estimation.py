@@ -192,7 +192,7 @@ class RobustEstimation:
                 print('There is not enough data to continue the regression.')
                 print(
                     f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (ex) if applied.')
-                self.filtered_dataset['selection_array_ex'] = self.filtered_dataset['ex_selection_coh']
+                self.filtered_dataset['selection_array_ex'] = self.filtered_dataset['ex_selection_coh'].copy()
                 if np.sum(self.filtered_dataset['selection_array_ex']) <= 10:
                     print('There is still not enough data to continue the regression.')
                     print(
@@ -204,7 +204,7 @@ class RobustEstimation:
                 print('There is not enough data to continue the regression.')
                 print(
                     f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (ey) if applied.')
-                self.filtered_dataset['selection_array_ey'] = self.filtered_dataset['ey_selection_coh']
+                self.filtered_dataset['selection_array_ey'] = self.filtered_dataset['ey_selection_coh'].copy()
                 if np.sum(self.filtered_dataset['selection_array_ey']) <= 10:
                     print('There is still not enough data to continue the regression.')
                     print(
@@ -221,7 +221,7 @@ class RobustEstimation:
                 print('There is not enough data to continue the regression.')
                 print(
                     f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (hz) if applied.')
-                self.filtered_dataset['selection_array_hz'] = self.filtered_dataset['hz_selection_coh']
+                self.filtered_dataset['selection_array_hz'] = self.filtered_dataset['hz_selection_coh'].copy()
                 if np.sum(self.filtered_dataset['selection_array_hz']) <= 10:
                     print('There is still not enough data to continue the regression.')
                     print(
