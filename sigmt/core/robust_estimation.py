@@ -191,24 +191,24 @@ class RobustEstimation:
             if np.sum(self.filtered_dataset['selection_array_ex']) < 10:
                 print('There is not enough data to continue the regression.')
                 print(
-                    f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (ex) if applied.')
+                    f'Trying to remove polarization direction (ex) related data rejections for ft:{self.ft} Hz if applied.')
                 self.filtered_dataset['selection_array_ex'] = self.filtered_dataset['ex_selection_coh'].copy()
                 if np.sum(self.filtered_dataset['selection_array_ex']) <= 10:
                     print('There is still not enough data to continue the regression.')
                     print(
-                        f'Trying to remove coherency threshold related data rejection for ft:{self.ft} Hz (ex) if applied.')
+                        f'Trying to remove coherency threshold (ex) related data rejection for ft:{self.ft} Hz if applied.')
                     self.filtered_dataset['selection_array_ex'] = xr.ones_like(self.filtered_dataset['selection_array_ex'],
                                                                                dtype=bool)
 
             if np.sum(self.filtered_dataset['selection_array_ey']) < 10:
                 print('There is not enough data to continue the regression.')
                 print(
-                    f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (ey) if applied.')
+                    f'Trying to remove polarization direction (ey) related data rejections for ft:{self.ft} Hz if applied.')
                 self.filtered_dataset['selection_array_ey'] = self.filtered_dataset['ey_selection_coh'].copy()
                 if np.sum(self.filtered_dataset['selection_array_ey']) <= 10:
                     print('There is still not enough data to continue the regression.')
                     print(
-                        f'Trying to remove coherency threshold related data rejection for ft:{self.ft} Hz (ey) if applied.')
+                        f'Trying to remove coherency threshold (ey) related data rejection for ft:{self.ft} Hz if applied.')
                     self.filtered_dataset['selection_array_ey'] = xr.ones_like(self.filtered_dataset['selection_array_ey'],
                                                                                dtype=bool)
 
@@ -220,12 +220,12 @@ class RobustEstimation:
             if np.sum(self.filtered_dataset['selection_array_hz']) < 10:
                 print('There is not enough data to continue the regression.')
                 print(
-                    f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (hz) if applied.')
+                    f'Trying to remove polarization direction (hz) related data rejections for ft:{self.ft} Hz if applied.')
                 self.filtered_dataset['selection_array_hz'] = self.filtered_dataset['hz_selection_coh'].copy()
                 if np.sum(self.filtered_dataset['selection_array_hz']) <= 10:
                     print('There is still not enough data to continue the regression.')
                     print(
-                        f'Trying to remove coherency threshold related data rejection for ft:{self.ft} Hz (hz) if applied.')
+                        f'Trying to remove coherency threshold (hz) related data rejection for ft:{self.ft} Hz if applied.')
                     self.filtered_dataset['selection_array_hz'] = xr.ones_like(self.filtered_dataset['selection_array_hz'],
                                                                                dtype=bool)
 
@@ -324,9 +324,14 @@ class RobustEstimation:
                 # Allowing up to 5% of the data by adjusting scale_factor = 1.5.
                 # Because, in some cases, high residual values prevent Huber weight
                 # conditions from being met, causing the runtime error when Lc becomes zero.
+                max_while_iteration = 100
+                while_iteration = 0
                 while int(np.sum(self.residuals <= km)) < int(np.ceil(len(self.residuals) * 0.05)):
-                    scale_factor = scale_factor + 0.1
-                    km = scale_factor * dm
+                    if while_iteration > max_while_iteration:
+                        break
+                    else:
+                        scale_factor = scale_factor + 0.1
+                        km = scale_factor * dm
                 # Get huber weights based on km
                 self.get_huber_weights(km)
             else:
