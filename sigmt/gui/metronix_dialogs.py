@@ -101,7 +101,7 @@ class LayoutSettingsDialog(QDialog):
             self.dipole_south = QLineEdit(str(abs(self.header[next(iter(self.header))]['ex']['x2'][0])))
         if 'ey' in self.header[next(iter(self.header))]:
             self.dipole_east = QLineEdit(str(abs(self.header[next(iter(self.header))]['ey']['y1'][0])))
-            self.dipole_west = QLineEdit(str(abs(self.header[next(iter(self.header))]['ey']['y1'][0])))
+            self.dipole_west = QLineEdit(str(abs(self.header[next(iter(self.header))]['ey']['y2'][0])))
         #
         if 'hx' in self.header[next(iter(self.header))]:
             self.coil_hx_type = QComboBox()
