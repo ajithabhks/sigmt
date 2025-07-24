@@ -320,13 +320,10 @@ class RobustEstimation:
                 # Allowing up to 5% of the data by adjusting scale_factor = 1.5.
                 # Because, in some cases, high residual values prevent Huber weight
                 # conditions from being met, causing the runtime error when Lc becomes zero.
-                i = 0
                 while int(np.sum(self.residuals <= km)) < int(np.ceil(len(self.residuals) * 0.05)):
                     i = i + 1
                     scale_factor = scale_factor + 0.1
                     km = scale_factor * dm
-                    if i > 20:
-                        pass
                 # Get huber weights based on km
                 self.get_huber_weights(km)
             else:
