@@ -115,7 +115,7 @@ class RobustEstimation:
                         f'Channel: {self.channel}, ft: {self.ft} Hz. Applying Mahalanobis distance condition.')
                     self.filtered_dataset = self.filtered_dataset.isel(time_window=selected_windows)
                 else:
-                    print('Skipping Mahalanobis distance condition due to insufficient windows.')
+                    print('Skipping Mahalanobis distance condition due to insufficient time windows.')
                 print(
                     f'Channel: {self.channel}, ft: {self.ft} Hz. Getting Jackknife initial guess.')
                 self.get_jackknife_initial_guess()
@@ -186,33 +186,37 @@ class RobustEstimation:
             self.filtered_dataset['selection_array_ey'] = (
                     self.filtered_dataset['ey_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
                     self.filtered_dataset['alpha_h_selection'])
-        if not self.processing_mode == "MT Only":
-            self.filtered_dataset['selection_array_hz'] = (
-                    self.filtered_dataset['hz_selection_coh'] * self.filtered_dataset['alpha_h_selection'])
 
-        # Avoid crashing due to insufficient data
-        if not self.processing_mode == "Tipper Only":
+            # Avoid crashing due to insufficient data
             if np.sum(self.filtered_dataset['selection_array_ex']) < 10:
                 print('There is not enough data to continue the regression.')
-                print(f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (ex) if applied.')
+                print(
+                    f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (ex) if applied.')
                 self.filtered_dataset['selection_array_ex'] = self.filtered_dataset['ex_selection_coh']
                 if np.sum(self.filtered_dataset['selection_array_ex']) <= 10:
                     print('There is still not enough data to continue the regression.')
-                    print(f'Trying to remove coherency threshold related data rejection for ft:{self.ft} Hz (ex) if applied.')
+                    print(
+                        f'Trying to remove coherency threshold related data rejection for ft:{self.ft} Hz (ex) if applied.')
                     self.filtered_dataset['selection_array_ex'] = xr.ones_like(self.filtered_dataset['selection_array_ex'],
                                                                                dtype=bool)
-        if not self.processing_mode == "Tipper Only":
+
             if np.sum(self.filtered_dataset['selection_array_ey']) < 10:
                 print('There is not enough data to continue the regression.')
-                print(f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (ey) if applied.')
+                print(
+                    f'Trying to remove polarization direction related data rejections for ft:{self.ft} Hz (ey) if applied.')
                 self.filtered_dataset['selection_array_ey'] = self.filtered_dataset['ey_selection_coh']
                 if np.sum(self.filtered_dataset['selection_array_ey']) <= 10:
                     print('There is still not enough data to continue the regression.')
-                    print(f'Trying to remove coherency threshold related data rejection for ft:{self.ft} Hz (ey) if applied.')
+                    print(
+                        f'Trying to remove coherency threshold related data rejection for ft:{self.ft} Hz (ey) if applied.')
                     self.filtered_dataset['selection_array_ey'] = xr.ones_like(self.filtered_dataset['selection_array_ey'],
                                                                                dtype=bool)
 
         if not self.processing_mode == "MT Only":
+            self.filtered_dataset['selection_array_hz'] = (
+                    self.filtered_dataset['hz_selection_coh'] * self.filtered_dataset['alpha_h_selection'])
+
+            # Avoid crashing due to insufficient data
             if np.sum(self.filtered_dataset['selection_array_hz']) < 10:
                 print('There is not enough data to continue the regression.')
                 print(
@@ -321,7 +325,6 @@ class RobustEstimation:
                 # Because, in some cases, high residual values prevent Huber weight
                 # conditions from being met, causing the runtime error when Lc becomes zero.
                 while int(np.sum(self.residuals <= km)) < int(np.ceil(len(self.residuals) * 0.05)):
-                    i = i + 1
                     scale_factor = scale_factor + 0.1
                     km = scale_factor * dm
                 # Get huber weights based on km
