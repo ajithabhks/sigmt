@@ -180,54 +180,64 @@ class RobustEstimation:
 
         """
         if not self.processing_mode == "Tipper Only":
-            self.filtered_dataset['selection_array_ex'] = (
-                    self.filtered_dataset['ex_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
-                    self.filtered_dataset['alpha_h_selection'])
-            self.filtered_dataset['selection_array_ey'] = (
-                    self.filtered_dataset['ey_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
-                    self.filtered_dataset['alpha_h_selection'])
-
-            # Avoid crashing due to insufficient data
-            if np.sum(self.filtered_dataset['selection_array_ex']) < 10:
-                print('There is not enough data to continue the regression.')
-                print(
-                    f'Trying to remove polarization direction (ex) related data rejections for ft:{self.ft} Hz if applied.')
-                self.filtered_dataset['selection_array_ex'] = self.filtered_dataset['ex_selection_coh'].copy()
-                if np.sum(self.filtered_dataset['selection_array_ex']) <= 10:
-                    print('There is still not enough data to continue the regression.')
+            if self.channel == 'ex':
+                self.filtered_dataset['selection_array_ex'] = (
+                        self.filtered_dataset['ex_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
+                        self.filtered_dataset['alpha_h_selection'])
+                # Avoid crashing due to insufficient data
+                if np.sum(self.filtered_dataset['selection_array_ex']) < 10:
+                    print('There is not enough data to continue the regression.')
                     print(
-                        f'Trying to remove coherency threshold (ex) related data rejection for ft:{self.ft} Hz if applied.')
-                    self.filtered_dataset['selection_array_ex'] = xr.ones_like(self.filtered_dataset['selection_array_ex'],
-                                                                               dtype=bool)
+                        f'Trying to remove polarization direction (ex) related data rejections for ft:{self.ft} Hz if applied.')
+                    self.filtered_dataset['selection_array_ex'] = self.filtered_dataset['ex_selection_coh'].copy()
+                    if np.sum(self.filtered_dataset['selection_array_ex']) <= 10:
+                        print('There is still not enough data to continue the regression.')
+                        print(
+                            f'Trying to remove coherency threshold (ex) related data rejection for ft:{self.ft} '
+                            f'Hz if applied.')
+                        self.filtered_dataset['selection_array_ex'] = xr.ones_like(
+                            self.filtered_dataset['selection_array_ex'],
+                            dtype=bool)
 
-            if np.sum(self.filtered_dataset['selection_array_ey']) < 10:
-                print('There is not enough data to continue the regression.')
-                print(
-                    f'Trying to remove polarization direction (ey) related data rejections for ft:{self.ft} Hz if applied.')
-                self.filtered_dataset['selection_array_ey'] = self.filtered_dataset['ey_selection_coh'].copy()
-                if np.sum(self.filtered_dataset['selection_array_ey']) <= 10:
-                    print('There is still not enough data to continue the regression.')
+            if self.channel == 'ey':
+                self.filtered_dataset['selection_array_ey'] = (
+                        self.filtered_dataset['ey_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
+                        self.filtered_dataset['alpha_h_selection'])
+                # Avoid crashing due to insufficient data
+                if np.sum(self.filtered_dataset['selection_array_ey']) < 10:
+                    print('There is not enough data to continue the regression.')
                     print(
-                        f'Trying to remove coherency threshold (ey) related data rejection for ft:{self.ft} Hz if applied.')
-                    self.filtered_dataset['selection_array_ey'] = xr.ones_like(self.filtered_dataset['selection_array_ey'],
-                                                                               dtype=bool)
+                        f'Trying to remove polarization direction (ey) related data rejections for ft:{self.ft} Hz '
+                        f'if applied.')
+                    self.filtered_dataset['selection_array_ey'] = self.filtered_dataset['ey_selection_coh'].copy()
+                    if np.sum(self.filtered_dataset['selection_array_ey']) <= 10:
+                        print('There is still not enough data to continue the regression.')
+                        print(
+                            f'Trying to remove coherency threshold (ey) related data rejection for ft:{self.ft} Hz '
+                            f'if applied.')
+                        self.filtered_dataset['selection_array_ey'] = xr.ones_like(
+                            self.filtered_dataset['selection_array_ey'],
+                            dtype=bool)
 
         if not self.processing_mode == "MT Only":
-            self.filtered_dataset['selection_array_hz'] = (
-                    self.filtered_dataset['hz_selection_coh'] * self.filtered_dataset['alpha_h_selection'])
-
-            # Avoid crashing due to insufficient data
-            if np.sum(self.filtered_dataset['selection_array_hz']) < 10:
-                print('There is not enough data to continue the regression.')
-                print(
-                    f'Trying to remove polarization direction (hz) related data rejections for ft:{self.ft} Hz if applied.')
-                self.filtered_dataset['selection_array_hz'] = self.filtered_dataset['hz_selection_coh'].copy()
-                if np.sum(self.filtered_dataset['selection_array_hz']) <= 10:
-                    print('There is still not enough data to continue the regression.')
+            if self.channel == 'hz':
+                self.filtered_dataset['selection_array_hz'] = (
+                        self.filtered_dataset['hz_selection_coh'] * self.filtered_dataset['alpha_h_selection'])
+                # Avoid crashing due to insufficient data
+                if np.sum(self.filtered_dataset['selection_array_hz']) < 10:
+                    print('There is not enough data to continue the regression.')
                     print(
-                        f'Trying to remove coherency threshold (hz) related data rejection for ft:{self.ft} Hz if applied.')
-                    self.filtered_dataset['selection_array_hz'] = xr.ones_like(self.filtered_dataset['selection_array_hz'],
-                                                                               dtype=bool)
+                        f'Trying to remove polarization direction (hz) related data rejections for ft:{self.ft} Hz '
+                        f'if applied.')
+                    self.filtered_dataset['selection_array_hz'] = self.filtered_dataset['hz_selection_coh'].copy()
+                    if np.sum(self.filtered_dataset['selection_array_hz']) <= 10:
+                        print('There is still not enough data to continue the regression.')
+                        print(
+                            f'Trying to remove coherency threshold (hz) related data rejection for ft:{self.ft} Hz '
+                            f'if applied.')
+                        self.filtered_dataset['selection_array_hz'] = xr.ones_like(
+                            self.filtered_dataset['selection_array_hz'],
+                            dtype=bool)
 
     def get_mahalanobis_distance(self) -> None:
         """
@@ -327,6 +337,7 @@ class RobustEstimation:
                 max_while_iteration = 100
                 while_iteration = 0
                 while int(np.sum(self.residuals <= km)) < int(np.ceil(len(self.residuals) * 0.05)):
+                    while_iteration = while_iteration + 1
                     if while_iteration > max_while_iteration:
                         break
                     else:
