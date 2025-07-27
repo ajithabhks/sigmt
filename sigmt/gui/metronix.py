@@ -464,6 +464,8 @@ class MainWindow(QMainWindow):
         try:
             self.project_setup = utils.read_yaml_file(os.path.join(
                 self.project_dir, 'project_setup', 'setup.yaml'))
+            if 'target_frequency_table_type' not in self.project_setup:
+                self.project_setup['target_frequency_table_type'] = 'Default'
             if self.project_setup['interface'] == self.interface:
                 self.setWindowTitle(self.project_setup[
                                         'project_name'] +
