@@ -23,12 +23,11 @@ def perform_coh_thresh(bandavg_dataset: xr.Dataset, coh_thresh: float, min_perce
         min_windows = int(
             np.ceil(len(bandavg_dataset[f'coh_{channel}'].coords['time_window']) * (min_percent / 100)))
         for ft in bandavg_dataset[f'coh_{channel}'].coords['frequency']:
-            ct = coh_thresh
             coh = bandavg_dataset[f'coh_{channel}'].sel(frequency=ft)
-            while np.sum(coh >= ct) < min_windows:
-                ct = ct - 0.01
-            selection_array = coh > ct
-            bandavg_dataset[f'{channel}_selection_coh'].loc[dict(frequency=ft)] = selection_array
+            while np.sum(coh >= coh_thresh) < min_windows:
+                coh_thresh = coh_thresh - 0.01
+            selection_array = coh > coh_thresh
+            bandavg_dataset[f'{channel}_selection_coh'].loc[dict(frequency=ft)] = selection_array.copy()
 
     return bandavg_dataset
 
