@@ -5,7 +5,7 @@ each target frequencies and transfer functions are computed for all events.
 
 import gc
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
+from typing import Optional, Literal
 
 import numpy as np
 import xarray as xr
@@ -36,6 +36,7 @@ class BandAveraging:
                  calibration_data_electric: Optional[dict[str, dict[str, float]]] = None,
                  calibration_data_magnetic: Optional[dict] = None,
                  apply_notch_filter: bool = False,
+                 target_frequency_table_type: Optional[Literal['default', 'metronix', 'explicit']] = 'default',
                  notch_frequency: Optional[float] = None,
                  notch_harmonics: Optional[int] = None,
                  process_mt: bool = True,
@@ -158,6 +159,9 @@ class BandAveraging:
         :type calibration_data_magnetic: dict
         :param apply_notch_filter: A boolean flag indicating whether a notch filter should be applied. Default is False.
         :type apply_notch_filter: bool
+        :param target_frequency_table_type: User can define type of target frequencies to be used. Options are
+                                            default and metronix.
+        :type target_frequency_table_type: Optional[Literal['default', 'metronix', 'explicit']] = 'default'
         :param notch_frequency: The frequency to be removed using the notch filter. Default is None.
         :type notch_frequency: float
         :param notch_harmonics: Defines the number of harmonics to be filtered using a notch filter.
@@ -189,6 +193,7 @@ class BandAveraging:
         self.notch_harmonics = notch_harmonics
         self.process_mt = process_mt
         self.process_tipper = process_tipper
+        self.target_frequency_table_type = target_frequency_table_type
 
         # Class related attributes
         self.channels = None
@@ -206,7 +211,7 @@ class BandAveraging:
         self.ft_list = utils.get_target_frequency_list(sampling_frequency=self.sampling_frequency,
                                                        parzen_window_radius=self.parzen_window_radius,
                                                        fft_length=self.fft_length,
-                                                       table_type='default',
+                                                       table_type=self.target_frequency_table_type,
                                                        frequencies_per_decade=frequencies_per_decade)
 
         self.get_channels()  # Get list of available ts channel. 'Ex', 'Ey', ....
