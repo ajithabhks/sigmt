@@ -3,6 +3,8 @@ Place to store utility functions.
 """
 from typing import Dict, Any, Literal, Optional, Union
 
+from sigmt.utils.frequency_table import METRONIX_ADU_07
+
 import numpy as np
 import yaml
 
@@ -176,10 +178,7 @@ def get_target_frequency_list(sampling_frequency: float,
             raise ValueError("explicit_table must be provided when table_type is 'explicit'")
         frequency_table = np.array(explicit_table, dtype=float)
     elif table_type == 'metronix':
-        # TODO: Implement this in next version.
-        print('Currently Metronix frequency table is not implemented. Switching to default.')
-        frequency_table = np.flip(np.logspace(lowest_frequency, highest_frequency,
-                                              int((highest_frequency - lowest_frequency) * frequencies_per_decade + 1)))
+        frequency_table = METRONIX_ADU_07.copy()
     else:
         print('table_type provided is not supported. Switching to default.')
         frequency_table = np.flip(np.logspace(lowest_frequency, highest_frequency,

@@ -418,15 +418,16 @@ class MainWindow(QMainWindow):
         # Prompt user to select project directory
         self.project_dir = QFileDialog.getExistingDirectory(self, "Select Project Directory", "/")
         if self.project_dir:
-            # Create the necessary folders
-            folders = ['time_series', 'edi', 'project_setup', 'calibration_files']
-            for folder in folders:
-                folder_path = os.path.join(self.project_dir, folder)
-                os.makedirs(folder_path, exist_ok=True)
-
             # Ask questions and save project setup
             dialog = ProjectSetupDialog(self, interface=self.interface)
+
             if dialog.exec_():
+                # Create the necessary folders
+                folders = ['time_series', 'edi', 'project_setup', 'calibration_files']
+                for folder in folders:
+                    folder_path = os.path.join(self.project_dir, folder)
+                    os.makedirs(folder_path, exist_ok=True)
+
                 self.project_setup = dialog.get_values()
 
                 # Save setup data to YAML file
