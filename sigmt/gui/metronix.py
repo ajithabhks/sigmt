@@ -5,6 +5,7 @@ First landing window for the Metronix specific operations.
 
 import os
 import time
+from pathlib import Path
 
 import h5py
 import numpy as np
@@ -20,6 +21,7 @@ from PyQt5.QtWidgets import (QMainWindow, QAction, QFileDialog, QMessageBox,
                              QApplication, QProgressDialog)
 from scipy import signal
 
+import sigmt.utils.metronix.cal_from_metronix_txt
 from sigmt.core import data_selection_tools as dstools
 from sigmt.core import perform_data_selection as pds
 from sigmt.core import plots
@@ -1098,6 +1100,15 @@ class MainWindow(QMainWindow):
                     if self.project_setup['preferred_cal_file'] == 'xml':
                         calibration_data_magnetic[magnetic_channel]['calibration_data'] = self.xml_caldata[ts][
                             str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number'])]
+                    elif self.project_setup['preferred_cal_file'] == 'metronix_txt':
+                        metronix_txt_filename = (calibration_data_magnetic[magnetic_channel]["sensor_type"].lower()
+                                                 + "_"
+                                                 + str(calibration_data_magnetic[magnetic_channel]["sensor_serial_number"])
+                                                 )
+                        cal_file_path = Path(self.project_dir) / "calibration_files" / f"{metronix_txt_filename}.txt"
+                        calibration_data_magnetic[magnetic_channel][
+                            'calibration_data'] = sigmt.utils.metronix.cal_from_metronix_txt.read_calibration_metronix_txt(
+                            filepath=cal_file_path)
                     else:
                         calibration_data_magnetic[magnetic_channel]['calibration_data'] = None
 
