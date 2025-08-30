@@ -418,15 +418,16 @@ class MainWindow(QMainWindow):
         # Prompt user to select project directory
         self.project_dir = QFileDialog.getExistingDirectory(self, "Select Project Directory", "/")
         if self.project_dir:
-            # Create the necessary folders
-            folders = ['time_series', 'edi', 'project_setup', 'calibration_files']
-            for folder in folders:
-                folder_path = os.path.join(self.project_dir, folder)
-                os.makedirs(folder_path, exist_ok=True)
-
             # Ask questions and save project setup
             dialog = ProjectSetupDialog(self, interface=self.interface)
+
             if dialog.exec_():
+                # Create the necessary folders
+                folders = ['time_series', 'edi', 'project_setup', 'calibration_files']
+                for folder in folders:
+                    folder_path = os.path.join(self.project_dir, folder)
+                    os.makedirs(folder_path, exist_ok=True)
+
                 self.project_setup = dialog.get_values()
 
                 # Save setup data to YAML file
@@ -463,6 +464,9 @@ class MainWindow(QMainWindow):
         try:
             self.project_setup = utils.read_yaml_file(os.path.join(
                 self.project_dir, 'project_setup', 'setup.yaml'))
+            # To support older projects.
+            if 'target_frequency_table_type' not in self.project_setup:
+                self.project_setup['target_frequency_table_type'] = 'Default'
             if self.project_setup['interface'] == self.interface:
                 self.setWindowTitle(self.project_setup[
                                         'project_name'] +
@@ -993,6 +997,7 @@ class MainWindow(QMainWindow):
                 self.procinfo['md_thresh'] = float(self.md_threshold_entry.text())
                 self.procinfo['notch_frequency'] = float(self.project_setup['notch_frequency'])
                 self.procinfo['preferred_cal_file'] = self.project_setup['preferred_cal_file']
+                self.procinfo['target_frequency_table_type'] = self.project_setup['target_frequency_table_type'].lower()
                 self.procinfo['frequencies_per_decade'] = int(
                     self.project_setup['frequencies_per_decade'])
                 first_header = next(iter(next(iter(self.header.values())).values()))
@@ -1082,9 +1087,9 @@ class MainWindow(QMainWindow):
                     calibration_data_magnetic[magnetic_channel] = {}
                     calibration_data_magnetic[magnetic_channel]['sensor_type'] = self.header[ts][magnetic_channel]['sensor']
                     calibration_data_magnetic[magnetic_channel]['sensor_serial_number'] = \
-                    self.header[ts][magnetic_channel]['sensor_no'][0]
+                        self.header[ts][magnetic_channel]['sensor_no'][0]
                     calibration_data_magnetic[magnetic_channel]['chopper_status'] = \
-                    self.header[ts][magnetic_channel]['bychopper'][0]
+                        self.header[ts][magnetic_channel]['bychopper'][0]
                     calibration_data_magnetic[magnetic_channel]['calibration_data'] = self.xml_caldata[ts]
 
                 # Get the bandavg object
@@ -1095,6 +1100,7 @@ class MainWindow(QMainWindow):
                                         calibration_data_magnetic=calibration_data_magnetic,
                                         fft_length=self.procinfo['fft_length'],
                                         parzen_window_radius=self.procinfo['parzen_radius'],
+                                        target_frequency_table_type=self.procinfo['target_frequency_table_type'],
                                         frequencies_per_decade=self.procinfo['frequencies_per_decade'],
                                         apply_notch_filter=notch_filter_apply,
                                         notch_frequency=self.procinfo['notch_frequency'],
