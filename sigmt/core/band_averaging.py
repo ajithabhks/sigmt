@@ -113,49 +113,46 @@ class BandAveraging:
                                                 - 'sensor_serial_number': 300 (int)
                                                 - 'chopper_status': 1 (int) 1 means 0N, 0 means OFF
                                                 - 'calibration_data' (dict)
-                                                    - '300' (dict) - key is coil number
-                                                        - 'chopper_on' (ndarray, shape: n,3)
-                                                           n - number of frequencies
-                                                           First column: Frequency (Hz)
-                                                           Second column: Magnitude (V/nT*Hz)
-                                                           Third column: Phase  (deg)
-                                                        - 'chopper_off' (ndarray, shape: n,3)
-                                                           n - number of frequencies
-                                                           First column: Frequency (Hz)
-                                                           Second column: Magnitude (V/nT*Hz)
-                                                           Third column: Phase  (deg)
+                                                    - 'chopper_on' (ndarray, shape: n,3)
+                                                       n - number of frequencies
+                                                       First column: Frequency (Hz)
+                                                       Second column: Magnitude (V/nT*Hz)
+                                                       Third column: Phase  (deg)
+                                                    - 'chopper_off' (ndarray, shape: n,3)
+                                                       n - number of frequencies
+                                                       First column: Frequency (Hz)
+                                                       Second column: Magnitude (V/nT*Hz)
+                                                       Third column: Phase  (deg)
                                           - 'hy' (dict) details of hx coil
                                                 - 'sensor_type': 'MFS06e' (str)
                                                 - 'sensor_serial_number': 301 (int)
                                                 - 'chopper_status': 1 (int) 1 means 0N, 0 means OFF
                                                 - 'calibration_data' (dict)
-                                                    - '301' (dict) - key is coil number
-                                                        - 'chopper_on' (ndarray, shape: n,3)
-                                                           n - number of frequencies
-                                                           First column: Frequency (Hz)
-                                                           Second column: Magnitude (V/nT*Hz)
-                                                           Third column: Phase  (deg)
-                                                        - 'chopper_off' (ndarray, shape: n,3)
-                                                           n - number of frequencies
-                                                           First column: Frequency (Hz)
-                                                           Second column: Magnitude (V/nT*Hz)
-                                                           Third column: Phase  (deg)
+                                                    - 'chopper_on' (ndarray, shape: n,3)
+                                                       n - number of frequencies
+                                                       First column: Frequency (Hz)
+                                                       Second column: Magnitude (V/nT*Hz)
+                                                       Third column: Phase  (deg)
+                                                    - 'chopper_off' (ndarray, shape: n,3)
+                                                       n - number of frequencies
+                                                       First column: Frequency (Hz)
+                                                       Second column: Magnitude (V/nT*Hz)
+                                                       Third column: Phase  (deg)
                                           - 'hz' (dict) details of hx coil
                                                 - 'sensor_type': 'MFS06e' (str)
                                                 - 'sensor_serial_number': 301 (int)
                                                 - 'chopper_status': 1 (int) 1 means 0N, 0 means OFF
                                                 - 'calibration_data' (dict)
-                                                    - '302' (dict) - key is coil number
-                                                        - 'chopper_on' (ndarray, shape: n,3)
-                                                           n - number of frequencies
-                                                           First column: Frequency (Hz)
-                                                           Second column: Magnitude (V/nT*Hz)
-                                                           Third column: Phase  (deg)
-                                                        - 'chopper_off' (ndarray, shape: n,3)
-                                                           n - number of frequencies
-                                                           First column: Frequency (Hz)
-                                                           Second column: Magnitude (V/nT*Hz)
-                                                           Third column: Phase  (deg)
+                                                    - 'chopper_on' (ndarray, shape: n,3)
+                                                       n - number of frequencies
+                                                       First column: Frequency (Hz)
+                                                       Second column: Magnitude (V/nT*Hz)
+                                                       Third column: Phase  (deg)
+                                                    - 'chopper_off' (ndarray, shape: n,3)
+                                                       n - number of frequencies
+                                                       First column: Frequency (Hz)
+                                                       Second column: Magnitude (V/nT*Hz)
+                                                       Third column: Phase  (deg)
         :type calibration_data_magnetic: dict
         :param apply_notch_filter: A boolean flag indicating whether a notch filter should be applied. Default is False.
         :type apply_notch_filter: bool
@@ -277,8 +274,7 @@ class BandAveraging:
                     chopper_status = "chopper_off"
                 else:
                     chopper_status = None
-                calibration_data = self.calibration_data_magnetic[channel]['calibration_data'][sensor_serial_number][
-                    chopper_status]
+                calibration_data = self.calibration_data_magnetic[channel]['calibration_data'][chopper_status]
                 calibration_object = MetronixCalibration(self.spectra[channel], self.fft_frequencies,
                                                          sensor_type,
                                                          chopper_status, calibration_data)

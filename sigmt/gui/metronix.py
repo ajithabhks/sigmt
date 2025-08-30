@@ -795,7 +795,8 @@ class MainWindow(QMainWindow):
                            self.processing_df['local']]
             num = 0
             self.header = {}
-            self.xml_caldata = {}
+            if self.project_setup['preferred_cal_file'] == 'xml':
+                self.xml_caldata = {}
             self.h5file = os.path.join(self.project_dir, 'db.h5')
             if os.path.exists(self.h5file):
                 os.remove(self.h5file)
@@ -804,8 +805,9 @@ class MainWindow(QMainWindow):
                 for local_path in local_paths:
                     self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
                                                                                self.project_setup)
-                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
-                        local_path)
+                    if self.project_setup['preferred_cal_file'] == 'xml':
+                        self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
+                            local_path)
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
                         ts.create_dataset(key, data=ts_dict[key].values)
@@ -822,7 +824,8 @@ class MainWindow(QMainWindow):
                             self.processing_df['remote']]
             num = 0
             self.header = {}
-            self.xml_caldata = {}
+            if self.project_setup['preferred_cal_file'] == 'xml':
+                self.xml_caldata = {}
             self.h5file = os.path.join(self.project_dir, 'db.h5')
             if os.path.exists(self.h5file):
                 os.remove(self.h5file)
@@ -831,8 +834,9 @@ class MainWindow(QMainWindow):
                 for local_path, remote_path in zip(local_paths, remote_paths):
                     self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
                                                                                self.project_setup)
-                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
-                        local_path)
+                    if self.project_setup['preferred_cal_file'] == 'xml':
+                        self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
+                            local_path)
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
                         ts.create_dataset(key, data=ts_dict[key].values)
@@ -841,7 +845,8 @@ class MainWindow(QMainWindow):
                         # self.header[f'ts_{num}'][key]['end_time'] = ts_dict[key].time.max()
                     header_r, ts_r = metronix_utils.read_ts(remote_path, self.project_setup)
                     xml_caldata_r = metronix_utils.read_calibration_from_xml(remote_path)
-                    self.xml_caldata[f'ts_{num}'].update(xml_caldata_r)
+                    if self.project_setup['preferred_cal_file'] == 'xml':
+                        self.xml_caldata[f'ts_{num}'].update(xml_caldata_r)
                     if 'hx' in header_r:
                         mask = ts_r['hx']['time'].isin(ts_dict['hx']['time'])
                         ts_r['hx'] = ts_r['hx'].sel(time=mask)
@@ -1090,7 +1095,11 @@ class MainWindow(QMainWindow):
                         self.header[ts][magnetic_channel]['sensor_no'][0]
                     calibration_data_magnetic[magnetic_channel]['chopper_status'] = \
                         self.header[ts][magnetic_channel]['bychopper'][0]
-                    calibration_data_magnetic[magnetic_channel]['calibration_data'] = self.xml_caldata[ts]
+                    if self.project_setup['preferred_cal_file'] == 'xml':
+                        calibration_data_magnetic[magnetic_channel]['calibration_data'] = self.xml_caldata[ts][
+                            str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number'])]
+                    else:
+                        calibration_data_magnetic[magnetic_channel]['calibration_data'] = None
 
                 # Get the bandavg object
                 bandavg = BandAveraging(time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
