@@ -45,8 +45,7 @@ class ProjectSetupDialog(QDialog):
         self.notch_frequency = QLineEdit('50')
         self.preferred_cal_file = QComboBox()
         self.preferred_cal_file.addItem('xml')
-        # TODO: Support use of metronix text file in future
-        # self.preferred_cal_file.addItem('metronix txt')
+        self.preferred_cal_file.addItem('metronix_txt')
 
         layout.addWidget(QLabel("Project Name:"))
         layout.addWidget(self.project_name)
