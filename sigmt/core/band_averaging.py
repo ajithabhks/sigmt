@@ -267,7 +267,6 @@ class BandAveraging:
         for channel in magnetic_channels:
             if self.calibration_data_magnetic['instrument'] == 'metronix':
                 sensor_type = self.calibration_data_magnetic[channel]['sensor_type']
-                sensor_serial_number = str(self.calibration_data_magnetic[channel]['sensor_serial_number'])
                 if self.calibration_data_magnetic[channel]['chopper_status'] == 1:
                     chopper_status = "chopper_on"
                 elif self.calibration_data_magnetic[channel]['chopper_status'] == 0:

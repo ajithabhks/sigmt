@@ -277,23 +277,26 @@ def read_calibration_from_xml(meas_path: str) -> dict:
     :rtype: dict
 
     """
-    caldata = {}
-    xmlfiles = []
+    calibration_data = {}
+    xml_files = []
     for file in os.listdir(meas_path):
         if file.endswith(".xml"):
-            xmlfiles.append(file)
-    xmlfile = os.path.join(meas_path, xmlfiles[0])
+            xml_files.append(file)
+    if len(xml_files) == 0:
+        print("No XML found.")
+        calibration_data = None
+    else:
+        print("XML found. Attempting to read calibration data.")
+        xml_file = os.path.join(meas_path, xml_files[0])
+        channels_info = cal_from_xml.extract_channel_info(xml_file)
+        # Filter out channels with types 'Ex' and 'Ey'
+        filtered_channels = cal_from_xml.filter_channels(channels_info, ['Ex', 'Ey'])
+        filtered_channel_ids = [channel[0] for channel in filtered_channels]
+        for filtered_channel_id, val in zip(filtered_channel_ids, filtered_channels):
+            calibration_data[val[2]] = cal_from_xml.read_cal_data(xml_file, filtered_channel_id)
+        print("Calibration data reading from XML done!")
 
-    channels_info = cal_from_xml.extract_channel_info(xmlfile)
-
-    # Filter out channels with types 'Ex' and 'Ey'
-    filtered_channels = cal_from_xml.filter_channels(channels_info, ['Ex', 'Ey'])
-    filtered_channel_ids = [channel[0] for channel in filtered_channels]
-
-    for filtered_channel_id, val in zip(filtered_channel_ids, filtered_channels):
-        caldata[val[2]] = cal_from_xml.read_cal_data(xmlfile, filtered_channel_id)
-
-    return caldata
+    return calibration_data
 
 
 def prepare_ts_from_h5(h5file_path: str, ts_key: str) -> dict:

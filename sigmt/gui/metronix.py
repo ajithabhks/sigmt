@@ -797,8 +797,7 @@ class MainWindow(QMainWindow):
                            self.processing_df['local']]
             num = 0
             self.header = {}
-            if self.project_setup['preferred_cal_file'] == 'xml':
-                self.xml_caldata = {}
+            self.xml_caldata = {}
             self.h5file = os.path.join(self.project_dir, 'db.h5')
             if os.path.exists(self.h5file):
                 os.remove(self.h5file)
@@ -807,9 +806,7 @@ class MainWindow(QMainWindow):
                 for local_path in local_paths:
                     self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
                                                                                self.project_setup)
-                    if self.project_setup['preferred_cal_file'] == 'xml':
-                        self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
-                            local_path)
+                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(local_path)
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
                         ts.create_dataset(key, data=ts_dict[key].values)
@@ -826,8 +823,7 @@ class MainWindow(QMainWindow):
                             self.processing_df['remote']]
             num = 0
             self.header = {}
-            if self.project_setup['preferred_cal_file'] == 'xml':
-                self.xml_caldata = {}
+            self.xml_caldata = {}
             self.h5file = os.path.join(self.project_dir, 'db.h5')
             if os.path.exists(self.h5file):
                 os.remove(self.h5file)
@@ -836,9 +832,7 @@ class MainWindow(QMainWindow):
                 for local_path, remote_path in zip(local_paths, remote_paths):
                     self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
                                                                                self.project_setup)
-                    if self.project_setup['preferred_cal_file'] == 'xml':
-                        self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
-                            local_path)
+                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(local_path)
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
                         ts.create_dataset(key, data=ts_dict[key].values)
@@ -847,8 +841,7 @@ class MainWindow(QMainWindow):
                         # self.header[f'ts_{num}'][key]['end_time'] = ts_dict[key].time.max()
                     header_r, ts_r = metronix_utils.read_ts(remote_path, self.project_setup)
                     xml_caldata_r = metronix_utils.read_calibration_from_xml(remote_path)
-                    if self.project_setup['preferred_cal_file'] == 'xml':
-                        self.xml_caldata[f'ts_{num}'].update(xml_caldata_r)
+                    self.xml_caldata[f'ts_{num}'].update(xml_caldata_r)
                     if 'hx' in header_r:
                         mask = ts_r['hx']['time'].isin(ts_dict['hx']['time'])
                         ts_r['hx'] = ts_r['hx'].sel(time=mask)
@@ -1097,20 +1090,68 @@ class MainWindow(QMainWindow):
                         self.header[ts][magnetic_channel]['sensor_no'][0]
                     calibration_data_magnetic[magnetic_channel]['chopper_status'] = \
                         self.header[ts][magnetic_channel]['bychopper'][0]
+
+                    if calibration_data_magnetic[magnetic_channel]['chopper_status'] == 0:
+                        chopper_status = 'chopper_off'
+                    elif calibration_data_magnetic[magnetic_channel]['chopper_status'] == 1:
+                        chopper_status = 'chopper_on'
+                    else:
+                        chopper_status = None
+
+                    print('\n')
+                    print('====================================================')
+                    print(f'Working on calibration data for {magnetic_channel}')
+                    print(f'Coil serial number: {str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number'])}')
+                    print('\n')
+
+                    cal_data_xml = self.xml_caldata[ts][
+                        str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number'])]
+
+                    metronix_txt_filename = (calibration_data_magnetic[magnetic_channel]["sensor_type"].lower()
+                                             + "_"
+                                             + str(calibration_data_magnetic[magnetic_channel]["sensor_serial_number"])
+                                             )
+                    cal_txt_path = Path(self.project_dir) / "calibration_files" / f"{metronix_txt_filename}.txt"
+                    if cal_txt_path.exists():
+                        print('Metronix txt calibration file found.')
+                        cal_data_txt = sigmt.utils.metronix.cal_from_metronix_txt.read_calibration_metronix_txt(
+                            filepath=cal_txt_path)
+                    else:
+                        cal_data_txt = None
+                        print(f'Metronix txt calibration file not found at {cal_txt_path}')
+
                     if self.project_setup['preferred_cal_file'] == 'xml':
-                        calibration_data_magnetic[magnetic_channel]['calibration_data'] = self.xml_caldata[ts][
-                            str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number'])]
+                        print('Preferred calibration file selected: xml')
+                        if cal_data_xml[chopper_status].size != 0:
+                            print('Using calibration data from XML file.')
+                            calibration_data_magnetic[magnetic_channel]['calibration_data'] = cal_data_xml
+                        else:
+                            print('No calibration data is available from XML file.')
+                            print('Trying metronix txt.')
+                            if (cal_data_txt is None) or (cal_data_txt[chopper_status].size == 0):
+                                print('No calibration data is available from Metronix txt.')
+                                calibration_data_magnetic[magnetic_channel]['calibration_data'] = None
+                            else:
+                                print('Calibration data found from Metronix txt.')
+                                calibration_data_magnetic[magnetic_channel]['calibration_data'] = cal_data_txt
                     elif self.project_setup['preferred_cal_file'] == 'metronix_txt':
-                        metronix_txt_filename = (calibration_data_magnetic[magnetic_channel]["sensor_type"].lower()
-                                                 + "_"
-                                                 + str(calibration_data_magnetic[magnetic_channel]["sensor_serial_number"])
-                                                 )
-                        cal_file_path = Path(self.project_dir) / "calibration_files" / f"{metronix_txt_filename}.txt"
-                        calibration_data_magnetic[magnetic_channel][
-                            'calibration_data'] = sigmt.utils.metronix.cal_from_metronix_txt.read_calibration_metronix_txt(
-                            filepath=cal_file_path)
+                        print('Preferred calibration file selected: metronix_txt')
+                        if cal_data_txt[chopper_status].size != 0:
+                            print('Using calibration data from metronix_txt file.')
+                            calibration_data_magnetic[magnetic_channel]['calibration_data'] = cal_data_txt
+                        else:
+                            print('No calibration data is available from metronix_txt file.')
+                            print('Trying XML.')
+                            if cal_data_xml[chopper_status].size == 0:
+                                print('No calibration data is available from XML.')
+                                calibration_data_magnetic[magnetic_channel]['calibration_data'] = None
+                            else:
+                                print('Calibration data found from XML.')
+                                calibration_data_magnetic[magnetic_channel]['calibration_data'] = cal_data_xml
                     else:
                         calibration_data_magnetic[magnetic_channel]['calibration_data'] = None
+                    print('====================================================')
+                    print('\n')
 
                 # Get the bandavg object
                 bandavg = BandAveraging(time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
