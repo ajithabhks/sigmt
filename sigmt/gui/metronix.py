@@ -1132,11 +1132,11 @@ class MainWindow(QMainWindow):
                                 print('No calibration data is available from Metronix txt.')
                                 calibration_data_magnetic[magnetic_channel]['calibration_data'] = None
                             else:
-                                print('Calibration data found from Metronix txt.')
+                                print('Calibration data found from Metronix txt. Using it.')
                                 calibration_data_magnetic[magnetic_channel]['calibration_data'] = cal_data_txt
                     elif self.project_setup['preferred_cal_file'] == 'metronix_txt':
                         print('Preferred calibration file selected: metronix_txt')
-                        if cal_data_txt[chopper_status].size != 0:
+                        if (cal_data_txt is not None) and (cal_data_txt[chopper_status].size != 0):
                             print('Using calibration data from metronix_txt file.')
                             calibration_data_magnetic[magnetic_channel]['calibration_data'] = cal_data_txt
                         else:
@@ -1146,7 +1146,7 @@ class MainWindow(QMainWindow):
                                 print('No calibration data is available from XML.')
                                 calibration_data_magnetic[magnetic_channel]['calibration_data'] = None
                             else:
-                                print('Calibration data found from XML.')
+                                print('Calibration data found from XML. Using it.')
                                 calibration_data_magnetic[magnetic_channel]['calibration_data'] = cal_data_xml
                     else:
                         calibration_data_magnetic[magnetic_channel]['calibration_data'] = None
