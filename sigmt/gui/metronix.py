@@ -1101,7 +1101,7 @@ class MainWindow(QMainWindow):
                     print('\n')
                     print('====================================================')
                     print(f'Working on calibration data for {magnetic_channel}')
-                    print(f'Coil serial number: {str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number'])}')
+                    print(f"Coil serial number: {calibration_data_magnetic[magnetic_channel]['sensor_serial_number']}")
                     print('\n')
 
                     cal_data_xml = self.xml_caldata[ts][
