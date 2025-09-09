@@ -1104,14 +1104,25 @@ class MainWindow(QMainWindow):
                     print(f"Coil serial number: {calibration_data_magnetic[magnetic_channel]['sensor_serial_number']}")
                     print('\n')
 
-                    cal_data_xml = self.xml_caldata[ts][
-                        str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number'])]
+                    if str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number']) in self.xml_caldata[
+                        ts].keys():
+                        cal_data_xml = self.xml_caldata[ts][
+                            str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number'])]
+                    else:
+                        cal_data_xml = None
+
+                    # Sometimes null byte can be there in the sensor type string.
+                    # Removing that from string if exists
+                    if "\x00" in calibration_data_magnetic[magnetic_channel]["sensor_type"]:
+                        calibration_data_magnetic[magnetic_channel]["sensor_type"] = \
+                            calibration_data_magnetic[magnetic_channel]["sensor_type"].replace("\x00", "")
 
                     metronix_txt_filename = (calibration_data_magnetic[magnetic_channel]["sensor_type"].lower()
                                              + "_"
                                              + str(calibration_data_magnetic[magnetic_channel]["sensor_serial_number"])
                                              )
                     cal_txt_path = Path(self.project_dir) / "calibration_files" / f"{metronix_txt_filename}.txt"
+
                     if cal_txt_path.exists():
                         print('Metronix txt calibration file found.')
                         cal_data_txt = sigmt.utils.metronix.cal_from_metronix_txt.read_calibration_metronix_txt(
@@ -1122,7 +1133,7 @@ class MainWindow(QMainWindow):
 
                     if self.project_setup['preferred_cal_file'] == 'xml':
                         print('Preferred calibration file selected: xml')
-                        if cal_data_xml[chopper_status].size != 0:
+                        if (cal_data_xml is not None) and (cal_data_xml[chopper_status].size != 0):
                             print('Using calibration data from XML file.')
                             calibration_data_magnetic[magnetic_channel]['calibration_data'] = cal_data_xml
                         else:

@@ -31,7 +31,7 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str
     if not dataset:
         raise ValueError('dataset invalid')
 
-    # Apparant resistivities and phase
+    # Apparent resistivity and phase
     ftlist = dataset['frequency'].values
     zxy = dataset['zxy'].values
     zyx = dataset['zyx'].values
@@ -67,14 +67,15 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str
         plt.xlim((max(ftlist) + 10, min(ftlist) - 10))
         if min(ftlist) > 0.001:
             plt.xlim((max(ftlist) + 10, 0.001))
-    ymax_magnitude = int(np.ceil(np.log10(max(max(rho_xy), max(rho_yx)))))
-    ymin_magnitude = int(np.floor(np.log10(min(min(rho_xy), min(rho_yx)))))
+    ymax_magnitude = int(np.ceil(np.log10(max(np.nanmax(rho_xy), np.nanmax(rho_yx)))))
+    ymin_magnitude = int(np.floor(np.log10(min(np.nanmin(rho_xy), np.nanmin(rho_yx)))))
     plt.ylim(10 ** (ymin_magnitude - 2), 10 ** (ymax_magnitude + 2))
     plt.yticks([10 ** i for i in range(ymin_magnitude - 2, ymax_magnitude + 3)])
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('App. Res. (Ohm.m.)')
     plt.legend()
     plt.grid(which='both', linestyle='-.', linewidth=0.4)
+
     plt.subplot(212)
     plt.scatter(ftlist, phase_xy, c='r', s=10)
     plt.scatter(ftlist, phase_yx, c='b', s=10)
@@ -87,12 +88,12 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str
         plt.xlim((max(ftlist) + 10, min(ftlist) - 10))
         if min(ftlist) > 0.001:
             plt.xlim((max(ftlist) + 10, 0.001))
-    if (min(phase_xy) > 0 and min(phase_yx) > 0) and (max(phase_xy) < 90 and max(phase_yx) < 90):
+    if (np.nanmin(phase_xy) > 0 and np.nanmin(phase_yx) > 0) and (np.nanmax(phase_xy) < 90 and np.nanmax(phase_yx) < 90):
         plt.ylim((0, 90))
         plt.yticks([0, 15, 30, 45, 60, 75, 90])
     else:
-        ylim1 = min(min(phase_xy), min(phase_yx))
-        ylim2 = max(max(phase_xy), max(phase_yx))
+        ylim1 = min(np.nanmin(phase_xy), np.nanmin(phase_yx))
+        ylim2 = max(np.nanmax(phase_xy), np.nanmax(phase_yx))
         plt.ylim(ylim1 - 10, ylim2 + 10)
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Phase (Deg.)')

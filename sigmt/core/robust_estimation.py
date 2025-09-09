@@ -347,7 +347,7 @@ class RobustEstimation:
                 self.get_huber_weights(km)
             else:
                 # Number of windows in which weight = 1
-                lc = np.sum((self.huber_weights == 1) * 1)
+                lc = max(np.sum(self.huber_weights == 1), 1)  # Keeping it min = 1 to avoid division by zero
                 # Weighted sum of squared residuals
                 sum_squared = (n_time_windows / (lc ** 2)) * (
                     np.sum(self.huber_weights * (self.residuals ** 2)))
