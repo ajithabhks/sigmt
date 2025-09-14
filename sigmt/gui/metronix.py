@@ -835,6 +835,11 @@ class MainWindow(QMainWindow):
                     self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(local_path)
 
                     header_r, ts_r = metronix_utils.read_ts(remote_path, self.project_setup)
+
+                    # Take only 'hx' and 'hy' component of remote dataset
+                    header_r = {k: v for k, v in header_r.items() if k in ["hx", "hy"]}
+                    ts_r = {k: v for k, v in ts_r.items() if k in ["hx", "hy"]}
+
                     xml_caldata_r = metronix_utils.read_calibration_from_xml(remote_path)
                     self.xml_caldata[f'ts_{num}'].update(xml_caldata_r)
 
@@ -848,35 +853,42 @@ class MainWindow(QMainWindow):
                     if not all(time_coords[0].equals(tc) for tc in time_coords[1:]):
                         raise ValueError("Time coordinates are not aligned!")
 
-                    common_time = xr.align(ts_dict[list(ts_dict.keys())[0]], ts_r[list(ts_r.keys())[0]], join="inner")[
-                        0].time
-
-                    ts_dict = {k: v.sel(time=common_time) for k, v in ts_dict.items()}
-                    ts_r = {k: v.sel(time=common_time) for k, v in ts_r.items()}
-
                     # Write local data to database
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
                         ts.create_dataset(key, data=ts_dict[key].values)
-                        self.header[f'ts_{num}'][key]['time_coord'] = ts_dict[key].time
+                        # self.header[f'ts_{num}'][key]['time_coord'] = ts_dict[key].time
+
+                    # Finding common time between local and remote station
+                    common_time = xr.align(ts_dict[list(ts_dict.keys())[0]], ts_r[list(ts_r.keys())[0]], join="inner")[
+                        0].time
 
                     # Write remote data to database
-                    if 'hx' in header_r:
-                        header_r['hx']['nsamples'] = len(ts_r['hx'])
-                        self.header[f'ts_{num}']['rx'] = header_r['hx']
-                        ts.create_dataset('rx', data=ts_r['hx'].values)
-                        self.header[f'ts_{num}']['rx']['time_coord'] = ts_r['hx'].time
-                    if 'hy' in header_r:
-                        header_r['hy']['nsamples'] = len(ts_r['hy'])
-                        self.header[f'ts_{num}']['ry'] = header_r['hy']
-                        ts.create_dataset('ry', data=ts_r['hy'].values)
-                        self.header[f'ts_{num}']['ry']['time_coord'] = ts_r['hy'].time
-                        del header_r, ts_r
+                    if len(common_time) == 0:
+                        print("No overlapping time series.")
+                        print("Continuing as local station processing.")
+                        # Rx
+                        self.header[f'ts_{num}']['rx'] = self.header['hx']
+                        # self.header[f'ts_{num}']['rx']['time_coord'] = ts_dict['hx'].time
+                        ts.create_dataset('rx', data=ts_dict['hx'].values)
+                        # Ry
+                        self.header[f'ts_{num}']['ry'] = self.header['hy']
+                        # self.header[f'ts_{num}']['ry']['time_coord'] = ts_dict['hy'].time
+                        ts.create_dataset('ry', data=ts_dict['hy'].values)
                     else:
-                        QMessageBox.information(self, "Information",
-                                                f"Hx and/or Hy are not found at {remote_path}. "
-                                                f"Skipping to next measurement.")
-                        return
+                        if 'hx' in header_r:
+                            rx = ts_dict['hx']
+                            rx.loc[dict(time=common_time)] = ts_r['hx'].sel(time=common_time)
+                            ts.create_dataset('rx', data=rx.values)
+                            header_r['hx']['nsamples'] = len(ts_r['hx'])
+                            self.header[f'ts_{num}']['rx'] = header_r['hx']
+
+                        if 'hy' in header_r:
+                            ry = ts_dict['hy']
+                            ry.loc[dict(time=common_time)] = ts_r['hy'].sel(time=common_time)
+                            ts.create_dataset('ry', data=ry.values)
+                            header_r['hy']['nsamples'] = len(ts_r['hy'])
+                            self.header[f'ts_{num}']['ry'] = header_r['hy']
                     del ts_dict
                     num += 1
                     progress_dialog.setValue(num)
@@ -950,9 +962,9 @@ class MainWindow(QMainWindow):
                         self.header[ts][channel]['sfreq'] = [
                             self.header[ts][channel]['sfreq'][0] / decimation_factor]
                         self.header[ts][channel]['nsamples'] = len(decimated_data)
-                        self.header[ts][channel]['time_coord'] = self.header[ts][channel][
-                                                                     'time_coord'][
-                                                                 ::decimation_factor]
+                        # self.header[ts][channel]['time_coord'] = self.header[ts][channel][
+                        #                                              'time_coord'][
+                        #                                          ::decimation_factor]
             self.procinfo['fs'] = self.procinfo['fs'] / decimation_factor
             self.new_fs.setText(f"Now sampling frequency is {self.procinfo['fs']} Hz")
             self.new_fs.show()
