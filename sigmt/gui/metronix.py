@@ -833,33 +833,44 @@ class MainWindow(QMainWindow):
                     self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
                                                                                self.project_setup)
                     self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(local_path)
+
+                    header_r, ts_r = metronix_utils.read_ts(remote_path, self.project_setup)
+                    xml_caldata_r = metronix_utils.read_calibration_from_xml(remote_path)
+                    self.xml_caldata[f'ts_{num}'].update(xml_caldata_r)
+
+                    # Some checks on data.
+                    # Check if local stations time coordinates are not aligned
+                    time_coords = [v.coords['time'] for v in ts_dict.values()]
+                    if not all(time_coords[0].equals(tc) for tc in time_coords[1:]):
+                        raise ValueError("Time coordinates are not aligned!")
+                    # Check if remote stations time coordinates are not aligned
+                    time_coords = [v.coords['time'] for v in ts_r.values()]
+                    if not all(time_coords[0].equals(tc) for tc in time_coords[1:]):
+                        raise ValueError("Time coordinates are not aligned!")
+
+                    common_time = xr.align(ts_dict[list(ts_dict.keys())[0]], ts_r[list(ts_r.keys())[0]], join="inner")[
+                        0].time
+
+                    ts_dict = {k: v.sel(time=common_time) for k, v in ts_dict.items()}
+                    ts_r = {k: v.sel(time=common_time) for k, v in ts_r.items()}
+
+                    # Write local data to database
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
                         ts.create_dataset(key, data=ts_dict[key].values)
                         self.header[f'ts_{num}'][key]['time_coord'] = ts_dict[key].time
-                        # self.header[f'ts_{num}'][key]['start_time'] = ts_dict[key].time.min()
-                        # self.header[f'ts_{num}'][key]['end_time'] = ts_dict[key].time.max()
-                    header_r, ts_r = metronix_utils.read_ts(remote_path, self.project_setup)
-                    xml_caldata_r = metronix_utils.read_calibration_from_xml(remote_path)
-                    self.xml_caldata[f'ts_{num}'].update(xml_caldata_r)
+
+                    # Write remote data to database
                     if 'hx' in header_r:
-                        mask = ts_r['hx']['time'].isin(ts_dict['hx']['time'])
-                        ts_r['hx'] = ts_r['hx'].sel(time=mask)
                         header_r['hx']['nsamples'] = len(ts_r['hx'])
                         self.header[f'ts_{num}']['rx'] = header_r['hx']
                         ts.create_dataset('rx', data=ts_r['hx'].values)
                         self.header[f'ts_{num}']['rx']['time_coord'] = ts_r['hx'].time
-                        # self.header[f'ts_{num}']['Rx']['start_time'] = ts_r['Hx'].time.min()
-                        # self.header[f'ts_{num}']['Rx']['end_time'] = ts_r['Hx'].time.max()
                     if 'hy' in header_r:
-                        mask = ts_r['hy']['time'].isin(ts_dict['hy']['time'])
-                        ts_r['hy'] = ts_r['hy'].sel(time=mask)
                         header_r['hy']['nsamples'] = len(ts_r['hy'])
                         self.header[f'ts_{num}']['ry'] = header_r['hy']
                         ts.create_dataset('ry', data=ts_r['hy'].values)
                         self.header[f'ts_{num}']['ry']['time_coord'] = ts_r['hy'].time
-                        # self.header[f'ts_{num}']['Ry']['start_time'] = ts_r['Hy'].time.min()
-                        # self.header[f'ts_{num}']['Ry']['end_time'] = ts_r['Hy'].time.max()
                         del header_r, ts_r
                     else:
                         QMessageBox.information(self, "Information",
