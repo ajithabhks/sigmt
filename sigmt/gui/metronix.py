@@ -857,7 +857,6 @@ class MainWindow(QMainWindow):
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
                         ts.create_dataset(key, data=ts_dict[key].values)
-                        # self.header[f'ts_{num}'][key]['time_coord'] = ts_dict[key].time
 
                     # Finding common time between local and remote station
                     common_time = xr.align(ts_dict[list(ts_dict.keys())[0]], ts_r[list(ts_r.keys())[0]], join="inner")[
@@ -867,17 +866,18 @@ class MainWindow(QMainWindow):
                     # TODO: In future, ask user if they need to user common time or use local station data
                     # TODO: where there is no overlap.
                     if len(common_time) == 0:
+                        # Continue as local station processing
                         print("No overlapping time series.")
                         print("Continuing as local station processing.")
                         # Rx
-                        self.header[f'ts_{num}']['rx'] = self.header['hx']
-                        # self.header[f'ts_{num}']['rx']['time_coord'] = ts_dict['hx'].time
+                        self.header[f'ts_{num}']['rx'] = self.header[f'ts_{num}']['hx']
                         ts.create_dataset('rx', data=ts_dict['hx'].values)
                         # Ry
-                        self.header[f'ts_{num}']['ry'] = self.header['hy']
-                        # self.header[f'ts_{num}']['ry']['time_coord'] = ts_dict['hy'].time
+                        self.header[f'ts_{num}']['ry'] = self.header[f'ts_{num}']['hy']
                         ts.create_dataset('ry', data=ts_dict['hy'].values)
                     else:
+                        # Else, use the overlapping time series and fill remote channels with local
+                        # station data for the rest of the time
                         if 'hx' in header_r:
                             rx = ts_dict['hx']
                             rx.loc[dict(time=common_time)] = ts_r['hx'].sel(time=common_time)
