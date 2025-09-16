@@ -879,14 +879,14 @@ class MainWindow(QMainWindow):
                         # Else, use the overlapping time series and fill remote channels with local
                         # station data for the rest of the time
                         if 'hx' in header_r:
-                            rx = ts_dict['hx']
+                            rx = ts_dict['hx'].copy()
                             rx.loc[dict(time=common_time)] = ts_r['hx'].sel(time=common_time)
                             ts.create_dataset('rx', data=rx.values)
                             header_r['hx']['nsamples'] = len(ts_r['hx'])
                             self.header[f'ts_{num}']['rx'] = header_r['hx']
 
                         if 'hy' in header_r:
-                            ry = ts_dict['hy']
+                            ry = ts_dict['hy'].copy()
                             ry.loc[dict(time=common_time)] = ts_r['hy'].sel(time=common_time)
                             ts.create_dataset('ry', data=ry.values)
                             header_r['hy']['nsamples'] = len(ts_r['hy'])
