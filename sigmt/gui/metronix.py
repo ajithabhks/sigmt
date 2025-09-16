@@ -864,6 +864,8 @@ class MainWindow(QMainWindow):
                         0].time
 
                     # Write remote data to database
+                    # TODO: In future, ask user if they need to user common time or use local station data
+                    # TODO: where there is no overlap.
                     if len(common_time) == 0:
                         print("No overlapping time series.")
                         print("Continuing as local station processing.")
