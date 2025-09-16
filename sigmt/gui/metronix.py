@@ -964,9 +964,6 @@ class MainWindow(QMainWindow):
                         self.header[ts][channel]['sfreq'] = [
                             self.header[ts][channel]['sfreq'][0] / decimation_factor]
                         self.header[ts][channel]['nsamples'] = len(decimated_data)
-                        # self.header[ts][channel]['time_coord'] = self.header[ts][channel][
-                        #                                              'time_coord'][
-                        #                                          ::decimation_factor]
             self.procinfo['fs'] = self.procinfo['fs'] / decimation_factor
             self.new_fs.setText(f"Now sampling frequency is {self.procinfo['fs']} Hz")
             self.new_fs.show()
