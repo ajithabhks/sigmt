@@ -853,22 +853,19 @@ class MainWindow(QMainWindow):
                     if not all(time_coords[0].equals(tc) for tc in time_coords[1:]):
                         raise ValueError("Time coordinates are not aligned!")
 
-                    # Write local data to database
-                    ts = f.create_group(f'ts_{num}')
-                    for key in ts_dict.keys():
-                        ts.create_dataset(key, data=ts_dict[key].values)
-
                     # Finding common time between local and remote station
                     common_time = xr.align(ts_dict[list(ts_dict.keys())[0]], ts_r[list(ts_r.keys())[0]], join="inner")[
                         0].time
 
-                    # Write remote data to database
-                    # TODO: In future, ask user if they need to user common time or use local station data
-                    # TODO: where there is no overlap.
                     if len(common_time) == 0:
                         # Continue as local station processing
                         print("No overlapping time series.")
                         print("Continuing as local station processing.")
+                        # Write local data to database
+                        ts = f.create_group(f'ts_{num}')
+                        for key in ts_dict.keys():
+                            ts.create_dataset(key, data=ts_dict[key].values)
+                        # Write remote data to database
                         # Rx
                         self.header[f'ts_{num}']['rx'] = self.header[f'ts_{num}']['hx']
                         ts.create_dataset('rx', data=ts_dict['hx'].values)
@@ -876,21 +873,23 @@ class MainWindow(QMainWindow):
                         self.header[f'ts_{num}']['ry'] = self.header[f'ts_{num}']['hy']
                         ts.create_dataset('ry', data=ts_dict['hy'].values)
                     else:
-                        # Else, use the overlapping time series and fill remote channels with local
-                        # station data for the rest of the time
+                        # Else, use only the overlapping time series
+                        ts_dict = {k: v.sel(time=common_time) for k, v in ts_dict.items()}
+                        ts_r = {k: v.sel(time=common_time) for k, v in ts_r.items()}
+                        ts = f.create_group(f'ts_{num}')
+                        # Write local data to database
+                        for key in ts_dict.keys():
+                            ts.create_dataset(key, data=ts_dict[key].values)
+                            self.header[f'ts_{num}'][key]['nsamples'] = len(ts_dict[key].values)
+                        # Write remote data to database
                         if 'hx' in header_r:
-                            rx = ts_dict['hx'].copy()
-                            rx.loc[dict(time=common_time)] = ts_r['hx'].sel(time=common_time)
-                            ts.create_dataset('rx', data=rx.values)
                             header_r['hx']['nsamples'] = len(ts_r['hx'])
                             self.header[f'ts_{num}']['rx'] = header_r['hx']
-
+                            ts.create_dataset('rx', data=ts_r['hx'].values)
                         if 'hy' in header_r:
-                            ry = ts_dict['hy'].copy()
-                            ry.loc[dict(time=common_time)] = ts_r['hy'].sel(time=common_time)
-                            ts.create_dataset('ry', data=ry.values)
                             header_r['hy']['nsamples'] = len(ts_r['hy'])
                             self.header[f'ts_{num}']['ry'] = header_r['hy']
+                            ts.create_dataset('ry', data=ts_r['hy'].values)
                     del ts_dict
                     num += 1
                     progress_dialog.setValue(num)
