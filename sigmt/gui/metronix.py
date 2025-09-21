@@ -844,11 +844,11 @@ class MainWindow(QMainWindow):
                     self.xml_caldata[f'ts_{num}'].update(xml_caldata_r)
 
                     # Some checks on data.
-                    # Check if local stations time coordinates are not aligned
+                    # Check if local stations time coordinates are all aligned
                     time_coords = [v.coords['time'] for v in ts_dict.values()]
                     if not all(time_coords[0].equals(tc) for tc in time_coords[1:]):
                         raise ValueError("Time coordinates are not aligned!")
-                    # Check if remote stations time coordinates are not aligned
+                    # Check if remote stations time coordinates are all aligned
                     time_coords = [v.coords['time'] for v in ts_r.values()]
                     if not all(time_coords[0].equals(tc) for tc in time_coords[1:]):
                         raise ValueError("Time coordinates are not aligned!")
