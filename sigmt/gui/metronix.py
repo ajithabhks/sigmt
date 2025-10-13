@@ -635,11 +635,9 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, 'Warning',
                                     "No overlapping measurements found! You need to "
                                     "set remote measurement manually "
-                                    "by clicking 'Set Remote Measurement Manually' button below. \n\n"
+                                    "by clicking 'Set Remote Measurement Manually' "
+                                    "button below. \n\n"
                                     "Else, please proceed with single site processing.")
-                # self.remotesite_dropdown.blockSignals(True)
-                # self.remotesite_dropdown.setCurrentIndex(0)
-                # self.remotesite_dropdown.blockSignals(False)
                 self.remotesite_manual = self.remotesite
                 self.remotesite = None
                 overlapping_meas = self.localsite_meas
@@ -730,7 +728,8 @@ class MainWindow(QMainWindow):
                     return
                 if l_chopper_value != r_chopper_value:
                     QMessageBox.critical(self, "Error",
-                                         f"Chopper status not matching. Cannot proceed. Choose another match.")
+                                         f"Chopper status not matching. Cannot proceed. "
+                                         f"Choose another match.")
                     self.remotesite = None
                     self.remotesite_dropdown.setCurrentIndex(0)
                     return
@@ -749,15 +748,17 @@ class MainWindow(QMainWindow):
             self.processing_route.drop_duplicates(inplace=True)
         except:
             QMessageBox.critical(self, "Error",
-                                 f"Select local and remote site first! It works only if remote site is selected.")
+                                 f"Select local and remote site first! "
+                                 f"It works only if remote site is selected.")
 
     # noinspection PyTypeChecker
     def read_ts(self) -> None:
         """
         Reads time series based on the self.processing_route.
-        processing_route is a DataFrame containing ['local', 'remote', 'sampling_frequency', 'chopper_status',
-        'sampling_chopper'] for all measurements.
-        processing_df contains the values for selected sampling frequency & chopper status combo.
+        processing_route is a DataFrame containing ['local', 'remote', 'sampling_frequency',
+        'chopper_status', 'sampling_chopper'] for all measurements.
+        processing_df contains the values for selected sampling frequency &
+        chopper status combo.
 
         :return: None
         :rtype: NoneType
@@ -806,7 +807,8 @@ class MainWindow(QMainWindow):
                 for local_path in local_paths:
                     self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
                                                                                self.project_setup)
-                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(local_path)
+                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
+                        local_path)
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
                         ts.create_dataset(key, data=ts_dict[key].values)
@@ -832,40 +834,67 @@ class MainWindow(QMainWindow):
                 for local_path, remote_path in zip(local_paths, remote_paths):
                     self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
                                                                                self.project_setup)
-                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(local_path)
-                    ts = f.create_group(f'ts_{num}')
-                    for key in ts_dict.keys():
-                        ts.create_dataset(key, data=ts_dict[key].values)
-                        self.header[f'ts_{num}'][key]['time_coord'] = ts_dict[key].time
-                        # self.header[f'ts_{num}'][key]['start_time'] = ts_dict[key].time.min()
-                        # self.header[f'ts_{num}'][key]['end_time'] = ts_dict[key].time.max()
+                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
+                        local_path)
+
                     header_r, ts_r = metronix_utils.read_ts(remote_path, self.project_setup)
+
+                    # Take only 'hx' and 'hy' component of remote dataset
+                    header_r = {k: v for k, v in header_r.items() if k in ["hx", "hy"]}
+                    ts_r = {k: v for k, v in ts_r.items() if k in ["hx", "hy"]}
+
                     xml_caldata_r = metronix_utils.read_calibration_from_xml(remote_path)
                     self.xml_caldata[f'ts_{num}'].update(xml_caldata_r)
-                    if 'hx' in header_r:
-                        mask = ts_r['hx']['time'].isin(ts_dict['hx']['time'])
-                        ts_r['hx'] = ts_r['hx'].sel(time=mask)
-                        header_r['hx']['nsamples'] = len(ts_r['hx'])
-                        self.header[f'ts_{num}']['rx'] = header_r['hx']
-                        ts.create_dataset('rx', data=ts_r['hx'].values)
-                        self.header[f'ts_{num}']['rx']['time_coord'] = ts_r['hx'].time
-                        # self.header[f'ts_{num}']['Rx']['start_time'] = ts_r['Hx'].time.min()
-                        # self.header[f'ts_{num}']['Rx']['end_time'] = ts_r['Hx'].time.max()
-                    if 'hy' in header_r:
-                        mask = ts_r['hy']['time'].isin(ts_dict['hy']['time'])
-                        ts_r['hy'] = ts_r['hy'].sel(time=mask)
-                        header_r['hy']['nsamples'] = len(ts_r['hy'])
-                        self.header[f'ts_{num}']['ry'] = header_r['hy']
-                        ts.create_dataset('ry', data=ts_r['hy'].values)
-                        self.header[f'ts_{num}']['ry']['time_coord'] = ts_r['hy'].time
-                        # self.header[f'ts_{num}']['Ry']['start_time'] = ts_r['Hy'].time.min()
-                        # self.header[f'ts_{num}']['Ry']['end_time'] = ts_r['Hy'].time.max()
-                        del header_r, ts_r
+
+                    # Some checks on data.
+                    # Check if local stations time coordinates are all aligned
+                    time_coords = [v.coords['time'] for v in ts_dict.values()]
+                    if not all(time_coords[0].equals(tc) for tc in time_coords[1:]):
+                        raise ValueError("Time coordinates are not aligned!")
+                    # Check if remote stations time coordinates are all aligned
+                    time_coords = [v.coords['time'] for v in ts_r.values()]
+                    if not all(time_coords[0].equals(tc) for tc in time_coords[1:]):
+                        raise ValueError("Time coordinates are not aligned!")
+
+                    # Finding common time between local and remote station
+                    common_time = \
+                    xr.align(ts_dict[list(ts_dict.keys())[0]], ts_r[list(ts_r.keys())[0]],
+                             join="inner")[
+                        0].time
+
+                    if len(common_time) == 0:
+                        # Continue as local station processing
+                        print("No overlapping time series.")
+                        print("Continuing as local station processing.")
+                        # Write local data to database
+                        ts = f.create_group(f'ts_{num}')
+                        for key in ts_dict.keys():
+                            ts.create_dataset(key, data=ts_dict[key].values)
+                        # Write remote data to database
+                        # Rx
+                        self.header[f'ts_{num}']['rx'] = self.header[f'ts_{num}']['hx']
+                        ts.create_dataset('rx', data=ts_dict['hx'].values)
+                        # Ry
+                        self.header[f'ts_{num}']['ry'] = self.header[f'ts_{num}']['hy']
+                        ts.create_dataset('ry', data=ts_dict['hy'].values)
                     else:
-                        QMessageBox.information(self, "Information",
-                                                f"Hx and/or Hy are not found at {remote_path}. "
-                                                f"Skipping to next measurement.")
-                        return
+                        # Else, use only the overlapping time series
+                        ts_dict = {k: v.sel(time=common_time) for k, v in ts_dict.items()}
+                        ts_r = {k: v.sel(time=common_time) for k, v in ts_r.items()}
+                        ts = f.create_group(f'ts_{num}')
+                        # Write local data to database
+                        for key in ts_dict.keys():
+                            ts.create_dataset(key, data=ts_dict[key].values)
+                            self.header[f'ts_{num}'][key]['nsamples'] = len(ts_dict[key].values)
+                        # Write remote data to database
+                        if 'hx' in header_r:
+                            header_r['hx']['nsamples'] = len(ts_r['hx'])
+                            self.header[f'ts_{num}']['rx'] = header_r['hx']
+                            ts.create_dataset('rx', data=ts_r['hx'].values)
+                        if 'hy' in header_r:
+                            header_r['hy']['nsamples'] = len(ts_r['hy'])
+                            self.header[f'ts_{num}']['ry'] = header_r['hy']
+                            ts.create_dataset('ry', data=ts_r['hy'].values)
                     del ts_dict
                     num += 1
                     progress_dialog.setValue(num)
@@ -939,9 +968,6 @@ class MainWindow(QMainWindow):
                         self.header[ts][channel]['sfreq'] = [
                             self.header[ts][channel]['sfreq'][0] / decimation_factor]
                         self.header[ts][channel]['nsamples'] = len(decimated_data)
-                        self.header[ts][channel]['time_coord'] = self.header[ts][channel][
-                                                                     'time_coord'][
-                                                                 ::decimation_factor]
             self.procinfo['fs'] = self.procinfo['fs'] / decimation_factor
             self.new_fs.setText(f"Now sampling frequency is {self.procinfo['fs']} Hz")
             self.new_fs.show()
@@ -997,7 +1023,8 @@ class MainWindow(QMainWindow):
                 self.procinfo['md_thresh'] = float(self.md_threshold_entry.text())
                 self.procinfo['notch_frequency'] = float(self.project_setup['notch_frequency'])
                 self.procinfo['preferred_cal_file'] = self.project_setup['preferred_cal_file']
-                self.procinfo['target_frequency_table_type'] = self.project_setup['target_frequency_table_type'].lower()
+                self.procinfo['target_frequency_table_type'] = self.project_setup[
+                    'target_frequency_table_type'].lower()
                 self.procinfo['frequencies_per_decade'] = int(
                     self.project_setup['frequencies_per_decade'])
                 first_header = next(iter(next(iter(self.header.values())).values()))
@@ -1085,7 +1112,8 @@ class MainWindow(QMainWindow):
                                                element in list(self.header[ts].keys())]
                 for magnetic_channel in available_magnetic_channels:
                     calibration_data_magnetic[magnetic_channel] = {}
-                    calibration_data_magnetic[magnetic_channel]['sensor_type'] = self.header[ts][magnetic_channel]['sensor']
+                    calibration_data_magnetic[magnetic_channel]['sensor_type'] = \
+                    self.header[ts][magnetic_channel]['sensor']
                     calibration_data_magnetic[magnetic_channel]['sensor_serial_number'] = \
                         self.header[ts][magnetic_channel]['sensor_no'][0]
                     calibration_data_magnetic[magnetic_channel]['chopper_status'] = \
@@ -1101,13 +1129,16 @@ class MainWindow(QMainWindow):
                     print('\n')
                     print('====================================================')
                     print(f'Working on calibration data for {magnetic_channel}')
-                    print(f"Coil serial number: {calibration_data_magnetic[magnetic_channel]['sensor_serial_number']}")
+                    print(
+                        f"Coil serial number: {calibration_data_magnetic[magnetic_channel]['sensor_serial_number']}")
                     print('\n')
 
-                    if str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number']) in self.xml_caldata[
-                        ts].keys():
+                    if str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number']) in \
+                            self.xml_caldata[
+                                ts].keys():
                         cal_data_xml = self.xml_caldata[ts][
-                            str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number'])]
+                            str(calibration_data_magnetic[magnetic_channel][
+                                    'sensor_serial_number'])]
                     else:
                         cal_data_xml = None
 
@@ -1115,13 +1146,17 @@ class MainWindow(QMainWindow):
                     # Removing that from string if exists
                     if "\x00" in calibration_data_magnetic[magnetic_channel]["sensor_type"]:
                         calibration_data_magnetic[magnetic_channel]["sensor_type"] = \
-                            calibration_data_magnetic[magnetic_channel]["sensor_type"].replace("\x00", "")
+                            calibration_data_magnetic[magnetic_channel]["sensor_type"].replace(
+                                "\x00", "")
 
-                    metronix_txt_filename = (calibration_data_magnetic[magnetic_channel]["sensor_type"].lower()
-                                             + "_"
-                                             + str(calibration_data_magnetic[magnetic_channel]["sensor_serial_number"])
-                                             )
-                    cal_txt_path = Path(self.project_dir) / "calibration_files" / f"{metronix_txt_filename}.txt"
+                    metronix_txt_filename = (
+                                calibration_data_magnetic[magnetic_channel]["sensor_type"].lower()
+                                + "_"
+                                + str(
+                            calibration_data_magnetic[magnetic_channel]["sensor_serial_number"])
+                                )
+                    cal_txt_path = Path(
+                        self.project_dir) / "calibration_files" / f"{metronix_txt_filename}.txt"
 
                     if cal_txt_path.exists():
                         print('Metronix txt calibration file found.')
@@ -1135,50 +1170,57 @@ class MainWindow(QMainWindow):
                         print('Preferred calibration file selected: xml')
                         if (cal_data_xml is not None) and (cal_data_xml[chopper_status].size != 0):
                             print('Using calibration data from XML file.')
-                            calibration_data_magnetic[magnetic_channel]['calibration_data'] = cal_data_xml
+                            calibration_data_magnetic[magnetic_channel][
+                                'calibration_data'] = cal_data_xml
                         else:
                             print('No calibration data is available from XML file.')
                             print('Trying metronix txt.')
                             if (cal_data_txt is None) or (cal_data_txt[chopper_status].size == 0):
                                 print('No calibration data is available from Metronix txt.')
-                                calibration_data_magnetic[magnetic_channel]['calibration_data'] = None
+                                calibration_data_magnetic[magnetic_channel][
+                                    'calibration_data'] = None
                             else:
                                 print('Calibration data found from Metronix txt. Using it.')
-                                calibration_data_magnetic[magnetic_channel]['calibration_data'] = cal_data_txt
+                                calibration_data_magnetic[magnetic_channel][
+                                    'calibration_data'] = cal_data_txt
                     elif self.project_setup['preferred_cal_file'] == 'metronix_txt':
                         print('Preferred calibration file selected: metronix_txt')
                         if (cal_data_txt is not None) and (cal_data_txt[chopper_status].size != 0):
                             print('Using calibration data from metronix_txt file.')
-                            calibration_data_magnetic[magnetic_channel]['calibration_data'] = cal_data_txt
+                            calibration_data_magnetic[magnetic_channel][
+                                'calibration_data'] = cal_data_txt
                         else:
                             print('No calibration data is available from metronix_txt file.')
                             print('Trying XML.')
                             if cal_data_xml[chopper_status].size == 0:
                                 print('No calibration data is available from XML.')
-                                calibration_data_magnetic[magnetic_channel]['calibration_data'] = None
+                                calibration_data_magnetic[magnetic_channel][
+                                    'calibration_data'] = None
                             else:
                                 print('Calibration data found from XML. Using it.')
-                                calibration_data_magnetic[magnetic_channel]['calibration_data'] = cal_data_xml
+                                calibration_data_magnetic[magnetic_channel][
+                                    'calibration_data'] = cal_data_xml
                     else:
                         calibration_data_magnetic[magnetic_channel]['calibration_data'] = None
                     print('====================================================')
                     print('\n')
 
                 # Get the bandavg object
-                bandavg = BandAveraging(time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
-                                        sampling_frequency=self.procinfo['fs'], overlap=50,
-                                        calibrate_electric=True, calibrate_magnetic=True,
-                                        calibration_data_electric=calibration_data_electric,
-                                        calibration_data_magnetic=calibration_data_magnetic,
-                                        fft_length=self.procinfo['fft_length'],
-                                        parzen_window_radius=self.procinfo['parzen_radius'],
-                                        target_frequency_table_type=self.procinfo['target_frequency_table_type'],
-                                        frequencies_per_decade=self.procinfo['frequencies_per_decade'],
-                                        apply_notch_filter=notch_filter_apply,
-                                        notch_frequency=self.procinfo['notch_frequency'],
-                                        process_mt=process_mt, process_tipper=process_tipper,
-                                        remote_reference=remote_reference
-                                        )
+                bandavg = BandAveraging(
+                    time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
+                    sampling_frequency=self.procinfo['fs'], overlap=50,
+                    calibrate_electric=True, calibrate_magnetic=True,
+                    calibration_data_electric=calibration_data_electric,
+                    calibration_data_magnetic=calibration_data_magnetic,
+                    fft_length=self.procinfo['fft_length'],
+                    parzen_window_radius=self.procinfo['parzen_radius'],
+                    target_frequency_table_type=self.procinfo['target_frequency_table_type'],
+                    frequencies_per_decade=self.procinfo['frequencies_per_decade'],
+                    apply_notch_filter=notch_filter_apply,
+                    notch_frequency=self.procinfo['notch_frequency'],
+                    process_mt=process_mt, process_tipper=process_tipper,
+                    remote_reference=remote_reference
+                    )
                 datasets.append(bandavg.band_averaged_dataset)  # appends xarray dataset (for a run)
                 num += 1
                 progress_dialog.setValue(num)
