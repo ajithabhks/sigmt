@@ -1,6 +1,7 @@
 import struct
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 
 
 class PhoenixMTReader:
@@ -59,15 +60,8 @@ class PhoenixMTReader:
 
         if self.header["file_type"] == 1:
             # Continuous data: 64-byte frames = 20 * 3-byte samples + 4-byte footer
-            frames = len(raw) // 64
-            samples = np.empty(frames * 20, dtype=np.int32)
-            for i in range(frames):
-                frame = raw[i * 64:(i + 1) * 64]
-                for j in range(20):
-                    b = frame[j * 3:(j + 1) * 3]
-                    val = int.from_bytes(b, byteorder='big', signed=True)
-                    samples[i * 20 + j] = val
-            self.data = samples
+            # TODO: To be implemented
+            raise ValueError("Continuous data (.bin) are not currently supported!")
 
         elif self.header["file_type"] == 2:
             # Decimated data: float32 samples in Volts
@@ -84,6 +78,5 @@ class PhoenixMTReader:
         self.read_data()
         return self.header, self.data
 
-
-# reader = PhoenixMTReader("AAAAA_BBBBBBBB_C_DDDDDDDD.td_24k")
+# reader = PhoenixMTReader(r"10771_66CC9F4A_0_0000000A.td_24k")
 # header, data = reader.read()
