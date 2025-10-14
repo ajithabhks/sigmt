@@ -64,6 +64,7 @@ class PhoenixMTReader:
             raise ValueError("Continuous data (.bin) are not currently supported!")
 
         elif self.header["file_type"] == 2:
+            # This works only for Decimated Continuous Data
             # Decimated data: float32 samples in Volts
             self.data = np.frombuffer(raw, dtype='<f4')
 
