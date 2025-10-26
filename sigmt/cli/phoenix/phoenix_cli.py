@@ -80,17 +80,23 @@ calibration_data_electric = {
     'ex': {},
     'ey': {},
 }
-calibration_data_electric['ex']['x1'] = 50.0
-calibration_data_electric['ex']['x2'] = 50.0
-calibration_data_electric['ey']['y1'] = 50.0
-calibration_data_electric['ey']['y2'] = 50.0
+
+calibration_data_electric['ex']['x1'] = abs(recmeta_data['chconfig']['chans']
+                                            [channel_map['E1']]['length1'])
+calibration_data_electric['ex']['x2'] = abs(recmeta_data['chconfig']['chans']
+                                            [channel_map['E1']]['length2'])
+calibration_data_electric['ey']['y1'] = abs(recmeta_data['chconfig']['chans']
+                                            [channel_map['E2']]['length1'])
+calibration_data_electric['ey']['y2'] = abs(recmeta_data['chconfig']['chans']
+                                            [channel_map['E2']]['length2'])
 
 calibration_data_magnetic['hx']['calibration_data'] = hx_coil_data['cal_data'][0]['chan_data'][0]
 calibration_data_magnetic['hy']['calibration_data'] = hy_coil_data['cal_data'][0]['chan_data'][0]
 calibration_data_magnetic['hz']['calibration_data'] = hz_coil_data['cal_data'][0]['chan_data'][0]
 
-ts = {}
-ts['run1'] = {}
+ts = {
+    'run1': {}
+}
 
 ts['run1']['ex'] = phoenix_readers.read_decimated_continuous(
     channel_path=station_path / str(channel_map.get('E1')),
