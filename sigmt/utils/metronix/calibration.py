@@ -2,6 +2,7 @@
 Class for the metronix coil calibration
 """
 import numpy as np
+import scipy
 
 
 class MetronixCalibration:
@@ -50,13 +51,25 @@ class MetronixCalibration:
         calt = (magnitude * np.cos(phase) + (1j * magnitude * np.sin(phase))) * 1000
         # If Chopper is Off
         if self.chopper_status == 'chopper_off':
-            cal_all_band = np.interp(self.fft_freqs, self.calibration_data[:, 0], calt)
+            interp_func = scipy.interpolate.interp1d(
+                self.calibration_data[:, 0],
+                calt,
+                kind='linear',
+                fill_value='extrapolate'
+            )
+            cal_all_band = interp_func(self.fft_freqs)
             self.calibrated_data = self.xfft / cal_all_band[:, np.newaxis]
         # If Chopper is On
         if self.chopper_status == 'chopper_on':
             minfindx = np.where(self.fft_freqs < 0.1)[0]
-            cal_all_band = np.interp(self.fft_freqs[np.max(minfindx) + 1:np.shape(self.fft_freqs)[0]],
-                                     self.calibration_data[:, 0], calt)
+            interp_func = scipy.interpolate.interp1d(
+                self.calibration_data[:, 0],
+                calt,
+                kind='linear',
+                fill_value='extrapolate'
+            )
+            cal_all_band = interp_func(
+                self.fft_freqs[np.max(minfindx) + 1:np.shape(self.fft_freqs)[0]])
             thmag = np.zeros(np.shape(minfindx), )
             thmag[:, ] = 0.2 * self.fft_freqs[0:np.max(minfindx) + 1]
             thph = np.arctan2(4.0, self.fft_freqs[0:np.max(minfindx) + 1])
@@ -74,13 +87,25 @@ class MetronixCalibration:
         calt = (magnitude * np.cos(phase) + (1j * magnitude * np.sin(phase))) * 1000
         # If Chopper is Off
         if self.chopper_status == 'chopper_off':
-            cal_all_band = np.interp(self.fft_freqs, self.calibration_data[:, 0], calt)
+            interp_func = scipy.interpolate.interp1d(
+                self.calibration_data[:, 0],
+                calt,
+                kind='linear',
+                fill_value='extrapolate'
+            )
+            cal_all_band = interp_func(self.fft_freqs)
             self.calibrated_data = self.xfft / cal_all_band[:, np.newaxis]
         # If Chopper is On
         if self.chopper_status == 'chopper_on':
             minfindx = np.where(self.fft_freqs < 0.4)[0]
-            cal_all_band = np.interp(self.fft_freqs[np.max(minfindx) + 1:np.shape(self.fft_freqs)[0]],
-                                     self.calibration_data[:, 0], calt)
+            interp_func = scipy.interpolate.interp1d(
+                self.calibration_data[:, 0],
+                calt,
+                kind='linear',
+                fill_value='extrapolate'
+            )
+            cal_all_band = interp_func(
+                self.fft_freqs[np.max(minfindx) + 1:np.shape(self.fft_freqs)[0]])
             thmag = np.zeros(np.shape(minfindx), )
             thmag[:, ] = 0.2 * self.fft_freqs[0:np.max(minfindx) + 1]
             thph = np.arctan2(32.0, self.fft_freqs[0:np.max(minfindx) + 1])
