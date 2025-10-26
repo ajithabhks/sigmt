@@ -5,6 +5,7 @@ import numpy as np
 import xarray as xr
 
 import sigmt.cli.phoenix.data_readers as phoenix_readers
+import sigmt.utils.utils as utils
 from sigmt.core import data_selection_tools, plots
 from sigmt.core import perform_data_selection as pds
 from sigmt.core.band_averaging import BandAveraging
@@ -94,43 +95,98 @@ calibration_data_magnetic['hx']['calibration_data'] = hx_coil_data['cal_data'][0
 calibration_data_magnetic['hy']['calibration_data'] = hy_coil_data['cal_data'][0]['chan_data'][0]
 calibration_data_magnetic['hz']['calibration_data'] = hz_coil_data['cal_data'][0]['chan_data'][0]
 
+max_cols = 1000
 ts = {}
 
 out_list = phoenix_readers.read_decimated_segmented(
     channel_path=station_path / str(channel_map.get('E1')),
     file_extension="td_24k",
 )
+temp = []
 for num, out_val in enumerate(out_list):
-    ts[f'run{num}'] = {}
-    ts[f'run{num}']['ex'] = out_val['samples']
+    temp.append(utils.reshape_array_with_overlap(
+        window_length=fft_length,
+        overlap=overlap,
+        data=out_val['samples']
+    ))
+temp = np.hstack(temp)
+total_cols = temp.shape[1]
+
+for i, start in enumerate(range(0, total_cols, max_cols), start=1):
+    end = start + max_cols
+    ts.setdefault(f'run{i}', {})['ex'] = temp[:, start:end]
 
 out_list = phoenix_readers.read_decimated_segmented(
     channel_path=station_path / str(channel_map.get('E2')),
     file_extension="td_24k",
 )
+temp = []
 for num, out_val in enumerate(out_list):
-    ts[f'run{num}']['ey'] = out_val['samples']
+    temp.append(utils.reshape_array_with_overlap(
+        window_length=fft_length,
+        overlap=overlap,
+        data=out_val['samples']
+    ))
+temp = np.hstack(temp)
+total_cols = temp.shape[1]
+
+for i, start in enumerate(range(0, total_cols, max_cols), start=1):
+    end = start + max_cols
+    ts.setdefault(f'run{i}', {})['ey'] = temp[:, start:end]
 
 out_list = phoenix_readers.read_decimated_segmented(
     channel_path=station_path / str(channel_map.get('H1')),
     file_extension="td_24k",
 )
+temp = []
 for num, out_val in enumerate(out_list):
-    ts[f'run{num}']['hx'] = out_val['samples']
+    temp.append(utils.reshape_array_with_overlap(
+        window_length=fft_length,
+        overlap=overlap,
+        data=out_val['samples']
+    ))
+temp = np.hstack(temp)
+total_cols = temp.shape[1]
+
+for i, start in enumerate(range(0, total_cols, max_cols), start=1):
+    end = start + max_cols
+    ts.setdefault(f'run{i}', {})['hx'] = temp[:, start:end]
 
 out_list = phoenix_readers.read_decimated_segmented(
     channel_path=station_path / str(channel_map.get('H2')),
     file_extension="td_24k",
 )
+temp = []
 for num, out_val in enumerate(out_list):
-    ts[f'run{num}']['hy'] = out_val['samples']
+    temp.append(utils.reshape_array_with_overlap(
+        window_length=fft_length,
+        overlap=overlap,
+        data=out_val['samples']
+    ))
+temp = np.hstack(temp)
+total_cols = temp.shape[1]
+
+for i, start in enumerate(range(0, total_cols, max_cols), start=1):
+    end = start + max_cols
+    ts.setdefault(f'run{i}', {})['hy'] = temp[:, start:end]
 
 out_list = phoenix_readers.read_decimated_segmented(
     channel_path=station_path / str(channel_map.get('H3')),
     file_extension="td_24k",
 )
+temp = []
 for num, out_val in enumerate(out_list):
-    ts[f'run{num}']['hz'] = out_val['samples']
+    temp.append(utils.reshape_array_with_overlap(
+        window_length=fft_length,
+        overlap=overlap,
+        data=out_val['samples']
+    ))
+temp = np.hstack(temp)
+total_cols = temp.shape[1]
+
+for i, start in enumerate(range(0, total_cols, max_cols), start=1):
+    end = start + max_cols
+    ts.setdefault(f'run{i}', {})['hz'] = temp[:, start:end]
 
 # import scipy.signal as signal
 # ts['run1']['ex'] = signal.decimate(ts['run1']['ex'], 4, n=None, ftype='iir')
@@ -159,6 +215,7 @@ for run in ts.keys():
         notch_frequency=notch_frequency,
         process_mt=True,
         process_tipper=True,
+        reshape=False,
     )
     datasets.append(bandavg.band_averaged_dataset)
 

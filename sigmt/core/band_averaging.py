@@ -44,7 +44,8 @@ class BandAveraging:
             notch_frequency: Optional[float] = None,
             notch_harmonics: Optional[int] = None,
             process_mt: bool = True,
-            process_tipper: bool = True
+            process_tipper: bool = True,
+            reshape: Optional[bool] = True
     ) -> None:
         """
         Constructor
@@ -208,11 +209,14 @@ class BandAveraging:
 
         # Dividing time series into several time windows of length equals
         # to fft length. Number of windows will depend on the time series overlap.
-        self.time_series = _reshape_time_series_with_overlap(
-            time_series=time_series,
-            fft_length=fft_length,
-            overlap=overlap
-        )
+        if reshape:
+            self.time_series = _reshape_time_series_with_overlap(
+                time_series=time_series,
+                fft_length=fft_length,
+                overlap=overlap
+            )
+        else:
+            self.time_series = time_series
         del time_series
 
         self.ft_list = utils.get_target_frequency_list(
@@ -553,15 +557,15 @@ class BandAveraging:
             self.band_averaged_dataset['tzx'] = ((self.band_averaged_dataset['hzhx'] *
                                                   self.band_averaged_dataset[
                                                       'hyhy']) - (
-                                                             self.band_averaged_dataset['hzhy'] *
-                                                             self.band_averaged_dataset[
-                                                                 'hyhx'])) / denominator
+                                                         self.band_averaged_dataset['hzhy'] *
+                                                         self.band_averaged_dataset[
+                                                             'hyhx'])) / denominator
             self.band_averaged_dataset['tzy'] = ((self.band_averaged_dataset['hzhy'] *
                                                   self.band_averaged_dataset[
                                                       'hxhx']) - (
-                                                             self.band_averaged_dataset['hzhx'] *
-                                                             self.band_averaged_dataset[
-                                                                 'hxhy'])) / denominator
+                                                         self.band_averaged_dataset['hzhx'] *
+                                                         self.band_averaged_dataset[
+                                                             'hxhy'])) / denominator
 
             # TODO: This may not be created in this class
             self.band_averaged_dataset['hz_selection_coh'] = xr.DataArray(

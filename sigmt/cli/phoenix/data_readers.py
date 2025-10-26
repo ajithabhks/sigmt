@@ -60,7 +60,7 @@ def read_decimated_segmented(
         if seg.size == 0:  # end of all files
             break
         segments.append({
-            "timestamp": r.subheader["timestamp"],
+            "timestamp": r.subheader["timestamp"] * 1000,  # to mV
             "samples": seg,
             "minVal": r.subheader["minVal"],
             "maxVal": r.subheader["maxVal"],
