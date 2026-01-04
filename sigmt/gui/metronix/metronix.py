@@ -21,7 +21,6 @@ from PyQt5.QtWidgets import (QMainWindow, QAction, QFileDialog, QMessageBox,
                              QApplication, QProgressDialog)
 from scipy import signal
 
-import sigmt.utils.metronix.cal_from_metronix_txt
 from sigmt.core import data_selection_tools as dstools
 from sigmt.core import perform_data_selection as pds
 from sigmt.core import plots
@@ -35,6 +34,7 @@ from sigmt.gui.project_related.create_project import ProjectSetupDialog
 from sigmt.gui.project_related.edit_project import EditProjectSetupDialog
 from sigmt.utils import utils
 from sigmt.utils.edi import edi_ops
+from sigmt.utils.metronix import cal_from_metronix_txt
 from sigmt.utils.metronix import metronix_utils
 
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):
@@ -805,10 +805,13 @@ class MainWindow(QMainWindow):
             # Creates a h5 file in project directory in write mode
             with h5py.File(self.h5file, 'w') as f:
                 for local_path in local_paths:
-                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
-                                                                               self.project_setup)
+                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(
+                        local_path,
+                        self.project_setup
+                    )
                     self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
-                        local_path)
+                        local_path
+                    )
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
                         ts.create_dataset(key, data=ts_dict[key].values)
@@ -832,8 +835,10 @@ class MainWindow(QMainWindow):
             # Creates a h5 file in project directory in write mode
             with h5py.File(self.h5file, 'w') as f:
                 for local_path, remote_path in zip(local_paths, remote_paths):
-                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
-                                                                               self.project_setup)
+                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(
+                        local_path,
+                        self.project_setup
+                    )
                     self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
                         local_path)
 
@@ -858,9 +863,9 @@ class MainWindow(QMainWindow):
 
                     # Finding common time between local and remote station
                     common_time = \
-                    xr.align(ts_dict[list(ts_dict.keys())[0]], ts_r[list(ts_r.keys())[0]],
-                             join="inner")[
-                        0].time
+                        xr.align(ts_dict[list(ts_dict.keys())[0]], ts_r[list(ts_r.keys())[0]],
+                                 join="inner")[
+                            0].time
 
                     if len(common_time) == 0:
                         # Continue as local station processing
@@ -1113,7 +1118,7 @@ class MainWindow(QMainWindow):
                 for magnetic_channel in available_magnetic_channels:
                     calibration_data_magnetic[magnetic_channel] = {}
                     calibration_data_magnetic[magnetic_channel]['sensor_type'] = \
-                    self.header[ts][magnetic_channel]['sensor']
+                        self.header[ts][magnetic_channel]['sensor']
                     calibration_data_magnetic[magnetic_channel]['sensor_serial_number'] = \
                         self.header[ts][magnetic_channel]['sensor_no'][0]
                     calibration_data_magnetic[magnetic_channel]['chopper_status'] = \
@@ -1150,17 +1155,17 @@ class MainWindow(QMainWindow):
                                 "\x00", "")
 
                     metronix_txt_filename = (
-                                calibration_data_magnetic[magnetic_channel]["sensor_type"].lower()
-                                + "_"
-                                + str(
-                            calibration_data_magnetic[magnetic_channel]["sensor_serial_number"])
-                                )
+                            calibration_data_magnetic[magnetic_channel]["sensor_type"].lower()
+                            + "_"
+                            + str(
+                        calibration_data_magnetic[magnetic_channel]["sensor_serial_number"])
+                    )
                     cal_txt_path = Path(
                         self.project_dir) / "calibration_files" / f"{metronix_txt_filename}.txt"
 
                     if cal_txt_path.exists():
                         print('Metronix txt calibration file found.')
-                        cal_data_txt = sigmt.utils.metronix.cal_from_metronix_txt.read_calibration_metronix_txt(
+                        cal_data_txt = cal_from_metronix_txt.read_calibration_metronix_txt(
                             filepath=cal_txt_path)
                     else:
                         cal_data_txt = None
@@ -1220,7 +1225,7 @@ class MainWindow(QMainWindow):
                     notch_frequency=self.procinfo['notch_frequency'],
                     process_mt=process_mt, process_tipper=process_tipper,
                     remote_reference=remote_reference
-                    )
+                )
                 datasets.append(bandavg.band_averaged_dataset)  # appends xarray dataset (for a run)
                 num += 1
                 progress_dialog.setValue(num)
