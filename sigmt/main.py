@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QPushButton, QDialog, QVBoxLayout, QLabel
 
-from sigmt.gui.metronix import MainWindow as Metronix
+from sigmt.gui.metronix.metronix import MainWindow as Metronix
 
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)

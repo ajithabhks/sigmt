@@ -29,8 +29,8 @@ from sigmt.core.band_averaging import BandAveraging
 from sigmt.core.robust_estimation import RobustEstimation
 from sigmt.gui.about_dialog import AboutDialog
 from sigmt.gui.edi_merger import EDIMerger
-from sigmt.gui.metronix_dialogs import LayoutSettingsDialog
-from sigmt.gui.metronix_dialogs import SelectionDialog
+from sigmt.gui.metronix.metronix_dialogs import LayoutSettingsDialog
+from sigmt.gui.metronix.metronix_dialogs import SelectionDialog
 from sigmt.gui.project_related.create_project import ProjectSetupDialog
 from sigmt.gui.project_related.edit_project import EditProjectSetupDialog
 from sigmt.utils import utils
