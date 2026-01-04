@@ -9,6 +9,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QPushButton, QDialog, QVBoxLayout, QLabel
 
 from sigmt.gui.metronix.metronix import MainWindow as Metronix
+from sigmt.gui.phoenix.phoenix import MainWindow as Phoenix
 
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
@@ -28,6 +29,7 @@ class Welcome(QDialog):
         """
         super().__init__()
         self.metronix_button = None
+        self.phoenix_button = None
         self.main_window = None
         self.init_ui()
 
@@ -53,21 +55,40 @@ class Welcome(QDialog):
         layout.addWidget(select_label, alignment=Qt.AlignHCenter)
 
         self.metronix_button = QPushButton('Metronix', self)
+        self.phoenix_button = QPushButton('Phoenix', self)
+
+        # Prevent default focus / highlight
+        for btn in (self.metronix_button, self.phoenix_button):
+            btn.setFocusPolicy(Qt.NoFocus)
+            btn.setAutoDefault(False)
+
         layout.addWidget(self.metronix_button, alignment=Qt.AlignHCenter)
+        layout.addWidget(self.phoenix_button, alignment=Qt.AlignHCenter)
 
         layout.addStretch()
 
         self.setLayout(layout)
 
-        self.metronix_button.clicked.connect(self.open_metronix_mainwindow)
+        self.metronix_button.clicked.connect(self.open_metronix_main_window)
+        self.phoenix_button.clicked.connect(self.open_phoenix_main_window)
 
-    def open_metronix_mainwindow(self) -> None:
+    def open_metronix_main_window(self) -> None:
         """
         To open the metronix specific main window and close welcome page
 
         :return: None
         """
         self.main_window = Metronix()
+        self.main_window.show()
+        self.close()
+
+    def open_phoenix_main_window(self) -> None:
+        """
+        To open the phoenix specific main window and close welcome page
+
+        :return: None
+        """
+        self.main_window = Phoenix()
         self.main_window.show()
         self.close()
 
