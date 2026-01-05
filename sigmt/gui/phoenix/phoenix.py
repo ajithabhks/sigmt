@@ -7,9 +7,7 @@ import json
 import os
 import re
 import time
-from pathlib import Path
 
-import h5py
 import numpy as np
 import xarray as xr
 import yaml
@@ -18,8 +16,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (QMainWindow, QAction, QFileDialog, QMessageBox,
                              QWidget, QVBoxLayout, QComboBox, QLabel,
                              QPushButton, QHBoxLayout, QRadioButton, QGroupBox,
-                             QGridLayout, QLineEdit, QSizePolicy, QDialog,
-                             QApplication, QProgressDialog)
+                             QGridLayout, QLineEdit, QSizePolicy, QApplication, QProgressDialog)
 from scipy import signal
 
 from sigmt.core import data_selection_tools as dstools
@@ -29,7 +26,6 @@ from sigmt.core.band_averaging import BandAveraging
 from sigmt.core.robust_estimation import RobustEstimation
 from sigmt.gui.about_dialog import AboutDialog
 from sigmt.gui.edi_merger import EDIMerger
-from sigmt.gui.metronix.metronix_dialogs import LayoutSettingsDialog
 from sigmt.gui.project_related.create_project import ProjectSetupDialog
 from sigmt.gui.project_related.edit_project import EditProjectSetupDialog
 from sigmt.utils import utils
@@ -108,7 +104,6 @@ class MainWindow(QMainWindow):
         self.localsite_dropdown = None
         self.remotesite_dropdown = None
         self.sampling_frequency_dropdown = None
-        self.verify_layout_button = None
         self.fft_values = ['262144', '131072', '65536', '32768', '16384',
                            '8192', '4096', '2048', '1024', '512', '256']
         #
@@ -216,10 +211,6 @@ class MainWindow(QMainWindow):
         self.read_time_series_button = QPushButton("Read time series")
         self.read_time_series_button.clicked.connect(self.read_ts)
         section1_grid_layout.addWidget(self.read_time_series_button, 1, 0)
-        self.verify_layout_button = QPushButton("Verify/Edit layout settings")
-        self.verify_layout_button.clicked.connect(self.open_layout_settings)
-        self.verify_layout_button.hide()
-        section1_grid_layout.addWidget(self.verify_layout_button, 1, 1)
         section1_grid_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         #
         section1_layout.addWidget(section1_grid_widget)
@@ -230,7 +221,7 @@ class MainWindow(QMainWindow):
         section2_layout = QGridLayout()
         section2_layout.addWidget(QLabel("Select Decimation from the list:"), 0, 0)
         self.decimation_list_dropdown = QComboBox()
-        self.decimation_list_dropdown.addItems(['4', '8'])
+        self.decimation_list_dropdown.addItems(['5'])
         section2_layout.addWidget(self.decimation_list_dropdown, 0, 1)
         self.decimate_button = QPushButton("Decimate")
         self.decimate_button.clicked.connect(self.decimate)
@@ -442,8 +433,6 @@ class MainWindow(QMainWindow):
         :rtype: NoneType
 
         """
-        if self.verify_layout_button is not None:
-            self.verify_layout_button.hide()
         self.new_fs.hide()
         self.fft_length_dropdown.clear()
         self.parzen_radius_entry.clear()
@@ -534,9 +523,7 @@ class MainWindow(QMainWindow):
         # Resetting some buttons
         self.apply_coh_thresh_button.setText("Apply coherency threshold")
         self.apply_pd_thresh_button.setText("Perform PD thresholding")
-        #
-        if self.verify_layout_button is not None:
-            self.verify_layout_button.hide()
+
         self.new_fs.hide()
         self.fft_length_dropdown.clear()
         self.parzen_radius_entry.clear()
@@ -594,8 +581,6 @@ class MainWindow(QMainWindow):
         :rtype: NoneType
 
         """
-        if self.verify_layout_button is not None:
-            self.verify_layout_button.hide()
         self.new_fs.hide()
         self.fft_length_dropdown.clear()
         self.parzen_radius_entry.clear()
@@ -704,69 +689,139 @@ class MainWindow(QMainWindow):
         with open(local_recmeta_file, 'r', encoding='utf-8') as f:
             self.recmeta_data_local = json.load(f)
 
-        # Create a progress dialog
-        progress_dialog = QProgressDialog("Reading time series...", None, 0, 1, self)
-        progress_dialog.setWindowModality(Qt.WindowModal)
-        progress_dialog.setWindowTitle("Please wait")
-        progress_dialog.show()
-
-        # This is important to show the progress bar and GUI not to freeze
-        qapp_instance = QApplication.instance()
-        qapp_instance.processEvents()
-        num = 0
-
         if int(self.sfreq_selected) > 150:
+            self.file_type = 'decimated_segmented'
             print('Decimated Segmented')
         else:
+            self.file_type = 'decimated_continuous'
             print('Decimated Continuous')
 
-        file_extension = phoenix_utils.sampling_rate_to_extension(
+        self.file_extension = phoenix_utils.sampling_rate_to_extension(
             sampling_rate=int(self.sfreq_selected)
         )
 
-        # read data here
+        local_channel_map = self.recmeta_data_local['channel_map']['mapping']
+        local_channel_map = {ch['tag']: ch['idx'] for ch in local_channel_map}
 
-        num += 1
-        progress_dialog.setValue(num)
-        qapp_instance.processEvents()
-        progress_dialog.close()
-        self.procinfo['fs'] = self.processing_df['sampling_frequency'].iloc[0]
+        if self.file_type == 'decimated_continuous':
+            counts = phoenix_utils.get_uniform_continuous_td_counts(
+                recording_path=self.localsite_path,
+                file_extension=self.file_extension,
+            )
+            self.time_series = phoenix_utils.read_decimated_continuous_data(
+                recording_path=self.localsite_path,
+                channel_map=local_channel_map,
+                file_extension=self.file_extension
+            )
+        elif self.file_type == 'decimated_segmented':
+
+            counts = phoenix_utils.get_uniform_segmented_td_counts(
+                recording_path=self.localsite_path,
+                file_extension=self.file_extension,
+            )
+            self.time_series = phoenix_utils.read_decimated_segmented_data(
+                recording_path=self.localsite_path,
+                channel_map=local_channel_map,
+                file_extension=self.file_extension
+            )
+
+        # read data here
+        self.procinfo['fs'] = int(self.sfreq_selected)
+
+        self.calibration_data_magnetic = {
+            'instrument': 'phoenix',
+            'hx': {},
+            'hy': {},
+            'hz': {}
+        }
+
+        self.calibration_data_electric = {
+            'ex': {},
+            'ey': {},
+        }
+
+        self.calibration_data_electric['ex']['x1'] = abs(
+            self.recmeta_data_local['chconfig']['chans']
+            [local_channel_map['E1']]['length1']
+        )
+        self.calibration_data_electric['ex']['x2'] = abs(
+            self.recmeta_data_local['chconfig']['chans']
+            [local_channel_map['E1']]['length2']
+        )
+        self.calibration_data_electric['ey']['y1'] = abs(
+            self.recmeta_data_local['chconfig']['chans']
+            [local_channel_map['E2']]['length1']
+        )
+        self.calibration_data_electric['ey']['y2'] = abs(
+            self.recmeta_data_local['chconfig']['chans']
+            [local_channel_map['E2']]['length2']
+        )
+
+        cal_data_path = os.path.join(
+            self.project_dir,
+            'calibration_files'
+        )
+
+        hx_coil_serial = self.recmeta_data_local['chconfig']['chans'][local_channel_map['H1']][
+            'serial']
+        hy_coil_serial = self.recmeta_data_local['chconfig']['chans'][local_channel_map['H2']][
+            'serial']
+        hz_coil_serial = self.recmeta_data_local['chconfig']['chans'][local_channel_map['H3']][
+            'serial']
+
+        hx_coil_data_path = os.path.join(
+            cal_data_path,
+            f'{hx_coil_serial}.json'
+        )
+        with open(hx_coil_data_path, 'r', encoding='utf-8') as f:
+            hx_coil_data = json.load(f)
+        hy_coil_data_path = os.path.join(
+            cal_data_path,
+            f'{hy_coil_serial}.json'
+        )
+        with open(hy_coil_data_path, 'r', encoding='utf-8') as f:
+            hy_coil_data = json.load(f)
+        hz_coil_data_path = os.path.join(
+            cal_data_path,
+            f'{hz_coil_serial}.json'
+        )
+        with open(hz_coil_data_path, 'r', encoding='utf-8') as f:
+            hz_coil_data = json.load(f)
+
+        self.calibration_data_magnetic['hx']['calibration_data'] = \
+            hx_coil_data['cal_data'][0]['chan_data'][0]
+        self.calibration_data_magnetic['hy']['calibration_data'] = \
+            hy_coil_data['cal_data'][0]['chan_data'][0]
+        self.calibration_data_magnetic['hz']['calibration_data'] = \
+            hz_coil_data['cal_data'][0]['chan_data'][0]
+
         QMessageBox.information(
             self,
             "Information",
-            "Time series reading completed!\n\n"
             "Summary\n"
             "----------\n"
-            f"No. of measurements loaded: {len(self.processing_df)}\n"
-            f"Sampling frequency: {self.procinfo['fs']} Hz"
+            f"Sampling frequency: {self.procinfo['fs']} Hz\n"
+            f"File type: {self.file_type.replace('_', ' ').title()}\n"
+            f"Number of files: {counts[0]}\n"
+            f"Number of continuous samples: {counts[1]}\n"
         )
 
-        self.procinfo['nsamples_mostly'] = utils.get_nsamples(self.header)
+        self.procinfo['nsamples_mostly'] = counts[1]
         fftlength = utils.get_fftlength(self.procinfo['nsamples_mostly'])
+
         # Updating FFT length dropdown
-        self.fft_length_dropdown.addItems(self.fft_values)
+        fft_values = [
+            v for v in self.fft_values
+            if int(v) <= self.procinfo["nsamples_mostly"]
+        ]
+
+        self.fft_length_dropdown.addItems(fft_values)
         self.fft_length_dropdown.setCurrentIndex(self.fft_length_dropdown.findText(str(fftlength)))
         # Updating parzen window radius
         parzen_radius = utils.get_parzen(self.procinfo['fs'])
         self.parzen_radius_entry.setText(str(parzen_radius))
-        self.verify_layout_button.show()
         # Updating MD thresholds
         self.md_threshold_entry.setText(str(1.5))
-
-    def open_layout_settings(self) -> None:
-        """
-        Opens layout settings dialog
-
-        :return: None
-        :rtype: NoneType
-
-        """
-        try:
-            dialog = LayoutSettingsDialog(header=self.header, parent=self)
-            if dialog.exec_() == QDialog.Accepted:
-                self.header = dialog.header
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"An error occurred while layout settings: {e}")
 
     def decimate(self) -> None:
         """
@@ -792,29 +847,48 @@ class MainWindow(QMainWindow):
             qapp_instance = QApplication.instance()
             qapp_instance.processEvents()
             decimation_factor = int(self.decimation_list_dropdown.currentText())
-            with h5py.File(self.h5file, 'r+') as f:
-                for ts in f.keys():
-                    for channel in f[ts]:
-                        decimated_data = signal.decimate(
-                            f[ts][channel][:],
-                            decimation_factor,
-                            n=None,
-                            ftype='iir'
-                        )
-                        del f[ts][channel]
-                        ts_group = f[ts]
-                        ts_group.create_dataset(channel, data=decimated_data)
-                        self.header[ts][channel]['sfreq'] = [
-                            self.header[ts][channel]['sfreq'][0] / decimation_factor]
-                        self.header[ts][channel]['nsamples'] = len(decimated_data)
+
+            for ts in self.time_series:
+                for channel in self.time_series[ts]:
+                    self.time_series[ts][channel] = signal.decimate(
+                        self.time_series[ts][channel][:],
+                        decimation_factor,
+                        n=None,
+                        ftype='iir'
+                    )
+
             self.procinfo['fs'] = self.procinfo['fs'] / decimation_factor
             self.new_fs.setText(f"Now sampling frequency is {self.procinfo['fs']} Hz")
             self.new_fs.show()
-            self.procinfo['nsamples_mostly'] = utils.get_nsamples(self.header)
+
+            first_run = next(iter(self.time_series.values()))
+            first_array = next(iter(first_run.values()))
+            self.procinfo['nsamples_mostly'] = first_array.shape[0]
+
             fftlength = utils.get_fftlength(self.procinfo['nsamples_mostly'])
+
             # Updating FFT length dropdown
-            self.fft_length_dropdown.setCurrentIndex(
-                self.fft_length_dropdown.findText(str(fftlength)))
+            fft_values = [
+                v for v in self.fft_values
+                if int(v) <= self.procinfo["nsamples_mostly"]
+            ]
+
+            # Replace existing items
+            self.fft_length_dropdown.blockSignals(True)
+            self.fft_length_dropdown.clear()
+            self.fft_length_dropdown.addItems([str(v) for v in fft_values])
+
+            # Select fftlength if present, otherwise pick a sensible fallback
+            idx = self.fft_length_dropdown.findText(str(fftlength))
+            if idx >= 0:
+                self.fft_length_dropdown.setCurrentIndex(idx)
+            else:
+                # fallback: last item (largest) if any
+                if self.fft_length_dropdown.count() > 0:
+                    self.fft_length_dropdown.setCurrentIndex(self.fft_length_dropdown.count() - 1)
+
+            self.fft_length_dropdown.blockSignals(False)
+
             # Updating parzen window radius
             parzen_radius = utils.get_parzen(self.procinfo['fs'])
             self.parzen_radius_entry.setText(str(parzen_radius))
@@ -851,7 +925,7 @@ class MainWindow(QMainWindow):
         self.apply_pd_thresh_button.setText("Perform PD thresholding")
         #
         try:
-            if self.header is not None:
+            if self.time_series is not None:
                 self.procinfo['localsite'] = self.localsite
                 self.procinfo['remotesite'] = self.remotesite
                 self.procinfo['notch'] = self.notch_status
@@ -860,18 +934,16 @@ class MainWindow(QMainWindow):
                 self.procinfo['parzen_radius'] = float(self.parzen_radius_entry.text())
                 self.procinfo['md_thresh'] = float(self.md_threshold_entry.text())
                 self.procinfo['notch_frequency'] = float(self.project_setup['notch_frequency'])
-                self.procinfo['preferred_cal_file'] = self.project_setup['preferred_cal_file']
                 self.procinfo['target_frequency_table_type'] = self.project_setup[
                     'target_frequency_table_type'].lower()
                 self.procinfo['frequencies_per_decade'] = int(
                     self.project_setup['frequencies_per_decade'])
-                first_header = next(iter(next(iter(self.header.values())).values()))
+
+                self.procinfo['lat'] = self.recmeta_data_local['timing']['gps_lat']
+                self.procinfo['lon'] = self.recmeta_data_local['timing']['gps_lon']
+                self.procinfo['elev'] = self.recmeta_data_local['timing']['gps_alt']
                 #
-                self.procinfo['lat'] = first_header['lat'][0] / 1000 / 60 / 60
-                self.procinfo['lon'] = first_header['lon'][0] / 1000 / 60 / 60
-                self.procinfo['elev'] = first_header['elev'][0] / 100
-                #
-                self.procinfo['start_time'] = first_header['start'][0]
+                self.procinfo['start_time'] = 0  # TODO
                 QMessageBox.information(self, "Done", f"Parameters are saved.")
             else:
                 QMessageBox.critical(self, "Error", f"Please read time series first!!")
@@ -894,8 +966,13 @@ class MainWindow(QMainWindow):
         if 'localsite' in self.procinfo and self.procinfo['localsite'] == self.localsite:
             datasets = []
             #
-            progress_dialog = QProgressDialog("Performing band averaging...", None, 0,
-                                              len(self.header), self)
+            progress_dialog = QProgressDialog(
+                "Performing band averaging...",
+                None,
+                0,
+                len(self.time_series),
+                self
+            )
             progress_dialog.setWindowModality(Qt.WindowModal)
             progress_dialog.setWindowTitle("Please wait")
             progress_dialog.show()
@@ -905,7 +982,7 @@ class MainWindow(QMainWindow):
             #
             num = 0
             bandavg_time = time.time()
-            for ts in self.header:
+            for run in self.time_series:
 
                 # Preparing inputs for band averaging
                 # TODO: Replace this with a better strategy later
@@ -931,23 +1008,26 @@ class MainWindow(QMainWindow):
                 else:
                     remote_reference = False
 
-
                 # Get the bandavg object
                 bandavg = BandAveraging(
-                    time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
-                    sampling_frequency=self.procinfo['fs'], overlap=50,
-                    calibrate_electric=True, calibrate_magnetic=True,
-                    calibration_data_electric=calibration_data_electric,
-                    calibration_data_magnetic=calibration_data_magnetic,
+                    time_series=self.time_series[run],
+                    sampling_frequency=self.procinfo['fs'],
                     fft_length=self.procinfo['fft_length'],
                     parzen_window_radius=self.procinfo['parzen_radius'],
-                    target_frequency_table_type=self.procinfo['target_frequency_table_type'],
-                    frequencies_per_decade=self.procinfo['frequencies_per_decade'],
+                    overlap=50,
+                    frequencies_per_decade=12,
+                    remote_reference=remote_reference,
+                    calibrate_electric=True,
+                    calibrate_magnetic=True,
+                    calibration_data_electric=self.calibration_data_electric,
+                    calibration_data_magnetic=self.calibration_data_magnetic,
+                    instrument='phoenix',
                     apply_notch_filter=notch_filter_apply,
                     notch_frequency=self.procinfo['notch_frequency'],
-                    process_mt=process_mt, process_tipper=process_tipper,
-                    remote_reference=remote_reference
+                    process_mt=process_mt,
+                    process_tipper=process_tipper,
                 )
+
                 datasets.append(bandavg.band_averaged_dataset)  # appends xarray dataset (for a run)
                 num += 1
                 progress_dialog.setValue(num)

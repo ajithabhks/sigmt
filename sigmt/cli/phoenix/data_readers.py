@@ -35,7 +35,6 @@ def read_decimated_continuous(
         all_data.append(block)
 
     ts = np.concatenate(all_data) * 1000  # Convert to mV
-    # print(f"Read {len(files)} files, {ts.size:,} samples total")
 
     return ts
 

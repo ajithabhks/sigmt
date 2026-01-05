@@ -62,7 +62,7 @@ def get_fftlength(nofsamples: int) -> int:
     i = 1
     ffts = [256]
     cfft = 256 * (2 ** i)
-    term = nofsamples / (20 * i);
+    term = nofsamples / (20 * i)
     ffts.append(cfft)
     while cfft <= term:
         i = i + 1
@@ -94,7 +94,11 @@ def get_parzen(fs: float) -> float:
     return parzen_radius
 
 
-def reshape_array_with_overlap(window_length: int, overlap: int, data: np.ndarray) -> np.ndarray:
+def reshape_array_with_overlap(
+        window_length: int,
+        overlap: int,
+        data: np.ndarray
+) -> np.ndarray:
     """
     To reshape a numpy array into different windows with 50% overlap.
 
@@ -128,15 +132,16 @@ def reshape_array_with_overlap(window_length: int, overlap: int, data: np.ndarra
     return result_array
 
 
-def get_target_frequency_list(sampling_frequency: float,
-                              parzen_window_radius: float,
-                              fft_length: int,
-                              frequencies_per_decade: int = 12,
-                              lowest_frequency: int = -5,
-                              highest_frequency: int = 5,
-                              table_type: Optional[Literal['default', 'metronix', 'explicit']] = 'default',
-                              explicit_table: Optional[Union[list, np.ndarray]] = None,
-                              ) -> np.ndarray:
+def get_target_frequency_list(
+        sampling_frequency: float,
+        parzen_window_radius: float,
+        fft_length: int,
+        frequencies_per_decade: int = 12,
+        lowest_frequency: int = -5,
+        highest_frequency: int = 5,
+        table_type: Optional[Literal['default', 'metronix', 'explicit']] = 'default',
+        explicit_table: Optional[Union[list, np.ndarray]] = None,
+) -> np.ndarray:
     """
     Computes a list of target frequencies based on the given processing parameters.
 
@@ -171,8 +176,13 @@ def get_target_frequency_list(sampling_frequency: float,
     """
 
     if table_type == 'default':
-        frequency_table = np.flip(np.logspace(lowest_frequency, highest_frequency,
-                                              int((highest_frequency - lowest_frequency) * frequencies_per_decade + 1)))
+        frequency_table = np.flip(
+            np.logspace(
+                lowest_frequency,
+                highest_frequency,
+                int((highest_frequency - lowest_frequency) * frequencies_per_decade + 1)
+            )
+        )
     elif table_type == 'explicit':
         if explicit_table is None:
             raise ValueError("explicit_table must be provided when table_type is 'explicit'")
@@ -181,8 +191,13 @@ def get_target_frequency_list(sampling_frequency: float,
         frequency_table = np.array(METRONIX_ADU_07.copy())
     else:
         print('table_type provided is not supported. Switching to default.')
-        frequency_table = np.flip(np.logspace(lowest_frequency, highest_frequency,
-                                              int((highest_frequency - lowest_frequency) * frequencies_per_decade + 1)))
+        frequency_table = np.flip(
+            np.logspace(
+                lowest_frequency,
+                highest_frequency,
+                int((highest_frequency - lowest_frequency) * frequencies_per_decade + 1)
+            )
+        )
 
     fr = parzen_window_radius * frequency_table  # bandwidth of parzen window - oneside from ft
     total_bandwidth = fr * 2  # bandwidth of parzen window - two side from ft
