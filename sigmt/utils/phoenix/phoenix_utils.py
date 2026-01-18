@@ -5,11 +5,14 @@ Utility functions for the phoenix
 import os
 import pathlib
 import re
-from typing import List, Set, Tuple, Dict
+from math import ceil
+from typing import List, Set, Tuple, Dict, Optional
 
+import numpy as np
 from PhoenixGeoPy.Reader import TimeSeries as PhoenixReader
 
 import sigmt.cli.phoenix.data_readers as phoenix_readers
+from sigmt.utils import utils
 
 
 def load_sites(project_dir: str) -> List[str]:
@@ -175,7 +178,7 @@ def get_uniform_continuous_td_counts(
         sr = reader.header_info["sample_rate"]
         frag_s = reader.header_info["frag_period"]
 
-        total_samples = int(sr * frag_s) * (num_files-1)
+        total_samples = int(sr * frag_s) * (num_files - 1)
         counts.add((num_files, total_samples))
 
     if not counts:
@@ -299,83 +302,53 @@ def read_decimated_segmented_data(recording_path, channel_map, file_extension) -
     return ts
 
 
-    # temp = np.hstack(temp)
-    # total_cols = temp.shape[1]
-    #
-    # for i, start in enumerate(range(0, total_cols, max_cols), start=1):
-    #     end = start + max_cols
-    #     ts.setdefault(f'run{i}', {})['ex'] = temp[:, start:end]
-    #
-    # out_list = phoenix_readers.read_decimated_segmented(
-    #     channel_path=station_path / str(channel_map.get('E2')),
-    #     file_extension="td_24k",
-    # )
-    # temp = []
-    # for num, out_val in enumerate(out_list):
-    #     temp.append(utils.reshape_array_with_overlap(
-    #         window_length=fft_length,
-    #         overlap=overlap,
-    #         data=out_val['samples']
-    #     ))
-    # temp = np.hstack(temp)
-    # total_cols = temp.shape[1]
-    #
-    # for i, start in enumerate(range(0, total_cols, max_cols), start=1):
-    #     end = start + max_cols
-    #     ts.setdefault(f'run{i}', {})['ey'] = temp[:, start:end]
-    #
-    # out_list = phoenix_readers.read_decimated_segmented(
-    #     channel_path=station_path / str(channel_map.get('H1')),
-    #     file_extension="td_24k",
-    # )
-    # temp = []
-    # for num, out_val in enumerate(out_list):
-    #     temp.append(utils.reshape_array_with_overlap(
-    #         window_length=fft_length,
-    #         overlap=overlap,
-    #         data=out_val['samples']
-    #     ))
-    # temp = np.hstack(temp)
-    # total_cols = temp.shape[1]
-    #
-    # for i, start in enumerate(range(0, total_cols, max_cols), start=1):
-    #     end = start + max_cols
-    #     ts.setdefault(f'run{i}', {})['hx'] = temp[:, start:end]
-    #
-    # out_list = phoenix_readers.read_decimated_segmented(
-    #     channel_path=station_path / str(channel_map.get('H2')),
-    #     file_extension="td_24k",
-    # )
-    # temp = []
-    # for num, out_val in enumerate(out_list):
-    #     temp.append(utils.reshape_array_with_overlap(
-    #         window_length=fft_length,
-    #         overlap=overlap,
-    #         data=out_val['samples']
-    #     ))
-    # temp = np.hstack(temp)
-    # total_cols = temp.shape[1]
-    #
-    # for i, start in enumerate(range(0, total_cols, max_cols), start=1):
-    #     end = start + max_cols
-    #     ts.setdefault(f'run{i}', {})['hy'] = temp[:, start:end]
-    #
-    # out_list = phoenix_readers.read_decimated_segmented(
-    #     channel_path=station_path / str(channel_map.get('H3')),
-    #     file_extension="td_24k",
-    # )
-    # temp = []
-    # for num, out_val in enumerate(out_list):
-    #     temp.append(utils.reshape_array_with_overlap(
-    #         window_length=fft_length,
-    #         overlap=overlap,
-    #         data=out_val['samples']
-    #     ))
-    # temp = np.hstack(temp)
-    # total_cols = temp.shape[1]
-    #
-    # for i, start in enumerate(range(0, total_cols, max_cols), start=1):
-    #     end = start + max_cols
-    #     ts.setdefault(f'run{i}', {})['hz'] = temp[:, start:end]
-    #
-    # return ts
+def optimize_time_series_dict(
+        time_series_dict: dict,
+        fft_length: int,
+        overlap: int,
+        max_runs: Optional[int] = 20,
+) -> Dict:
+    """
+    Optimized time series dictionary
+    """
+    print('Optimizing time series dictionary')
+
+    optimized_time_series_dict = {}
+
+    for run in time_series_dict:
+        optimized_time_series_dict[run] = {}
+        for channel in time_series_dict[run]:
+            optimized_time_series_dict[run][channel] = utils.reshape_array_with_overlap(
+                window_length=fft_length,
+                overlap=overlap,
+                data=time_series_dict[run][channel]
+            )
+
+    del time_series_dict
+
+    runs = list(optimized_time_series_dict.keys())
+    n_runs = len(runs)
+
+    group_size = ceil(n_runs / max_runs)
+
+    reduced_time_series = {}
+
+    for i in range(max_runs):
+        group_runs = runs[i * group_size:(i + 1) * group_size]
+        if not group_runs:
+            break
+
+        reduced_time_series[f"run{i}"] = {}
+
+        for ch in optimized_time_series_dict[group_runs[0]].keys():
+            arrays = [optimized_time_series_dict[r][ch] for r in group_runs]
+
+            # check row consistency
+            rows = {a.shape[0] for a in arrays}
+            if len(rows) != 1:
+                raise ValueError(f"Row mismatch in channel {ch}: {rows}")
+
+            reduced_time_series[f"run{i}"][ch] = np.concatenate(arrays, axis=1)
+
+    print('Optimizing time series dictionary. Done.')
+    return reduced_time_series

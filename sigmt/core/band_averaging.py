@@ -586,8 +586,10 @@ def _reshape_time_series_with_overlap(time_series, fft_length, overlap):
 
     """
     for channel in time_series:
-        time_series[channel] = utils.reshape_array_with_overlap(window_length=fft_length,
-                                                                overlap=overlap,
-                                                                data=time_series[channel])
+        time_series[channel] = utils.reshape_array_with_overlap(
+            window_length=fft_length,
+            overlap=overlap,
+            data=time_series[channel]
+        )
 
     return time_series

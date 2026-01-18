@@ -964,83 +964,12 @@ class MainWindow(QMainWindow):
         self.apply_pd_thresh_button.setText("Perform PD thresholding")
         #
         if 'localsite' in self.procinfo and self.procinfo['localsite'] == self.localsite:
-            datasets = []
-            #
-            progress_dialog = QProgressDialog(
-                "Performing band averaging...",
-                None,
-                0,
-                len(self.time_series),
-                self
-            )
-            progress_dialog.setWindowModality(Qt.WindowModal)
-            progress_dialog.setWindowTitle("Please wait")
-            progress_dialog.show()
-            # This is important to show the progress bar and GUI not to freeze
-            qapp_instance = QApplication.instance()
-            qapp_instance.processEvents()
-            #
-            num = 0
-            bandavg_time = time.time()
-            for run in self.time_series:
 
-                # Preparing inputs for band averaging
-                # TODO: Replace this with a better strategy later
-                if self.procinfo['notch'] == 'on':
-                    notch_filter_apply = True
-                else:
-                    notch_filter_apply = False
+            if self.file_type == 'decimated_continuous':
+                self.band_averaging_decimated_continuous()
+            elif self.file_type == 'decimated_segmented':
+                self.band_averaging_decimated_segmented()
 
-                # TODO: Replace this with a better strategy later
-                if self.procinfo['processing_mode'] == 'MT + Tipper':
-                    process_mt = True
-                    process_tipper = True
-                elif self.procinfo['processing_mode'] == 'MT Only':
-                    process_mt = True
-                    process_tipper = False
-                else:
-                    process_mt = None
-                    process_tipper = None
-
-                # TODO: Replace this with a better strategy later
-                if self.procinfo['remotesite'] is not None:
-                    remote_reference = True
-                else:
-                    remote_reference = False
-
-                # Get the bandavg object
-                bandavg = BandAveraging(
-                    time_series=self.time_series[run],
-                    sampling_frequency=self.procinfo['fs'],
-                    fft_length=self.procinfo['fft_length'],
-                    parzen_window_radius=self.procinfo['parzen_radius'],
-                    overlap=50,
-                    frequencies_per_decade=12,
-                    remote_reference=remote_reference,
-                    calibrate_electric=True,
-                    calibrate_magnetic=True,
-                    calibration_data_electric=self.calibration_data_electric,
-                    calibration_data_magnetic=self.calibration_data_magnetic,
-                    instrument='phoenix',
-                    apply_notch_filter=notch_filter_apply,
-                    notch_frequency=self.procinfo['notch_frequency'],
-                    process_mt=process_mt,
-                    process_tipper=process_tipper,
-                )
-
-                datasets.append(bandavg.band_averaged_dataset)  # appends xarray dataset (for a run)
-                num += 1
-                progress_dialog.setValue(num)
-            self.bandavg_dataset = xr.concat(datasets, dim='time_window').assign_coords(
-                time_window=np.arange(len(xr.concat(datasets, dim='time_window').time_window)))
-            self.dof = bandavg.dof
-            self.avgf = bandavg.avgf
-            self.bandavg_dataset['dof'] = xr.DataArray(
-                self.dof,
-                coords={'frequency': self.bandavg_dataset.coords['frequency']},
-                dims='frequency'
-            )
-            print(f'Time taken for band averaging: ' + str(time.time() - bandavg_time))
             # Calculating data selection parameters
             time_dataselection = time.time()
             self.bandavg_dataset['coh_ex'] = (
@@ -1054,10 +983,180 @@ class MainWindow(QMainWindow):
                 'alpha_e'] = dstools.pdvalues(
                 self.bandavg_dataset)
             print(f'Time taken for data selection tool: ' + str(time.time() - time_dataselection))
-            qapp_instance.processEvents()
             QMessageBox.information(self, "Done", f"Band averaging done!")
         else:
             QMessageBox.critical(self, "Error", f"Please read time series again!!")
+
+    def band_averaging_decimated_continuous(self):
+        datasets = []
+
+        progress_dialog = QProgressDialog(
+            "Performing band averaging...",
+            None,
+            0,
+            len(self.time_series),
+            self
+        )
+        progress_dialog.setWindowModality(Qt.WindowModal)
+        progress_dialog.setWindowTitle("Please wait")
+        progress_dialog.show()
+        # This is important to show the progress bar and GUI not to freeze
+        qapp_instance = QApplication.instance()
+        qapp_instance.processEvents()
+        #
+        num = 0
+        bandavg_time = time.time()
+
+        for run in self.time_series:
+            # Preparing inputs for band averaging
+            # TODO: Replace this with a better strategy later
+            if self.procinfo['notch'] == 'on':
+                notch_filter_apply = True
+            else:
+                notch_filter_apply = False
+
+            # TODO: Replace this with a better strategy later
+            if self.procinfo['processing_mode'] == 'MT + Tipper':
+                process_mt = True
+                process_tipper = True
+            elif self.procinfo['processing_mode'] == 'MT Only':
+                process_mt = True
+                process_tipper = False
+            else:
+                process_mt = None
+                process_tipper = None
+
+            # TODO: Replace this with a better strategy later
+            if self.procinfo['remotesite'] is not None:
+                remote_reference = True
+            else:
+                remote_reference = False
+
+            # Get the bandavg object
+            bandavg = BandAveraging(
+                time_series=self.time_series[run].copy(),
+                sampling_frequency=self.procinfo['fs'],
+                fft_length=self.procinfo['fft_length'],
+                parzen_window_radius=self.procinfo['parzen_radius'],
+                overlap=50,
+                frequencies_per_decade=self.procinfo['target_frequency_table_type'],
+                remote_reference=remote_reference,
+                calibrate_electric=True,
+                calibrate_magnetic=True,
+                calibration_data_electric=self.calibration_data_electric,
+                calibration_data_magnetic=self.calibration_data_magnetic,
+                instrument='phoenix',
+                apply_notch_filter=notch_filter_apply,
+                notch_frequency=self.procinfo['notch_frequency'],
+                process_mt=process_mt,
+                process_tipper=process_tipper,
+            )
+
+            datasets.append(bandavg.band_averaged_dataset)  # appends xarray dataset (for a run)
+            num += 1
+            progress_dialog.setValue(num)
+        self.bandavg_dataset = xr.concat(datasets, dim='time_window').assign_coords(
+            time_window=np.arange(len(xr.concat(datasets, dim='time_window').time_window)))
+        self.dof = bandavg.dof
+        self.avgf = bandavg.avgf
+        self.bandavg_dataset['dof'] = xr.DataArray(
+            self.dof,
+            coords={'frequency': self.bandavg_dataset.coords['frequency']},
+            dims='frequency'
+        )
+        print(f'Time taken for band averaging: ' + str(time.time() - bandavg_time))
+        qapp_instance.processEvents()
+
+    def band_averaging_decimated_segmented(self):
+        datasets = []
+
+        # decimated_segmented type usually contains thousands of
+        # independent time series which make band averaging inefficient.
+        # so adding an optimization technique to reduce number of runs
+        optimized_time_series = phoenix_utils.optimize_time_series_dict(
+            time_series_dict=self.time_series.copy(),
+            fft_length=self.procinfo['fft_length'],
+            overlap=50,
+        )
+
+        progress_dialog = QProgressDialog(
+            "Performing band averaging...",
+            None,
+            0,
+            len(optimized_time_series),
+            self
+        )
+        progress_dialog.setWindowModality(Qt.WindowModal)
+        progress_dialog.setWindowTitle("Please wait")
+        progress_dialog.show()
+        # This is important to show the progress bar and GUI not to freeze
+        qapp_instance = QApplication.instance()
+        qapp_instance.processEvents()
+        #
+        num = 0
+        bandavg_time = time.time()
+
+        for run in optimized_time_series:
+
+            # Preparing inputs for band averaging
+            # TODO: Replace this with a better strategy later
+            if self.procinfo['notch'] == 'on':
+                notch_filter_apply = True
+            else:
+                notch_filter_apply = False
+
+            # TODO: Replace this with a better strategy later
+            if self.procinfo['processing_mode'] == 'MT + Tipper':
+                process_mt = True
+                process_tipper = True
+            elif self.procinfo['processing_mode'] == 'MT Only':
+                process_mt = True
+                process_tipper = False
+            else:
+                process_mt = None
+                process_tipper = None
+
+            # TODO: Replace this with a better strategy later
+            if self.procinfo['remotesite'] is not None:
+                remote_reference = True
+            else:
+                remote_reference = False
+
+            # Get the bandavg object
+            bandavg = BandAveraging(
+                time_series=optimized_time_series[run],
+                sampling_frequency=self.procinfo['fs'],
+                fft_length=self.procinfo['fft_length'],
+                parzen_window_radius=self.procinfo['parzen_radius'],
+                overlap=50,
+                frequencies_per_decade=self.procinfo['target_frequency_table_type'],
+                remote_reference=remote_reference,
+                calibrate_electric=True,
+                calibrate_magnetic=True,
+                calibration_data_electric=self.calibration_data_electric,
+                calibration_data_magnetic=self.calibration_data_magnetic,
+                instrument='phoenix',
+                apply_notch_filter=notch_filter_apply,
+                notch_frequency=self.procinfo['notch_frequency'],
+                process_mt=process_mt,
+                process_tipper=process_tipper,
+                reshape=False,
+            )
+
+            datasets.append(bandavg.band_averaged_dataset)  # appends xarray dataset (for a run)
+            num += 1
+            progress_dialog.setValue(num)
+        self.bandavg_dataset = xr.concat(datasets, dim='time_window').assign_coords(
+            time_window=np.arange(len(xr.concat(datasets, dim='time_window').time_window)))
+        self.dof = bandavg.dof
+        self.avgf = bandavg.avgf
+        self.bandavg_dataset['dof'] = xr.DataArray(
+            self.dof,
+            coords={'frequency': self.bandavg_dataset.coords['frequency']},
+            dims='frequency'
+        )
+        print(f'Time taken for band averaging: ' + str(time.time() - bandavg_time))
+        qapp_instance.processEvents()
 
     def plot_coh_all(self) -> None:
         """
