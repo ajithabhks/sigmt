@@ -816,7 +816,12 @@ class MainWindow(QMainWindow):
         ]
 
         self.fft_length_dropdown.addItems(fft_values)
-        self.fft_length_dropdown.setCurrentIndex(self.fft_length_dropdown.findText(str(fftlength)))
+
+        if self.file_type == 'decimated_continuous':
+            self.fft_length_dropdown.setCurrentIndex(
+                self.fft_length_dropdown.findText(str(fftlength)))
+        elif self.file_type == 'decimated_segmented':
+            self.fft_length_dropdown.setCurrentIndex(0)
         # Updating parzen window radius
         parzen_radius = utils.get_parzen(self.procinfo['fs'])
         self.parzen_radius_entry.setText(str(parzen_radius))
@@ -878,14 +883,18 @@ class MainWindow(QMainWindow):
             self.fft_length_dropdown.clear()
             self.fft_length_dropdown.addItems([str(v) for v in fft_values])
 
-            # Select fftlength if present, otherwise pick a sensible fallback
-            idx = self.fft_length_dropdown.findText(str(fftlength))
-            if idx >= 0:
-                self.fft_length_dropdown.setCurrentIndex(idx)
-            else:
-                # fallback: last item (largest) if any
-                if self.fft_length_dropdown.count() > 0:
-                    self.fft_length_dropdown.setCurrentIndex(self.fft_length_dropdown.count() - 1)
+            if self.file_type == 'decimated_continuous':
+                # Select fftlength if present, otherwise pick a sensible fallback
+                idx = self.fft_length_dropdown.findText(str(fftlength))
+                if idx >= 0:
+                    self.fft_length_dropdown.setCurrentIndex(idx)
+                else:
+                    # fallback: last item (largest) if any
+                    if self.fft_length_dropdown.count() > 0:
+                        self.fft_length_dropdown.setCurrentIndex(
+                            self.fft_length_dropdown.count() - 1)
+            elif self.file_type == 'decimated_segmented':
+                self.fft_length_dropdown.setCurrentIndex(0)
 
             self.fft_length_dropdown.blockSignals(False)
 
