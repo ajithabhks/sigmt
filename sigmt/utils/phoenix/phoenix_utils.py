@@ -11,8 +11,8 @@ from typing import List, Set, Tuple, Dict, Optional
 import numpy as np
 from PhoenixGeoPy.Reader import TimeSeries as PhoenixReader
 
-import sigmt.cli.phoenix.data_readers as phoenix_readers
 from sigmt.utils import utils
+from sigmt.utils.phoenix import phoenix_readers
 
 
 def load_sites(project_dir: str) -> List[str]:
