@@ -299,11 +299,11 @@ class BandAveraging:
                 calibration_data = self.calibration_data_magnetic[channel]['calibration_data'][
                     chopper_status]
                 calibration_object = MetronixCalibration(
-                    self.spectra[channel],
-                    self.fft_frequencies,
-                    sensor_type,
-                    chopper_status,
-                    calibration_data
+                    xfft=self.spectra[channel],
+                    fft_freqs=self.fft_frequencies,
+                    sensor_type=sensor_type,
+                    chopper_status=chopper_status,
+                    calibration_data=calibration_data
                 )
                 self.spectra[channel] = calibration_object.calibrated_data
             elif self.instrument == 'phoenix':

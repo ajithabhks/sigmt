@@ -1220,6 +1220,7 @@ class MainWindow(QMainWindow):
                     fft_length=self.procinfo['fft_length'],
                     parzen_window_radius=self.procinfo['parzen_radius'],
                     target_frequency_table_type=self.procinfo['target_frequency_table_type'],
+                    instrument='metronix',
                     frequencies_per_decade=self.procinfo['frequencies_per_decade'],
                     apply_notch_filter=notch_filter_apply,
                     notch_frequency=self.procinfo['notch_frequency'],
