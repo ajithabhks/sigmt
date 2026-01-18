@@ -11,7 +11,13 @@ from PyQt5.QtWidgets import QFileDialog
 from sigmt.__version__ import __version__
 
 
-def save_edi(estimates: xr.Dataset, procinfo: dict, project_setup: dict, save_path: Optional[str]= None) -> None:
+def save_edi(
+        estimates: xr.Dataset,
+        procinfo: dict,
+        project_setup: dict,
+        save_path: Optional[str]= None,
+        file_name: Optional[str]= None
+) -> None:
     """
     Saves EDI after processing is done.
 
@@ -23,6 +29,8 @@ def save_edi(estimates: xr.Dataset, procinfo: dict, project_setup: dict, save_pa
     :type project_setup: dict
     :param save_path: Optional path to the output folder. If this is provided, plots will be saved to this folder.
     :type save_path: str
+    :param file_name: Specify file_name if explicit EDI filename is required.
+    :type file_name: str
     :return: None
     :rtype: NoneType
 
@@ -97,7 +105,9 @@ def save_edi(estimates: xr.Dataset, procinfo: dict, project_setup: dict, save_pa
     today = today.strftime("%m/%d/%Y")
 
     if save_path:
-        edi_file = os.path.join(save_path, f"edi_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.edi")
+        if file_name is None:
+            file_name = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        edi_file = os.path.join(save_path, f"edi_{file_name}.edi")
     else:
         file_formats = "EDI Files (*.edi);;All Files (*)"
         edi_file, _ = QFileDialog.getSaveFileName(None, "Save File", "", file_formats)
