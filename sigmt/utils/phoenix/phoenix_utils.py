@@ -352,3 +352,52 @@ def optimize_time_series_dict(
 
     print('Optimizing time series dictionary. Done.')
     return reduced_time_series
+
+
+from pathlib import Path
+from collections import defaultdict
+
+
+def extract_bbbbbbbb(filename: str):
+    parts = filename.split("_")
+    if len(parts) < 4:
+        return None
+    b = parts[1]
+    if len(b) == 8 and all(c in "0123456789abcdefABCDEF" for c in b):
+        return b.upper()
+    return None
+
+
+def list_files_by_bbbbbbbb_first_existing_channel(base_path, file_extension,
+                                                  channels=(0, 1, 2, 3, 4)):
+    """
+    Search ONLY the first existing channel folder among 0..4.
+    Returns: (result_dict, chosen_channel or None)
+    """
+    suffix = f".{file_extension}" if not file_extension.startswith(".") else file_extension
+    base = Path(base_path)
+
+    for ch in channels:
+        ch_path = base / str(ch)
+        if ch_path.exists() and ch_path.is_dir():
+            result = defaultdict(list)
+            for f in ch_path.glob(f"*{suffix}"):
+                if f.is_file():
+                    b = extract_bbbbbbbb(f.name)
+                    if b:
+                        result[b].append(f)
+            return result, ch
+
+    return defaultdict(list), None
+
+
+def return_overlapping_info(file_extension, local_station_path, remote_station_path,
+                            channels=(0, 1, 2, 3, 4)):
+    local_map, local_ch = list_files_by_bbbbbbbb_first_existing_channel(local_station_path,
+                                                                        file_extension, channels)
+    remote_map, remote_ch = list_files_by_bbbbbbbb_first_existing_channel(remote_station_path,
+                                                                          file_extension, channels)
+
+    time_stamp = sorted(set(local_map.keys()) & set(remote_map.keys()))
+
+    return time_stamp

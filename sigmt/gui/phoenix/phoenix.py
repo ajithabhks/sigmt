@@ -107,9 +107,11 @@ class MainWindow(QMainWindow):
         self.fft_values = ['262144', '131072', '65536', '32768', '16384',
                            '8192', '4096', '2048', '1024', '512', '256']
         #
+
+        self.time_series = None
+
         self.remotesite = None
         self.remotesite_meas = None
-        self.remotesite_manual = None
         #
         self.processing_route = None
         #
@@ -537,7 +539,6 @@ class MainWindow(QMainWindow):
             self.localsite_meas = None
             self.remotesite = None
             self.remotesite_meas = None
-            self.remotesite_manual = None
         except:
             pass
 
@@ -586,7 +587,6 @@ class MainWindow(QMainWindow):
         self.parzen_radius_entry.clear()
         self.md_threshold_entry.clear()
 
-        self.remotesite_manual = None
         self.localsite = self.localsite_dropdown.currentText()
         self.localsite_path = os.path.join(
             self.project_dir,
@@ -598,6 +598,7 @@ class MainWindow(QMainWindow):
         recording_pattern = re.compile(
             r"^\d+_\d{4}-\d{2}-\d{2}-\d{6}$"
         )
+
         recording_folders = sorted(
             entry for entry in os.listdir(self.localsite_path)
             if os.path.isdir(os.path.join(self.localsite_path, entry))
@@ -624,30 +625,55 @@ class MainWindow(QMainWindow):
                 self.remotesite
             )
 
-        # local_site_sampling_rates =
-
         # Finding overlapping measurements
         if self.remotesite is not None:
-            overlapping_meas = sorted(
-                list(set(self.localsite_meas).intersection(set(self.remotesite_meas))))
-            # If no overlapping found with remote, return to single site mode
-            if not overlapping_meas:
-                QMessageBox.warning(self, 'Warning',
-                                    "No overlapping measurements found! You need to "
-                                    "set remote measurement manually "
-                                    "by clicking 'Set Remote Measurement Manually' "
-                                    "button below. \n\n"
-                                    "Else, please proceed with single site processing.")
-                self.remotesite_manual = self.remotesite
-                self.remotesite = None
-                overlapping_meas = self.localsite_meas
-        elif self.remotesite is None:
-            overlapping_meas = self.localsite_meas
+            remote_recording_folders = sorted(
+                entry for entry in os.listdir(self.remotesite_path)
+                if os.path.isdir(os.path.join(self.remotesite_path, entry))
+                and recording_pattern.match(entry)
+            )
 
-        # unique_samp_values = self.processing_route['sampling_chopper'].unique().tolist()
+            # Full path to the first recording folder
+            self.remotesite_path = os.path.join(
+                self.remotesite_path,
+                remote_recording_folders[0]
+            )
+
+            unique_sampling_rates_rr = phoenix_utils.get_sampling_rate_list(
+                recording_path=self.remotesite_path)
+
+            unique_combined = sorted(set(unique_samp_values) | set(unique_sampling_rates_rr))
+
+            verified_sampling_rates = []
+
+            if unique_combined:
+                for sampling_rate in unique_combined:
+                    file_extension = phoenix_utils.sampling_rate_to_extension(
+                        sampling_rate=int(sampling_rate)
+                    )
+
+                    time_stamp = phoenix_utils.return_overlapping_info(
+                        file_extension=file_extension,
+                        local_station_path=self.localsite_path,
+                        remote_station_path=self.remotesite_path,
+                    )
+
+                    if time_stamp:
+                        verified_sampling_rates.append(sampling_rate)
+
+            # If no overlapping found with remote, return to single site mode
+            if not verified_sampling_rates:
+                QMessageBox.warning(self, 'Warning',
+                                    "No overlapping measurements found!")
+                self.remotesite = None
+                self.remotesite_dropdown.setCurrentIndex(0)
+                verified_sampling_rates = unique_samp_values
+        else:
+            verified_sampling_rates = unique_samp_values
+
         # Displaying in sampling frequency dropdown
         self.sampling_frequency_dropdown.clear()  # Clear existing dropdown
-        self.sampling_frequency_dropdown.addItems(unique_samp_values)  # Add new values
+        self.sampling_frequency_dropdown.addItems(verified_sampling_rates)  # Add new values
 
     # noinspection PyTypeChecker
     def read_ts(self) -> None:
@@ -689,6 +715,22 @@ class MainWindow(QMainWindow):
         with open(local_recmeta_file, 'r', encoding='utf-8') as f:
             self.recmeta_data_local = json.load(f)
 
+        local_channel_map = self.recmeta_data_local['channel_map']['mapping']
+        local_channel_map = {ch['tag']: ch['idx'] for ch in local_channel_map}
+
+        if self.remotesite:
+            remote_recmeta_file = os.path.join(
+                self.remotesite_path,
+                'recmeta.json'
+            )
+
+            # Read JSON file
+            with open(remote_recmeta_file, 'r', encoding='utf-8') as f:
+                self.recmeta_data_remote = json.load(f)
+
+            remote_channel_map = self.recmeta_data_remote['channel_map']['mapping']
+            remote_channel_map = {ch['tag']: ch['idx'] for ch in remote_channel_map}
+
         if int(self.sfreq_selected) > 150:
             self.file_type = 'decimated_segmented'
             print('Decimated Segmented')
@@ -700,9 +742,6 @@ class MainWindow(QMainWindow):
             sampling_rate=int(self.sfreq_selected)
         )
 
-        local_channel_map = self.recmeta_data_local['channel_map']['mapping']
-        local_channel_map = {ch['tag']: ch['idx'] for ch in local_channel_map}
-
         if self.file_type == 'decimated_continuous':
             counts = phoenix_utils.get_uniform_continuous_td_counts(
                 recording_path=self.localsite_path,
@@ -713,6 +752,34 @@ class MainWindow(QMainWindow):
                 channel_map=local_channel_map,
                 file_extension=self.file_extension
             )
+
+            if self.remotesite:
+                remote_time_series = phoenix_utils.read_decimated_continuous_data(
+                    recording_path=self.remotesite_path,
+                    channel_map=remote_channel_map,
+                    file_extension=self.file_extension
+                )
+                remote_time_series_length = len(
+                    next(iter(remote_time_series.get('run0', {}).values())))
+                local_time_series_length = len(
+                    next(iter(self.time_series.get('run0', {}).values())))
+
+                min_time_series_length = min(remote_time_series_length, local_time_series_length)
+
+                for run in remote_time_series.keys():
+                    for channel in remote_time_series[run].keys():
+                        remote_time_series[run][channel] = remote_time_series[run][channel][
+                                                           :min_time_series_length]
+
+                for run in self.time_series.keys():
+                    for channel in self.time_series[run].keys():
+                        self.time_series[run][channel] = self.time_series[run][channel][
+                                                         :min_time_series_length]
+                    if 'hx' in remote_time_series[run].keys():
+                        self.time_series[run]['rx'] = remote_time_series[run]['hx'].copy()
+                    if 'hy' in remote_time_series[run].keys():
+                        self.time_series[run]['ry'] = remote_time_series[run]['hy'].copy()
+
         elif self.file_type == 'decimated_segmented':
 
             counts = phoenix_utils.get_uniform_segmented_td_counts(
@@ -724,6 +791,28 @@ class MainWindow(QMainWindow):
                 channel_map=local_channel_map,
                 file_extension=self.file_extension
             )
+
+            if self.remotesite:
+                remote_time_series = phoenix_utils.read_decimated_segmented_data(
+                    recording_path=self.remotesite_path,
+                    channel_map=remote_channel_map,
+                    file_extension=self.file_extension
+                )
+
+                remote_time_series_length = len(remote_time_series.keys())
+                local_time_series_length = len(self.time_series.keys())
+
+                min_time_series_length = min(remote_time_series_length, local_time_series_length)
+
+                self.time_series = dict(list(self.time_series.items())[:min_time_series_length])
+                remote_time_series = dict(
+                    list(remote_time_series.items())[:min_time_series_length])
+
+                for run in self.time_series.keys():
+                    if 'hx' in remote_time_series[run].keys():
+                        self.time_series[run]['rx'] = remote_time_series[run]['hx'].copy()
+                    if 'hy' in remote_time_series[run].keys():
+                        self.time_series[run]['ry'] = remote_time_series[run]['hy'].copy()
 
         # read data here
         self.procinfo['fs'] = int(self.sfreq_selected)
