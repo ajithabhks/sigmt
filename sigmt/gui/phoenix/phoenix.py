@@ -618,6 +618,20 @@ class MainWindow(QMainWindow):
                 self.remotesite
             )
 
+        # Read metadata
+        # Define the file path
+        local_recmeta_file = os.path.join(
+            self.localsite_path,
+            'recmeta.json'
+        )
+
+        # Read JSON file
+        with open(local_recmeta_file, 'r', encoding='utf-8') as f:
+            self.recmeta_data_local = json.load(f)
+
+        local_channel_map = self.recmeta_data_local['channel_map']['mapping']
+        self.local_channel_map = {ch['tag']: ch['idx'] for ch in local_channel_map}
+
         # Finding overlapping measurements
         if self.remotesite is not None:
             remote_recording_folders = sorted(
@@ -631,6 +645,30 @@ class MainWindow(QMainWindow):
                 self.remotesite_path,
                 remote_recording_folders[0]
             )
+
+            remote_recmeta_file = os.path.join(
+                self.remotesite_path,
+                'recmeta.json'
+            )
+
+            # Read JSON file
+            with open(remote_recmeta_file, 'r', encoding='utf-8') as f:
+                self.recmeta_data_remote = json.load(f)
+
+            remote_channel_map = self.recmeta_data_remote['channel_map']['mapping']
+            self.remote_channel_map = {ch['tag']: ch['idx'] for ch in remote_channel_map}
+
+            local_start_time = self.recmeta_data_local.get('start', None)
+            remote_start_time = self.recmeta_data_remote.get('start', None)
+
+            if local_start_time != remote_start_time:
+                QMessageBox.warning(self, 'Warning',
+                                    "Remote reference processing cannot be done as "
+                                    "local and remote start time doesn't match. "
+                                    "Currently, SigMT needs same start time.")
+                self.remotesite = None
+                self.remotesite_dropdown.setCurrentIndex(0)
+                return
 
             unique_sampling_rates_rr = phoenix_utils.get_sampling_rate_list(
                 recording_path=self.remotesite_path)
@@ -657,11 +695,13 @@ class MainWindow(QMainWindow):
             # If no overlapping found with remote, return to single site mode
             if not verified_sampling_rates:
                 QMessageBox.warning(self, 'Warning',
-                                    "No overlapping measurements found!")
+                                    "No overlapping time series found!")
                 self.remotesite = None
                 self.remotesite_dropdown.setCurrentIndex(0)
                 verified_sampling_rates = unique_samp_values
         else:
+            self.recmeta_data_remote = None
+            self.remote_channel_map = None
             verified_sampling_rates = unique_samp_values
 
         # Displaying in sampling frequency dropdown
@@ -695,36 +735,6 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, 'Warning', "Please choose local and/or remote site.")
             return
 
-        # Read metadata
-        # Define the file path
-        local_recmeta_file = os.path.join(
-            self.localsite_path,
-            'recmeta.json'
-        )
-
-        # Read JSON file
-        with open(local_recmeta_file, 'r', encoding='utf-8') as f:
-            self.recmeta_data_local = json.load(f)
-
-        local_channel_map = self.recmeta_data_local['channel_map']['mapping']
-        local_channel_map = {ch['tag']: ch['idx'] for ch in local_channel_map}
-
-        if self.remotesite:
-            remote_recmeta_file = os.path.join(
-                self.remotesite_path,
-                'recmeta.json'
-            )
-
-            # Read JSON file
-            with open(remote_recmeta_file, 'r', encoding='utf-8') as f:
-                self.recmeta_data_remote = json.load(f)
-
-            remote_channel_map = self.recmeta_data_remote['channel_map']['mapping']
-            remote_channel_map = {ch['tag']: ch['idx'] for ch in remote_channel_map}
-        else:
-            self.recmeta_data_remote = None
-            remote_channel_map = None
-
         if int(self.sfreq_selected) > 150:
             self.file_type = 'decimated_segmented'
             print('Decimated Segmented')
@@ -744,14 +754,14 @@ class MainWindow(QMainWindow):
             )
             self.time_series = phoenix_utils.read_decimated_continuous_data(
                 recording_path=self.localsite_path,
-                channel_map=local_channel_map,
+                channel_map=self.local_channel_map,
                 file_extension=self.file_extension
             )
 
             if self.remotesite:
                 remote_time_series = phoenix_utils.read_decimated_continuous_data(
                     recording_path=self.remotesite_path,
-                    channel_map=remote_channel_map,
+                    channel_map=self.remote_channel_map,
                     file_extension=self.file_extension
                 )
                 remote_time_series_length = len(
@@ -761,6 +771,7 @@ class MainWindow(QMainWindow):
 
                 min_time_series_length = min(remote_time_series_length, local_time_series_length)
 
+                # Assuming same start time for local and remote station
                 for run in remote_time_series.keys():
                     for channel in remote_time_series[run].keys():
                         remote_time_series[run][channel] = remote_time_series[run][channel][
@@ -782,13 +793,13 @@ class MainWindow(QMainWindow):
             )
             self.time_series = phoenix_utils.read_decimated_segmented_data(
                 recording_path=self.localsite_path,
-                channel_map=local_channel_map,
+                channel_map=self.local_channel_map,
                 file_extension=self.file_extension
             )
             if self.remotesite:
                 remote_time_series = phoenix_utils.read_decimated_segmented_data(
                     recording_path=self.remotesite_path,
-                    channel_map=remote_channel_map,
+                    channel_map=self.remote_channel_map,
                     file_extension=self.file_extension
                 )
 
@@ -813,15 +824,15 @@ class MainWindow(QMainWindow):
         # Read calibration data
         self.calibration_data_electric = phoenix_utils.prepare_calibration_data_electric(
             local_recmeta_data=self.recmeta_data_local,
-            channel_map=local_channel_map
+            channel_map=self.local_channel_map
         )
 
         self.calibration_data_magnetic = phoenix_utils.prepare_calibration_data_magnetic(
             project_dir=self.project_dir,
             local_recmeta_data=self.recmeta_data_local,
-            local_channel_map=local_channel_map,
+            local_channel_map=self.local_channel_map,
             remote_recmeta_data=self.recmeta_data_remote,
-            remote_channel_map=remote_channel_map,
+            remote_channel_map=self.remote_channel_map,
         )
 
         QMessageBox.information(
