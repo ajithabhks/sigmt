@@ -5,8 +5,10 @@ First landing window for the Phoenix specific operations.
 
 import json
 import os
+import pathlib
 import re
 import time
+from typing import Optional, Dict, Any
 
 import numpy as np
 import xarray as xr
@@ -56,7 +58,6 @@ class MainWindow(QMainWindow):
         self.coh_plot_button = None
         self.pd_plot_button = None
         self.about_dialog = None
-        self.add_remote_manual_button = None
         self.read_time_series_button = None
         self.decimation_list_dropdown = None
         self.decimate_button = None
@@ -109,11 +110,15 @@ class MainWindow(QMainWindow):
         #
 
         self.time_series = None
+        self.calibration_data_electric = None
+        self.calibration_data_magnetic = None
+
+        self.recmeta_data_local = None
+        self.recmeta_data_remote = None
+        self.file_extension = None
+        self.file_type = None
 
         self.remotesite = None
-        self.remotesite_meas = None
-        #
-        self.processing_route = None
         #
         self.interface = 'Phoenix'
         self.init_ui()
@@ -538,7 +543,6 @@ class MainWindow(QMainWindow):
             self.localsite = None
             self.localsite_meas = None
             self.remotesite = None
-            self.remotesite_meas = None
         except:
             pass
 
@@ -616,7 +620,6 @@ class MainWindow(QMainWindow):
 
         if self.remotesite_dropdown.currentText() == "Select---":
             self.remotesite = None
-            self.remotesite_meas = None
         else:
             self.remotesite = self.remotesite_dropdown.currentText()
             self.remotesite_path = os.path.join(
@@ -675,7 +678,6 @@ class MainWindow(QMainWindow):
         self.sampling_frequency_dropdown.clear()  # Clear existing dropdown
         self.sampling_frequency_dropdown.addItems(verified_sampling_rates)  # Add new values
 
-    # noinspection PyTypeChecker
     def read_ts(self) -> None:
         """
         Reads time series based on the self.processing_route.
@@ -688,10 +690,9 @@ class MainWindow(QMainWindow):
         :rtype: NoneType
 
         """
-        # Reseting some buttons
+        # Resetting some buttons
         self.apply_coh_thresh_button.setText("Apply coherency threshold")
         self.apply_pd_thresh_button.setText("Perform PD thresholding")
-        #
         self.new_fs.hide()
 
         self.sfreq_selected = self.sampling_frequency_dropdown.currentText()
@@ -730,6 +731,9 @@ class MainWindow(QMainWindow):
 
             remote_channel_map = self.recmeta_data_remote['channel_map']['mapping']
             remote_channel_map = {ch['tag']: ch['idx'] for ch in remote_channel_map}
+        else:
+            self.recmeta_data_remote = None
+            remote_channel_map = None
 
         if int(self.sfreq_selected) > 150:
             self.file_type = 'decimated_segmented'
@@ -742,6 +746,7 @@ class MainWindow(QMainWindow):
             sampling_rate=int(self.sfreq_selected)
         )
 
+        # Reading time series data
         if self.file_type == 'decimated_continuous':
             counts = phoenix_utils.get_uniform_continuous_td_counts(
                 recording_path=self.localsite_path,
@@ -781,7 +786,6 @@ class MainWindow(QMainWindow):
                         self.time_series[run]['ry'] = remote_time_series[run]['hy'].copy()
 
         elif self.file_type == 'decimated_segmented':
-
             counts = phoenix_utils.get_uniform_segmented_td_counts(
                 recording_path=self.localsite_path,
                 file_extension=self.file_extension,
@@ -791,7 +795,6 @@ class MainWindow(QMainWindow):
                 channel_map=local_channel_map,
                 file_extension=self.file_extension
             )
-
             if self.remotesite:
                 remote_time_series = phoenix_utils.read_decimated_segmented_data(
                     recording_path=self.remotesite_path,
@@ -817,72 +820,19 @@ class MainWindow(QMainWindow):
         # read data here
         self.procinfo['fs'] = int(self.sfreq_selected)
 
-        self.calibration_data_magnetic = {
-            'instrument': 'phoenix',
-            'hx': {},
-            'hy': {},
-            'hz': {}
-        }
-
-        self.calibration_data_electric = {
-            'ex': {},
-            'ey': {},
-        }
-
-        self.calibration_data_electric['ex']['x1'] = abs(
-            self.recmeta_data_local['chconfig']['chans']
-            [local_channel_map['E1']]['length1']
-        )
-        self.calibration_data_electric['ex']['x2'] = abs(
-            self.recmeta_data_local['chconfig']['chans']
-            [local_channel_map['E1']]['length2']
-        )
-        self.calibration_data_electric['ey']['y1'] = abs(
-            self.recmeta_data_local['chconfig']['chans']
-            [local_channel_map['E2']]['length1']
-        )
-        self.calibration_data_electric['ey']['y2'] = abs(
-            self.recmeta_data_local['chconfig']['chans']
-            [local_channel_map['E2']]['length2']
+        # Read calibration data
+        self.calibration_data_electric = _prepare_calibration_data_electric(
+            local_recmeta_data=self.recmeta_data_local,
+            channel_map=local_channel_map
         )
 
-        cal_data_path = os.path.join(
-            self.project_dir,
-            'calibration_files'
+        self.calibration_data_magnetic = _prepare_calibration_data_magnetic(
+            project_dir=self.project_dir,
+            local_recmeta_data=self.recmeta_data_local,
+            local_channel_map=local_channel_map,
+            remote_recmeta_data=self.recmeta_data_remote,
+            remote_channel_map=remote_channel_map,
         )
-
-        hx_coil_serial = self.recmeta_data_local['chconfig']['chans'][local_channel_map['H1']][
-            'serial']
-        hy_coil_serial = self.recmeta_data_local['chconfig']['chans'][local_channel_map['H2']][
-            'serial']
-        hz_coil_serial = self.recmeta_data_local['chconfig']['chans'][local_channel_map['H3']][
-            'serial']
-
-        hx_coil_data_path = os.path.join(
-            cal_data_path,
-            f'{hx_coil_serial}.json'
-        )
-        with open(hx_coil_data_path, 'r', encoding='utf-8') as f:
-            hx_coil_data = json.load(f)
-        hy_coil_data_path = os.path.join(
-            cal_data_path,
-            f'{hy_coil_serial}.json'
-        )
-        with open(hy_coil_data_path, 'r', encoding='utf-8') as f:
-            hy_coil_data = json.load(f)
-        hz_coil_data_path = os.path.join(
-            cal_data_path,
-            f'{hz_coil_serial}.json'
-        )
-        with open(hz_coil_data_path, 'r', encoding='utf-8') as f:
-            hz_coil_data = json.load(f)
-
-        self.calibration_data_magnetic['hx']['calibration_data'] = \
-            hx_coil_data['cal_data'][0]['chan_data'][0]
-        self.calibration_data_magnetic['hy']['calibration_data'] = \
-            hy_coil_data['cal_data'][0]['chan_data'][0]
-        self.calibration_data_magnetic['hz']['calibration_data'] = \
-            hz_coil_data['cal_data'][0]['chan_data'][0]
 
         QMessageBox.information(
             self,
@@ -1429,3 +1379,96 @@ class MainWindow(QMainWindow):
 
         """
         self.close()
+
+
+def _prepare_calibration_data_electric(
+        local_recmeta_data: Dict,
+        channel_map: Dict
+) -> Dict:
+    calibration_data_electric = {
+        'ex': {},
+        'ey': {},
+    }
+    calibration_data_electric['ex']['x1'] = abs(
+        local_recmeta_data['chconfig']['chans']
+        [channel_map['E1']]['length1']
+    )
+    calibration_data_electric['ex']['x2'] = abs(
+        local_recmeta_data['chconfig']['chans']
+        [channel_map['E1']]['length2']
+    )
+    calibration_data_electric['ey']['y1'] = abs(
+        local_recmeta_data['chconfig']['chans']
+        [channel_map['E2']]['length1']
+    )
+    calibration_data_electric['ey']['y2'] = abs(
+        local_recmeta_data['chconfig']['chans']
+        [channel_map['E2']]['length2']
+    )
+
+    return calibration_data_electric
+
+
+def _prepare_calibration_data_magnetic(
+        project_dir,
+        local_recmeta_data: Dict[str, Any],
+        local_channel_map: Dict[str, Any],
+        remote_recmeta_data: Optional[Dict[str, Any]] = None,
+        remote_channel_map: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Prepare magnetic calibration data for Phoenix instrument.
+
+    Expects calibration files at: <project_dir>/calibration_files/<serial>.json
+    Extracts: data['cal_data'][0]['chan_data'][0]
+    """
+
+    cal_dir = pathlib.Path(project_dir) / "calibration_files"
+
+    def _extract_chan_cal(serial: str) -> Any:
+        path = cal_dir / f"{serial}.json"
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"Missing calibration file: {path}") from e
+
+        # Keep same extraction semantics, but with a clearer error if shape differs
+        try:
+            return data["cal_data"][0]["chan_data"][0]
+        except (KeyError, IndexError, TypeError) as e:
+            raise ValueError(
+                f"Unexpected calibration JSON structure in {path}. "
+                f"Expected data['cal_data'][0]['chan_data'][0]."
+            ) from e
+
+    def _serial_from(meta: Dict[str, Any], chan_map: Dict[str, Any], key: str) -> str:
+        try:
+            chan_idx = chan_map[key]
+            return meta["chconfig"]["chans"][chan_idx]["serial"]
+        except KeyError as e:
+            raise KeyError(f"Missing key while resolving serial for {key}: {e}") from e
+        except (IndexError, TypeError) as e:
+            raise ValueError(f"Bad channel map/index while resolving serial for {key}.") from e
+
+    calibration_data_magnetic: Dict[str, Any] = {
+        "instrument": "phoenix",
+        "hx": {"calibration_data": _extract_chan_cal(
+            _serial_from(local_recmeta_data, local_channel_map, "H1"))},
+        "hy": {"calibration_data": _extract_chan_cal(
+            _serial_from(local_recmeta_data, local_channel_map, "H2"))},
+        "hz": {"calibration_data": _extract_chan_cal(
+            _serial_from(local_recmeta_data, local_channel_map, "H3"))},
+        "rx": {},
+        "ry": {},
+    }
+
+    if remote_recmeta_data and remote_channel_map:
+        calibration_data_magnetic["rx"]["calibration_data"] = _extract_chan_cal(
+            _serial_from(remote_recmeta_data, remote_channel_map, "H1")
+        )
+        calibration_data_magnetic["ry"]["calibration_data"] = _extract_chan_cal(
+            _serial_from(remote_recmeta_data, remote_channel_map, "H2")
+        )
+
+    return calibration_data_magnetic
