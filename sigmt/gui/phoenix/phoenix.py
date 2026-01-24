@@ -15,10 +15,12 @@ import xarray as xr
 import yaml
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QMainWindow, QAction, QFileDialog, QMessageBox,
-                             QWidget, QVBoxLayout, QComboBox, QLabel,
-                             QPushButton, QHBoxLayout, QRadioButton, QGroupBox,
-                             QGridLayout, QLineEdit, QSizePolicy, QApplication, QProgressDialog)
+from PyQt5.QtWidgets import (
+    QMainWindow, QAction, QFileDialog, QMessageBox,
+    QWidget, QVBoxLayout, QComboBox, QLabel,
+    QPushButton, QHBoxLayout, QRadioButton, QGroupBox,
+    QGridLayout, QLineEdit, QSizePolicy, QApplication, QProgressDialog
+)
 from scipy import signal
 
 from sigmt.core import data_selection_tools as dstools
@@ -85,11 +87,7 @@ class MainWindow(QMainWindow):
         self.allsites = None
         self.localsite_path = None
         self.remotesite_path = None
-        self.overlapping_meas = None
         self.sfreq_selected = None
-        self.processing_df = None
-        self.header = None
-        self.xml_caldata = None
         self.menubar = None
         self.edi_merger = None
         self.plot_edi_button = None
@@ -97,7 +95,6 @@ class MainWindow(QMainWindow):
         self.perform_robust_estimation_button = None
         self.bandavg_dataset = None
         self.procinfo = {}
-        self.h5file = None
         self.project_dir = None
         self.project_setup = None
         self.localsite = None
@@ -455,10 +452,12 @@ class MainWindow(QMainWindow):
             if 'target_frequency_table_type' not in self.project_setup:
                 self.project_setup['target_frequency_table_type'] = 'Default'
             if self.project_setup['interface'] == self.interface:
-                self.setWindowTitle(self.project_setup[
-                                        'project_name'] +
-                                    ' - SigMT | '
-                                    f'A Tool for Magnetotelluric Data Processing ({self.interface})')
+                self.setWindowTitle(
+                    self.project_setup[
+                        'project_name'] +
+                    ' - SigMT | A Tool for Magnetotelluric Data Processing '
+                    f'({self.interface})'
+                )
             else:
                 QMessageBox.warning(self, "Warning", f"Not a {self.interface} Project")
         except:
@@ -498,10 +497,11 @@ class MainWindow(QMainWindow):
                         yaml.dump(self.project_setup, yaml_file)
                     QMessageBox.information(
                         self, 'Done', f'Project setup edited at: {self.project_dir}')
-                self.setWindowTitle(self.project_setup[
-                                        'project_name'] +
-                                    ' - SigMT | '
-                                    f'A Tool for Magnetotelluric Data Processing ({self.interface})')
+                self.setWindowTitle(
+                    self.project_setup[
+                        'project_name'] +
+                    ' - SigMT | A Tool for Magnetotelluric Data Processing '
+                    f'({self.interface})')
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"An error occurred while editing setup: {e}")
         else:
@@ -541,7 +541,6 @@ class MainWindow(QMainWindow):
             self.remotesite_dropdown.currentIndexChanged.disconnect(self.site_dropdown_changed)
             self.sampling_frequency_dropdown.clear()
             self.localsite = None
-            self.localsite_meas = None
             self.remotesite = None
         except:
             pass
@@ -571,16 +570,9 @@ class MainWindow(QMainWindow):
 
     def site_dropdown_changed(self) -> None:
         """
-        Gets current text from local site and remote site dropdown menus and finds matching
-        meas folders in both. Gets sampling frequencies available in overlapping measurements.
+        Gets current text from local site and remote site dropdown menus and
+        gets sampling frequencies available in overlapping measurements.
         Displays in the sampling frequency dropdown.
-        Two things are checked:
-        1. If folder names are same - First and must condition
-        2. Folders with same names have same type of measurements? (fs and chopper status)
-        If two above conditions are met, the folders are considered as overlapping measurements.
-        Added: If folder names are not matching, user will be asked to select remote meas manually.
-
-        :TODO Need to improve strategy later. Works for now!
 
         :return: None
         :rtype: NoneType

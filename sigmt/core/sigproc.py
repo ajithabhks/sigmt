@@ -40,6 +40,14 @@ def notch_filter_sos(time_series: np.ndarray,
                             output='sos')
         for n in range(2, harmonics + 1):
             f0 = n * notch_frequency
+            high = f0 + 5
+            nyq = f0/2
+
+            # stop once beyond nyq
+            if high >= nyq:
+                print(f'Could not apply notch filter at frequency {f0} Hz.\n')
+                break
+
             sos_new = signal.butter(4, [f0 - 5, f0 + 5], btype='bandstop', fs=sampling_frequency,
                                     output='sos')
             sos = np.concatenate((sos, sos_new), axis=0)

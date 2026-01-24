@@ -67,6 +67,5 @@ def read_decimated_segmented(
         })
 
     print(f"Read {len(segments)} segments across {len(files)} files")
-    print(datetime.fromtimestamp(r.subheader['timestamp'], tz=zoneinfo.ZoneInfo("America/Lima")))
 
     return segments
