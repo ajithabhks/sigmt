@@ -369,9 +369,11 @@ class BandAveraging:
         print('Performing FFT.')
         self.spectra = {}
         for channel in self.channels:
-            self.fft_frequencies, self.spectra[channel] = sp.do_fft(self.time_series[channel],
-                                                                    self.sampling_frequency,
-                                                                    self.fft_length)
+            self.fft_frequencies, self.spectra[channel] = sp.do_fft(
+                ts=self.time_series[channel],
+                fs=self.sampling_frequency,
+                fft_length=self.fft_length
+            )
 
     def perform_band_averaging(self) -> None:
         """
@@ -396,8 +398,11 @@ class BandAveraging:
         # Populating parzen window arrays based on target frequency and window radius
         for i in range(self.ft_list.shape[0]):
             ft = float(self.ft_list[i])
-            parzen_window[:, :, i] = stats.parzen(self.fft_frequencies, ft,
-                                                  self.parzen_window_radius)
+            parzen_window[:, :, i] = stats.parzen(
+                f=self.fft_frequencies,
+                ft=ft,
+                cr=self.parzen_window_radius
+            )
             self.dof[i] = (2 * 2 * np.sum(parzen_window[:, :, i] != 0)) - 4
             self.avgf[i] = np.sum(parzen_window[:, :, i] != 0)
 
@@ -554,18 +559,18 @@ class BandAveraging:
                 axis=0) / sum_parzen)
 
             # Computing the Tipper transfer function for all time windows
-            self.band_averaged_dataset['tzx'] = ((self.band_averaged_dataset['hzhx'] *
-                                                  self.band_averaged_dataset[
-                                                      'hyhy']) - (
-                                                         self.band_averaged_dataset['hzhy'] *
-                                                         self.band_averaged_dataset[
-                                                             'hyhx'])) / denominator
-            self.band_averaged_dataset['tzy'] = ((self.band_averaged_dataset['hzhy'] *
-                                                  self.band_averaged_dataset[
-                                                      'hxhx']) - (
-                                                         self.band_averaged_dataset['hzhx'] *
-                                                         self.band_averaged_dataset[
-                                                             'hxhy'])) / denominator
+            self.band_averaged_dataset['tzx'] = (
+                                                        (self.band_averaged_dataset['hzhx'] *
+                                                         self.band_averaged_dataset['hyhy']) -
+                                                        (self.band_averaged_dataset['hzhy'] *
+                                                         self.band_averaged_dataset['hyhx'])
+                                                ) / denominator
+            self.band_averaged_dataset['tzy'] = (
+                                                        (self.band_averaged_dataset['hzhy'] *
+                                                         self.band_averaged_dataset['hxhx']) -
+                                                        (self.band_averaged_dataset['hzhx'] *
+                                                         self.band_averaged_dataset['hxhy'])
+                                                ) / denominator
 
             # TODO: This may not be created in this class
             self.band_averaged_dataset['hz_selection_coh'] = xr.DataArray(

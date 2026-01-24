@@ -6,7 +6,11 @@ import numpy as np
 import xarray as xr
 
 
-def parzen(f: np.ndarray, ft: float, cr: float) -> np.ndarray:
+def parzen(
+        f: np.ndarray,
+        ft: float,
+        cr: float
+) -> np.ndarray:
     """
     Function to create a parzen window
 

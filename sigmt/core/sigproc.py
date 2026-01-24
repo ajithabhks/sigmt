@@ -35,11 +35,13 @@ def notch_filter_sos(time_series: np.ndarray,
         if harmonics > int(14000 / notch_frequency):
             harmonics = int(14000 / notch_frequency)
         print('No. of harmonics: ' + str(harmonics))
-        sos = signal.butter(4, [notch_frequency - 5, notch_frequency + 5], btype='bandstop', fs=sampling_frequency,
+        sos = signal.butter(4, [notch_frequency - 5, notch_frequency + 5], btype='bandstop',
+                            fs=sampling_frequency,
                             output='sos')
         for n in range(2, harmonics + 1):
             f0 = n * notch_frequency
-            sos_new = signal.butter(4, [f0 - 5, f0 + 5], btype='bandstop', fs=sampling_frequency, output='sos')
+            sos_new = signal.butter(4, [f0 - 5, f0 + 5], btype='bandstop', fs=sampling_frequency,
+                                    output='sos')
             sos = np.concatenate((sos, sos_new), axis=0)
         time_series = signal.sosfilt(sos, time_series, axis=0)
     else:
@@ -48,7 +50,11 @@ def notch_filter_sos(time_series: np.ndarray,
     return time_series
 
 
-def do_fft(ts: np.ndarray, fs: float, fft_length: int) -> tuple:
+def do_fft(
+        ts: np.ndarray,
+        fs: float,
+        fft_length: int
+) -> tuple:
     """
     Function to perform FFT.
 
