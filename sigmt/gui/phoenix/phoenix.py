@@ -5,10 +5,8 @@ First landing window for the Phoenix specific operations.
 
 import json
 import os
-import pathlib
 import re
 import time
-from typing import Optional, Dict, Any
 
 import numpy as np
 import xarray as xr
@@ -813,12 +811,12 @@ class MainWindow(QMainWindow):
         self.procinfo['fs'] = int(self.sfreq_selected)
 
         # Read calibration data
-        self.calibration_data_electric = _prepare_calibration_data_electric(
+        self.calibration_data_electric = phoenix_utils.prepare_calibration_data_electric(
             local_recmeta_data=self.recmeta_data_local,
             channel_map=local_channel_map
         )
 
-        self.calibration_data_magnetic = _prepare_calibration_data_magnetic(
+        self.calibration_data_magnetic = phoenix_utils.prepare_calibration_data_magnetic(
             project_dir=self.project_dir,
             local_recmeta_data=self.recmeta_data_local,
             local_channel_map=local_channel_map,
@@ -1371,96 +1369,3 @@ class MainWindow(QMainWindow):
 
         """
         self.close()
-
-
-def _prepare_calibration_data_electric(
-        local_recmeta_data: Dict,
-        channel_map: Dict
-) -> Dict:
-    calibration_data_electric = {
-        'ex': {},
-        'ey': {},
-    }
-    calibration_data_electric['ex']['x1'] = abs(
-        local_recmeta_data['chconfig']['chans']
-        [channel_map['E1']]['length1']
-    )
-    calibration_data_electric['ex']['x2'] = abs(
-        local_recmeta_data['chconfig']['chans']
-        [channel_map['E1']]['length2']
-    )
-    calibration_data_electric['ey']['y1'] = abs(
-        local_recmeta_data['chconfig']['chans']
-        [channel_map['E2']]['length1']
-    )
-    calibration_data_electric['ey']['y2'] = abs(
-        local_recmeta_data['chconfig']['chans']
-        [channel_map['E2']]['length2']
-    )
-
-    return calibration_data_electric
-
-
-def _prepare_calibration_data_magnetic(
-        project_dir,
-        local_recmeta_data: Dict[str, Any],
-        local_channel_map: Dict[str, Any],
-        remote_recmeta_data: Optional[Dict[str, Any]] = None,
-        remote_channel_map: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
-    """
-    Prepare magnetic calibration data for Phoenix instrument.
-
-    Expects calibration files at: <project_dir>/calibration_files/<serial>.json
-    Extracts: data['cal_data'][0]['chan_data'][0]
-    """
-
-    cal_dir = pathlib.Path(project_dir) / "calibration_files"
-
-    def _extract_chan_cal(serial: str) -> Any:
-        path = cal_dir / f"{serial}.json"
-        try:
-            with path.open("r", encoding="utf-8") as f:
-                data = json.load(f)
-        except FileNotFoundError as e:
-            raise FileNotFoundError(f"Missing calibration file: {path}") from e
-
-        # Keep same extraction semantics, but with a clearer error if shape differs
-        try:
-            return data["cal_data"][0]["chan_data"][0]
-        except (KeyError, IndexError, TypeError) as e:
-            raise ValueError(
-                f"Unexpected calibration JSON structure in {path}. "
-                f"Expected data['cal_data'][0]['chan_data'][0]."
-            ) from e
-
-    def _serial_from(meta: Dict[str, Any], chan_map: Dict[str, Any], key: str) -> str:
-        try:
-            chan_idx = chan_map[key]
-            return meta["chconfig"]["chans"][chan_idx]["serial"]
-        except KeyError as e:
-            raise KeyError(f"Missing key while resolving serial for {key}: {e}") from e
-        except (IndexError, TypeError) as e:
-            raise ValueError(f"Bad channel map/index while resolving serial for {key}.") from e
-
-    calibration_data_magnetic: Dict[str, Any] = {
-        "instrument": "phoenix",
-        "hx": {"calibration_data": _extract_chan_cal(
-            _serial_from(local_recmeta_data, local_channel_map, "H1"))},
-        "hy": {"calibration_data": _extract_chan_cal(
-            _serial_from(local_recmeta_data, local_channel_map, "H2"))},
-        "hz": {"calibration_data": _extract_chan_cal(
-            _serial_from(local_recmeta_data, local_channel_map, "H3"))},
-        "rx": {},
-        "ry": {},
-    }
-
-    if remote_recmeta_data and remote_channel_map:
-        calibration_data_magnetic["rx"]["calibration_data"] = _extract_chan_cal(
-            _serial_from(remote_recmeta_data, remote_channel_map, "H1")
-        )
-        calibration_data_magnetic["ry"]["calibration_data"] = _extract_chan_cal(
-            _serial_from(remote_recmeta_data, remote_channel_map, "H2")
-        )
-
-    return calibration_data_magnetic

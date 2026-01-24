@@ -8,10 +8,12 @@ import numpy as np
 from scipy import signal
 
 
-def notch_filter_sos(time_series: np.ndarray,
-                     sampling_frequency: float,
-                     notch_frequency: float,
-                     harmonics: Optional[int] = None) -> np.ndarray:
+def notch_filter_sos(
+        time_series: np.ndarray,
+        sampling_frequency: float,
+        notch_frequency: float,
+        harmonics: Optional[int] = None
+) -> np.ndarray:
     """
     SOS filter for notch filtering. Filters out the requested notch frequency and harmonics.
 
@@ -41,7 +43,7 @@ def notch_filter_sos(time_series: np.ndarray,
         for n in range(2, harmonics + 1):
             f0 = n * notch_frequency
             high = f0 + 5
-            nyq = f0/2
+            nyq = f0 / 2
 
             # stop once beyond nyq
             if high >= nyq:
