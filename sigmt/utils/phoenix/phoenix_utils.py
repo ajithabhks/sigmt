@@ -5,7 +5,9 @@ Utility functions for the phoenix
 import os
 import pathlib
 import re
+from collections import defaultdict
 from math import ceil
+from pathlib import Path
 from typing import List, Set, Tuple, Dict, Optional
 
 import numpy as np
@@ -352,10 +354,6 @@ def optimize_time_series_dict(
 
     print('Optimizing time series dictionary. Done.')
     return reduced_time_series
-
-
-from pathlib import Path
-from collections import defaultdict
 
 
 def extract_bbbbbbbb(filename: str):
