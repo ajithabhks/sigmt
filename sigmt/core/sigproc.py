@@ -43,7 +43,7 @@ def notch_filter_sos(
         for n in range(2, harmonics + 1):
             f0 = n * notch_frequency
             high = f0 + 5
-            nyq = f0 / 2
+            nyq = sampling_frequency / 2
 
             # stop once beyond nyq
             if high >= nyq:

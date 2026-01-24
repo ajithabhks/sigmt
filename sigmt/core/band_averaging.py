@@ -335,11 +335,13 @@ class BandAveraging:
 
             # Submit each task to the executor
             for channel in self.channels:
-                futures[channel] = executor.submit(sp.notch_filter_sos,
-                                                   time_series=self.time_series[channel],
-                                                   sampling_frequency=self.sampling_frequency,
-                                                   notch_frequency=self.notch_frequency,
-                                                   harmonics=self.notch_harmonics)
+                futures[channel] = executor.submit(
+                    sp.notch_filter_sos,
+                    time_series=self.time_series[channel],
+                    sampling_frequency=self.sampling_frequency,
+                    notch_frequency=self.notch_frequency,
+                    harmonics=self.notch_harmonics
+                )
 
             # Retrieve the results when needed
             for channel, future in futures.items():
