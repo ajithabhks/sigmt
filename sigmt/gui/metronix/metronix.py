@@ -806,11 +806,11 @@ class MainWindow(QMainWindow):
             with h5py.File(self.h5file, 'w') as f:
                 for local_path in local_paths:
                     self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(
-                        local_path,
-                        self.project_setup
+                        meas_path=local_path,
+                        project_setup=self.project_setup
                     )
                     self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
-                        local_path
+                        meas_path=local_path
                     )
                     ts = f.create_group(f'ts_{num}')
                     for key in ts_dict.keys():
@@ -836,19 +836,23 @@ class MainWindow(QMainWindow):
             with h5py.File(self.h5file, 'w') as f:
                 for local_path, remote_path in zip(local_paths, remote_paths):
                     self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(
-                        local_path,
-                        self.project_setup
+                        meas_path=local_path,
+                        project_setup=self.project_setup
                     )
                     self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
-                        local_path)
+                        meas_path=local_path
+                    )
 
-                    header_r, ts_r = metronix_utils.read_ts(remote_path, self.project_setup)
+                    header_r, ts_r = metronix_utils.read_ts(
+                        meas_path=remote_path,
+                        project_setup=self.project_setup
+                    )
 
                     # Take only 'hx' and 'hy' component of remote dataset
                     header_r = {k: v for k, v in header_r.items() if k in ["hx", "hy"]}
                     ts_r = {k: v for k, v in ts_r.items() if k in ["hx", "hy"]}
 
-                    xml_caldata_r = metronix_utils.read_calibration_from_xml(remote_path)
+                    xml_caldata_r = metronix_utils.read_calibration_from_xml(meas_path=remote_path)
                     self.xml_caldata[f'ts_{num}'].update(xml_caldata_r)
 
                     # Some checks on data.
