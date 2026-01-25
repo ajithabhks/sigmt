@@ -9,10 +9,9 @@ import re
 from collections import defaultdict
 from math import ceil
 from pathlib import Path
-from typing import List, Set, Tuple, Dict, Optional, Any
+from typing import List, Set, Dict, Optional, Any
 
 import numpy as np
-from PhoenixGeoPy.Reader import TimeSeries as PhoenixReader
 
 from sigmt.utils import utils
 from sigmt.utils.phoenix import phoenix_readers
@@ -29,7 +28,9 @@ def load_sites(project_dir: str) -> List[str]:
        <digits>_YYYY-MM-DD-HHMMSS
 
     :param project_dir: Path to the project directory
+    :type project_dir: str
     :return: List of valid site names
+    :rtype: List
     """
 
     recording_pattern = re.compile(
@@ -70,7 +71,7 @@ def load_sites(project_dir: str) -> List[str]:
     return sorted(sites)
 
 
-def get_sampling_rate_list(recording_path):
+def get_sampling_rate_list(recording_path: str) -> List[str]:
     """
     Return a sorted list of unique sampling rates found in a recording folder.
 
@@ -79,6 +80,11 @@ def get_sampling_rate_list(recording_path):
         td_2400 -> 2400
         td_150  -> 150
         td_30   -> 30
+
+    :param recording_path: Path to the recording folder.
+    :type recording_path: str
+    :return: List of sampling rates
+    :rtype: List
     """
     extension_to_sampling_rate = {
         "td_24k": 24000,
@@ -98,7 +104,7 @@ def get_sampling_rate_list(recording_path):
     return sorted(sampling_rates)
 
 
-def sampling_rate_to_extension(sampling_rate):
+def sampling_rate_to_extension(sampling_rate: int) -> str:
     """
     Convert a sampling rate to its corresponding td_* extension.
 
@@ -107,6 +113,11 @@ def sampling_rate_to_extension(sampling_rate):
         2400  -> "td_2400"
         150   -> "td_150"
         30    -> "td_30"
+
+    :param sampling_rate: Sampling rate
+    :type sampling_rate: int
+    :return: File extension
+    :rtype: str
     """
     sampling_rate_to_extension_map = {
         24000: "td_24k",
@@ -123,7 +134,7 @@ def sampling_rate_to_extension(sampling_rate):
 
 def list_unique_td_extensions(
         recording_path: str,
-        subfolders=("0", "1", "2", "3", "4"),
+        subfolders: tuple = ("0", "1", "2", "3", "4"),
 ) -> List[str]:
     """
     Scan subfolders (0..4) under a Phoenix recording folder and return unique
@@ -135,6 +146,12 @@ def list_unique_td_extensions(
         "abc.xyz.td_24k" -> extension "td_24k"
         "data.td_24k"    -> extension "td_24k"
 
+    :param recording_path: Path to recording path
+    :type recording_path: str
+    :param subfolders: Folders in recording path
+    :type subfolders: tuple
+    :return: List of file extensions
+    :rtype: List
     """
     td_exts: Set[str] = set()
 
@@ -155,81 +172,6 @@ def list_unique_td_extensions(
                 td_exts.add(ext)  # keep original ext string (case preserved)
 
     return sorted(td_exts)
-
-
-def get_uniform_continuous_td_counts(
-        recording_path,
-        file_extension: str,
-        channels=("0", "1", "2", "3", "4"),
-) -> Tuple[int, int]:
-    counts = set()
-    recording_path = pathlib.Path(recording_path)
-
-    for ch in channels:
-        ch_path = recording_path / ch
-
-        files = sorted(ch_path.glob(f"*.{file_extension}"))
-        num_files = len(files)
-
-        if num_files == 0:
-            continue
-
-        reader = PhoenixReader.DecimatedContinuousReader(
-            str(files[0]), num_files=num_files  # str() if reader expects a string path
-        )
-
-        sr = reader.header_info["sample_rate"]
-        frag_s = reader.header_info["frag_period"]
-
-        total_samples = int(sr * frag_s) * (num_files - 1)
-        counts.add((num_files, total_samples))
-
-    if not counts:
-        raise ValueError("No decimated continuous files found")
-
-    if len(counts) != 1:
-        raise ValueError(f"Inconsistent TD counts across channels: {counts}")
-
-    return counts.pop()
-
-
-def get_uniform_segmented_td_counts(
-        recording_path,
-        file_extension: str,
-        channels=("0", "1", "2", "3", "4"),
-) -> Tuple[int, int]:
-    """
-    Returns (num_files, total_segments) for decimated *segmented* data,
-    enforcing that all channels have the same counts.
-
-    Assumes PhoenixReader.DecimatedSegmentedReader can stream across files
-    using (first_file, num_files=...).
-    """
-    counts = set()
-    recording_path = pathlib.Path(recording_path)
-
-    for ch in channels:
-        ch_path = recording_path / ch
-
-        files = sorted(ch_path.glob(f"*.{file_extension}"))
-        num_files = len(files)
-
-        if num_files == 0:
-            continue
-
-        r = PhoenixReader.DecimatedSegmentedReader(str(files[0]), num_files=num_files)
-
-        seg = r.read_record()
-
-        counts.add((num_files, seg.shape[0]))
-
-    if not counts:
-        raise ValueError("No decimated segmented files found")
-
-    if len(counts) != 1:
-        raise ValueError(f"Inconsistent segmented counts across channels: {counts}")
-
-    return counts.pop()
 
 
 def read_decimated_continuous_data(

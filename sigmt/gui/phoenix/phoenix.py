@@ -747,10 +747,6 @@ class MainWindow(QMainWindow):
 
         # Reading time series data
         if self.file_type == 'decimated_continuous':
-            counts = phoenix_utils.get_uniform_continuous_td_counts(
-                recording_path=self.localsite_path,
-                file_extension=self.file_extension,
-            )
             self.time_series = phoenix_utils.read_decimated_continuous_data(
                 recording_path=self.localsite_path,
                 channel_map=self.local_channel_map,
@@ -786,10 +782,6 @@ class MainWindow(QMainWindow):
                         self.time_series[run]['ry'] = remote_time_series[run]['hy'].copy()
 
         elif self.file_type == 'decimated_segmented':
-            counts = phoenix_utils.get_uniform_segmented_td_counts(
-                recording_path=self.localsite_path,
-                file_extension=self.file_extension,
-            )
             self.time_series = phoenix_utils.read_decimated_segmented_data(
                 recording_path=self.localsite_path,
                 channel_map=self.local_channel_map,
@@ -834,6 +826,8 @@ class MainWindow(QMainWindow):
             remote_channel_map=self.remote_channel_map,
         )
 
+        num_samples = len(next(iter(next(iter(self.time_series.values())).values())))
+
         QMessageBox.information(
             self,
             "Information",
@@ -841,11 +835,10 @@ class MainWindow(QMainWindow):
             "----------\n"
             f"Sampling frequency: {self.procinfo['fs']} Hz\n"
             f"File type: {self.file_type.replace('_', ' ').title()}\n"
-            f"Number of files: {counts[0]}\n"
-            f"Number of continuous samples: {counts[1]}\n"
+            f"Number of continuous samples: {num_samples}\n"
         )
 
-        self.procinfo['nsamples_mostly'] = counts[1]
+        self.procinfo['nsamples_mostly'] = num_samples
         fftlength = utils.get_fftlength(self.procinfo['nsamples_mostly'])
 
         # Updating FFT length dropdown
@@ -853,6 +846,8 @@ class MainWindow(QMainWindow):
             v for v in self.fft_values
             if int(v) <= self.procinfo["nsamples_mostly"]
         ]
+
+        fft_values = [str(v) for v in fft_values if int(v) < self.procinfo["nsamples_mostly"]]
 
         self.fft_length_dropdown.addItems(fft_values)
 
