@@ -558,8 +558,6 @@ class MainWindow(QMainWindow):
                 self.remotesite_dropdown.addItem("Select---")
                 self.remotesite_dropdown.addItems(self.allsites)
                 self.remotesite_dropdown.currentIndexChanged.connect(self.site_dropdown_changed)
-                # Disable the "Select" option
-                # self.remotesite_dropdown.model().item(0).setEnabled(False)
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"An error occurred while loading sites: {e}")
         else:
@@ -569,7 +567,7 @@ class MainWindow(QMainWindow):
     def site_dropdown_changed(self) -> None:
         """
         Gets current text from local site and remote site dropdown menus and
-        gets sampling frequencies available in overlapping measurements.
+        gets sampling frequencies available in both stations.
         Displays in the sampling frequency dropdown.
 
         :return: None
@@ -671,7 +669,8 @@ class MainWindow(QMainWindow):
                 return
 
             unique_sampling_rates_rr = phoenix_utils.get_sampling_rate_list(
-                recording_path=self.remotesite_path)
+                recording_path=self.remotesite_path
+            )
 
             unique_combined = sorted(set(unique_samp_values) | set(unique_sampling_rates_rr))
 
@@ -704,17 +703,17 @@ class MainWindow(QMainWindow):
             self.remote_channel_map = None
             verified_sampling_rates = unique_samp_values
 
+        if self.remotesite is None:
+            verified_sampling_rates = unique_samp_values
+
         # Displaying in sampling frequency dropdown
         self.sampling_frequency_dropdown.clear()  # Clear existing dropdown
         self.sampling_frequency_dropdown.addItems(verified_sampling_rates)  # Add new values
 
     def read_ts(self) -> None:
         """
-        Reads time series based on the self.processing_route.
-        processing_route is a DataFrame containing ['local', 'remote', 'sampling_frequency',
-        'chopper_status', 'sampling_chopper'] for all measurements.
-        processing_df contains the values for selected sampling frequency &
-        chopper status combo.
+        Reads time series based from local and remote station (if requested).
+        Type of reading is decided based on the sampling rate.
 
         :return: None
         :rtype: NoneType
@@ -803,14 +802,14 @@ class MainWindow(QMainWindow):
                     file_extension=self.file_extension
                 )
 
-                remote_time_series_length = len(remote_time_series.keys())
-                local_time_series_length = len(self.time_series.keys())
+                num_remote_segments = len(remote_time_series.keys())
+                num_local_segments = len(self.time_series.keys())
 
-                min_time_series_length = min(remote_time_series_length, local_time_series_length)
+                min_num_segments = min(num_remote_segments, num_local_segments)
 
-                self.time_series = dict(list(self.time_series.items())[:min_time_series_length])
+                self.time_series = dict(list(self.time_series.items())[:min_num_segments])
                 remote_time_series = dict(
-                    list(remote_time_series.items())[:min_time_series_length])
+                    list(remote_time_series.items())[:min_num_segments])
 
                 for run in self.time_series.keys():
                     if 'hx' in remote_time_series[run].keys():
@@ -1002,7 +1001,7 @@ class MainWindow(QMainWindow):
 
     def perform_bandavg(self) -> None:
         """
-        Set up the band averaging.
+        Perform band averaging.
 
         :return: None
         :rtype: NoneType
