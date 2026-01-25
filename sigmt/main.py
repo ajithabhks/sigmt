@@ -55,7 +55,7 @@ class Welcome(QDialog):
         layout.addWidget(select_label, alignment=Qt.AlignHCenter)
 
         self.metronix_button = QPushButton('Metronix', self)
-        self.phoenix_button = QPushButton('Phoenix', self)
+        self.phoenix_button = QPushButton(' Phoenix (Experimental) ', self)
 
         # Prevent default focus / highlight
         for btn in (self.metronix_button, self.phoenix_button):
