@@ -96,6 +96,7 @@ def process_data(data_path: str):
             parzen_window_radius=0.25,
             target_frequency_table_type="default",
             frequencies_per_decade=12,
+            instrument='metronix',
             apply_notch_filter=True,
             notch_frequency=50.0,
             process_mt=True,

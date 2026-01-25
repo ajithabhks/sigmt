@@ -10,7 +10,14 @@ class MetronixCalibration:
     Class to perform Metronix specific calibration.
     """
 
-    def __init__(self, xfft, fft_freqs, sensor_type, stat, calibration_data):
+    def __init__(
+            self,
+            xfft: np.ndarray,
+            fft_freqs: np.ndarray,
+            sensor_type: str,
+            chopper_status: str,
+            calibration_data: np.ndarray,
+    ):
         """
         Constructor
 
@@ -20,8 +27,8 @@ class MetronixCalibration:
         :type fft_freqs: np.ndarray
         :param sensor_type: Type of sensor, Eg: MFS06e
         :type sensor_type: str
-        :param stat: Chopper status. Either 'chopper_on' or 'chopper_off'
-        :type stat: str
+        :param chopper_status: Chopper status. Either 'chopper_on' or 'chopper_off'
+        :type chopper_status: str
         :param calibration_data: Calibration data as array. shape: (length(43), 3).
         :type calibration_data: np.ndarray
         """
@@ -29,7 +36,7 @@ class MetronixCalibration:
         self.xfft = xfft
         self.fft_freqs = fft_freqs
         self.sensor_type = sensor_type
-        self.chopper_status = stat
+        self.chopper_status = chopper_status
         self.calibration_data = calibration_data
         self.perform_calibration()
 

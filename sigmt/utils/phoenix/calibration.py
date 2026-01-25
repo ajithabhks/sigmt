@@ -1,0 +1,50 @@
+"""
+Class for the phoenix coil calibration
+
+"""
+import numpy as np
+import scipy
+
+
+class PhoenixCalibration:
+    """
+    Class to perform Phoenix specific calibration.
+    """
+
+    def __init__(
+            self,
+            xfft,
+            fft_freqs,
+            calibration_data
+    ):
+        """
+        Constructor
+
+        :param xfft: FFT values for the time series shape: (fft_length, nof_windows)
+        :type xfft: np.ndarray
+        :param fft_freqs: Frequencies for FFT values, 1D array.
+        :type fft_freqs: np.ndarray
+        :param calibration_data: Calibration data as array. shape: (length(43), 3).
+        :type calibration_data: np.ndarray
+        """
+        self.calibrated_data = None
+        self.xfft = xfft
+        self.fft_freqs = fft_freqs
+        self.calibration_data = calibration_data
+        self.perform_calibration()
+
+    def perform_calibration(self):
+        """
+        Streamline it based on the sensor type.
+        """
+        magnitude = np.array(self.calibration_data['magnitude'])
+        phase = np.radians(self.calibration_data['phs_deg'])
+        calibration = (magnitude * np.cos(phase)) + (1j * magnitude * np.sin(phase))
+        interp_func = scipy.interpolate.interp1d(
+            np.array(self.calibration_data['freq_Hz']),
+            calibration,
+            kind='linear',
+            fill_value='extrapolate'
+        )
+        cal_all_band = interp_func(self.fft_freqs)
+        self.calibrated_data = self.xfft / cal_all_band[:, np.newaxis]
