@@ -28,8 +28,8 @@ Ajithabh, K.S., Patro, P.K., 2023. SigMT: An open-source Python package for magn
 If you have any questions, feedback, or suggestions regarding SigMT, feel free to open an issue.
 
 ## Downloads
-* Read user guide: https://github.com/ajithabhks/sigmt/blob/main/docs/user_guide_sigmt.ipynb
-* Metronix test data link: https://cloud.geo-metronix.de/s/GcigJA3Zp8zTAif
+* <a href="https://ajithabh.com/projects/sigmt/sigmt_metronix_user_guide.html" target="_blank">Read Metronix User Guide</a>
+* <a href="https://cloud.geo-metronix.de/s/GcigJA3Zp8zTAif" target="_blank">Metronix Test Data Link</a>
 
   Download Northern_Mining.zip, use Sarıçam site in the ts folder.
 
