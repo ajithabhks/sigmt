@@ -27,6 +27,7 @@ from sigmt.core import plots
 from sigmt.core.band_averaging import BandAveraging
 from sigmt.core.robust_estimation import RobustEstimation
 from sigmt.gui.about_dialog import AboutDialog
+from sigmt.gui.disclaimer_dialog import DisclaimerDialog
 from sigmt.gui.edi_merger import EDIMerger
 from sigmt.gui.project_related.create_project import ProjectSetupDialog
 from sigmt.gui.project_related.edit_project import EditProjectSetupDialog
@@ -100,6 +101,7 @@ class MainWindow(QMainWindow):
         self.localsite_dropdown = None
         self.remotesite_dropdown = None
         self.sampling_frequency_dropdown = None
+        self.disclaimer_dialog = None
         self.fft_values = ['262144', '131072', '65536', '32768', '16384',
                            '8192', '4096', '2048', '1024', '512', '256']
         #
@@ -166,6 +168,24 @@ class MainWindow(QMainWindow):
         about_action = QAction("About", self)
         about_action.triggered.connect(self.show_about_dialog)
         about_menu.addAction(about_action)
+
+        disclaimer_menu = self.menubar.addMenu("⚠️ IMPORTANT DISCLAIMER")
+        disclaimer_menu.setProperty("warning", True)
+
+        disclaimer_menu.setStyleSheet("""
+            QMenu {
+                background-color: #fff5f5;
+                color: #842029;
+                font-weight: bold;
+            }
+            QMenu::item:selected {
+                background-color: #f1aeb5;
+            }
+        """)
+
+        disclaimer_action = QAction("Read this BEFORE using Phoenix", self)
+        disclaimer_action.triggered.connect(self.show_disclaimer)
+        disclaimer_menu.addAction(disclaimer_action)
 
         # Central Widget
         central_widget = QWidget(self)
@@ -515,6 +535,17 @@ class MainWindow(QMainWindow):
         """
         self.about_dialog = AboutDialog()
         self.about_dialog.show()
+
+    def show_disclaimer(self):
+        """
+        Opens a dialog box with some message.
+
+        :return: None
+        :rtype: NoneType
+
+        """
+        self.disclaimer_dialog = DisclaimerDialog()
+        self.disclaimer_dialog.show()
 
     def load_sites(self) -> None:
         """
