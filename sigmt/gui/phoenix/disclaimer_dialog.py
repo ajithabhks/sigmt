@@ -49,7 +49,7 @@ class DisclaimerDialog(QDialog):
         bullets = [
             "This is the first experimental release of Phoenix Data Processing in SigMT.",
             "This feature has been tested only with MTU-5C data.",
-            "The application may contain UI glitches and incorrect or incomplete results.",
+            "The application may contain UI glitches.",
             "Remote references have been tested, but may still produce unexpected issues.",
             "Report issues/suggestions via email (in GitHub page) or using the GitHub Issues page.",
             "This feature is under active development. A more stable release will be published after feedback.",

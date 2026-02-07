@@ -27,7 +27,7 @@ from sigmt.core import plots
 from sigmt.core.band_averaging import BandAveraging
 from sigmt.core.robust_estimation import RobustEstimation
 from sigmt.gui.about_dialog import AboutDialog
-from sigmt.gui.disclaimer_dialog import DisclaimerDialog
+from sigmt.gui.phoenix.disclaimer_dialog import DisclaimerDialog
 from sigmt.gui.edi_merger import EDIMerger
 from sigmt.gui.project_related.create_project import ProjectSetupDialog
 from sigmt.gui.project_related.edit_project import EditProjectSetupDialog
