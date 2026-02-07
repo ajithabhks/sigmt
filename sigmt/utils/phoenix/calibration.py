@@ -37,7 +37,7 @@ class PhoenixCalibration:
 
     def perform_calibration(self):
         """
-        Streamline it based on the sensor type.
+        Apply calibration
         """
         magnitude = np.array(self.calibration_data['magnitude'])
         phase = np.radians(self.calibration_data['phs_deg'])
