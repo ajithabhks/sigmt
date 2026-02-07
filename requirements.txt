@@ -9,3 +9,4 @@ scipy
 seaborn
 setuptools>=64.0.0
 xarray
+PhoenixGeoPy==1.0.2

@@ -115,7 +115,8 @@ class RobustEstimation:
                         f'Channel: {self.channel}, ft: {self.ft} Hz. Applying Mahalanobis distance condition.')
                     self.filtered_dataset = self.filtered_dataset.isel(time_window=selected_windows)
                 else:
-                    print('Skipping Mahalanobis distance condition due to insufficient time windows.')
+                    print(
+                        'Skipping Mahalanobis distance condition due to insufficient time windows.')
                 print(
                     f'Channel: {self.channel}, ft: {self.ft} Hz. Getting Jackknife initial guess.')
                 self.get_jackknife_initial_guess()
@@ -182,14 +183,16 @@ class RobustEstimation:
         if not self.processing_mode == "Tipper Only":
             if self.channel == 'ex':
                 self.filtered_dataset['selection_array_ex'] = (
-                        self.filtered_dataset['ex_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
+                        self.filtered_dataset['ex_selection_coh'] * self.filtered_dataset[
+                    'alpha_e_selection'] *
                         self.filtered_dataset['alpha_h_selection'])
                 # Avoid crashing due to insufficient data
                 if np.sum(self.filtered_dataset['selection_array_ex']) < 10:
                     print('There is not enough data to continue the regression.')
                     print(
                         f'Trying to remove polarization direction (ex) related data rejections for ft:{self.ft} Hz if applied.')
-                    self.filtered_dataset['selection_array_ex'] = self.filtered_dataset['ex_selection_coh'].copy()
+                    self.filtered_dataset['selection_array_ex'] = self.filtered_dataset[
+                        'ex_selection_coh'].copy()
                     if np.sum(self.filtered_dataset['selection_array_ex']) <= 10:
                         print('There is still not enough data to continue the regression.')
                         print(
@@ -201,7 +204,8 @@ class RobustEstimation:
 
             if self.channel == 'ey':
                 self.filtered_dataset['selection_array_ey'] = (
-                        self.filtered_dataset['ey_selection_coh'] * self.filtered_dataset['alpha_e_selection'] *
+                        self.filtered_dataset['ey_selection_coh'] * self.filtered_dataset[
+                    'alpha_e_selection'] *
                         self.filtered_dataset['alpha_h_selection'])
                 # Avoid crashing due to insufficient data
                 if np.sum(self.filtered_dataset['selection_array_ey']) < 10:
@@ -209,7 +213,8 @@ class RobustEstimation:
                     print(
                         f'Trying to remove polarization direction (ey) related data rejections for ft:{self.ft} Hz '
                         f'if applied.')
-                    self.filtered_dataset['selection_array_ey'] = self.filtered_dataset['ey_selection_coh'].copy()
+                    self.filtered_dataset['selection_array_ey'] = self.filtered_dataset[
+                        'ey_selection_coh'].copy()
                     if np.sum(self.filtered_dataset['selection_array_ey']) <= 10:
                         print('There is still not enough data to continue the regression.')
                         print(
@@ -222,14 +227,16 @@ class RobustEstimation:
         if not self.processing_mode == "MT Only":
             if self.channel == 'hz':
                 self.filtered_dataset['selection_array_hz'] = (
-                        self.filtered_dataset['hz_selection_coh'] * self.filtered_dataset['alpha_h_selection'])
+                        self.filtered_dataset['hz_selection_coh'] * self.filtered_dataset[
+                    'alpha_h_selection'])
                 # Avoid crashing due to insufficient data
                 if np.sum(self.filtered_dataset['selection_array_hz']) < 10:
                     print('There is not enough data to continue the regression.')
                     print(
                         f'Trying to remove polarization direction (hz) related data rejections for ft:{self.ft} Hz '
                         f'if applied.')
-                    self.filtered_dataset['selection_array_hz'] = self.filtered_dataset['hz_selection_coh'].copy()
+                    self.filtered_dataset['selection_array_hz'] = self.filtered_dataset[
+                        'hz_selection_coh'].copy()
                     if np.sum(self.filtered_dataset['selection_array_hz']) <= 10:
                         print('There is still not enough data to continue the regression.')
                         print(
@@ -347,7 +354,8 @@ class RobustEstimation:
                 self.get_huber_weights(km)
             else:
                 # Number of windows in which weight = 1
-                lc = max(np.sum(self.huber_weights == 1), 1)  # Keeping it min = 1 to avoid division by zero
+                lc = max(np.sum(self.huber_weights == 1),
+                         1)  # Keeping it min = 1 to avoid division by zero
                 # Weighted sum of squared residuals
                 sum_squared = (n_time_windows / (lc ** 2)) * (
                     np.sum(self.huber_weights * (self.residuals ** 2)))
@@ -398,7 +406,7 @@ class RobustEstimation:
                   z_deno)
 
         if self.channel == 'ex' or self.channel == 'ey':
-            # Metronix specific correction
+            # Fix EDI convention
             self.z1_robust_huber = z1 * -1
             self.z2_robust_huber = z2 * -1
         else:

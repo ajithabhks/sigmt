@@ -39,13 +39,17 @@ class ProjectSetupDialog(QDialog):
 
         self.frequency_table_type = QComboBox()
         self.frequency_table_type.addItem('Default')
-        self.frequency_table_type.addItem('Metronix')
+        if self.interface == 'Metronix':
+            self.frequency_table_type.addItem('Metronix')
         self.frequency_table_type.currentTextChanged.connect(self.toggle_frequencies_per_decade)
 
         self.notch_frequency = QLineEdit('50')
         self.preferred_cal_file = QComboBox()
-        self.preferred_cal_file.addItem('xml')
-        self.preferred_cal_file.addItem('metronix_txt')
+        if self.interface == 'Metronix':
+            self.preferred_cal_file.addItem('xml')
+            self.preferred_cal_file.addItem('metronix_txt')
+        elif self.interface == 'Phoenix':
+            self.preferred_cal_file.addItem('phoenix_json')
 
         layout.addWidget(QLabel("Project Name:"))
         layout.addWidget(self.project_name)

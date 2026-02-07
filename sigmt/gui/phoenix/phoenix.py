@@ -1,41 +1,39 @@
 """
-First landing window for the Metronix specific operations.
+First landing window for the Phoenix specific operations.
 
 """
 
+import json
 import os
+import re
 import time
-from pathlib import Path
 
-import h5py
 import numpy as np
-import pandas as pd
 import xarray as xr
 import yaml
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import (QMainWindow, QAction, QFileDialog, QMessageBox,
-                             QWidget, QVBoxLayout, QComboBox, QLabel,
-                             QPushButton, QHBoxLayout, QRadioButton, QGroupBox,
-                             QGridLayout, QLineEdit, QSizePolicy, QDialog,
-                             QApplication, QProgressDialog)
+from PyQt5.QtWidgets import (
+    QMainWindow, QAction, QFileDialog, QMessageBox,
+    QWidget, QVBoxLayout, QComboBox, QLabel,
+    QPushButton, QHBoxLayout, QRadioButton, QGroupBox,
+    QGridLayout, QLineEdit, QSizePolicy, QApplication, QProgressDialog
+)
 from scipy import signal
 
-import sigmt.utils.metronix.cal_from_metronix_txt
 from sigmt.core import data_selection_tools as dstools
 from sigmt.core import perform_data_selection as pds
 from sigmt.core import plots
 from sigmt.core.band_averaging import BandAveraging
 from sigmt.core.robust_estimation import RobustEstimation
 from sigmt.gui.about_dialog import AboutDialog
+from sigmt.gui.phoenix.disclaimer_dialog import DisclaimerDialog
 from sigmt.gui.edi_merger import EDIMerger
-from sigmt.gui.metronix_dialogs import LayoutSettingsDialog
-from sigmt.gui.metronix_dialogs import SelectionDialog
 from sigmt.gui.project_related.create_project import ProjectSetupDialog
 from sigmt.gui.project_related.edit_project import EditProjectSetupDialog
 from sigmt.utils import utils
 from sigmt.utils.edi import edi_ops
-from sigmt.utils.metronix import metronix_utils
+from sigmt.utils.phoenix import phoenix_utils
 
 if hasattr(Qt, 'AA_EnableHighDpiScaling'):
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
@@ -46,7 +44,7 @@ if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
 
 class MainWindow(QMainWindow):
     """
-    Definition of the main window for Metronix processing
+    Definition of the main window for Phoenix processing
 
     """
 
@@ -61,7 +59,6 @@ class MainWindow(QMainWindow):
         self.coh_plot_button = None
         self.pd_plot_button = None
         self.about_dialog = None
-        self.add_remote_manual_button = None
         self.read_time_series_button = None
         self.decimation_list_dropdown = None
         self.decimate_button = None
@@ -89,11 +86,7 @@ class MainWindow(QMainWindow):
         self.allsites = None
         self.localsite_path = None
         self.remotesite_path = None
-        self.overlapping_meas = None
         self.sfreq_selected = None
-        self.processing_df = None
-        self.header = None
-        self.xml_caldata = None
         self.menubar = None
         self.edi_merger = None
         self.plot_edi_button = None
@@ -101,7 +94,6 @@ class MainWindow(QMainWindow):
         self.perform_robust_estimation_button = None
         self.bandavg_dataset = None
         self.procinfo = {}
-        self.h5file = None
         self.project_dir = None
         self.project_setup = None
         self.localsite = None
@@ -109,17 +101,23 @@ class MainWindow(QMainWindow):
         self.localsite_dropdown = None
         self.remotesite_dropdown = None
         self.sampling_frequency_dropdown = None
-        self.verify_layout_button = None
+        self.disclaimer_dialog = None
         self.fft_values = ['262144', '131072', '65536', '32768', '16384',
                            '8192', '4096', '2048', '1024', '512', '256']
         #
+
+        self.time_series = None
+        self.calibration_data_electric = None
+        self.calibration_data_magnetic = None
+
+        self.recmeta_data_local = None
+        self.recmeta_data_remote = None
+        self.file_extension = None
+        self.file_type = None
+
         self.remotesite = None
-        self.remotesite_meas = None
-        self.remotesite_manual = None
         #
-        self.processing_route = None
-        #
-        self.interface = 'Metronix'
+        self.interface = 'Phoenix'
         self.init_ui()
 
     def init_ui(self) -> None:
@@ -131,7 +129,7 @@ class MainWindow(QMainWindow):
 
         """
         self.setWindowTitle('[No Project Opened] SigMT | A Tool for '
-                            'Magnetotelluric Data Processing (Metronix)')
+                            f'Magnetotelluric Data Processing ({self.interface})')
         self.setWindowIcon(QIcon(r'sigmt\images\sigmt.ico'))
         self.setGeometry(100, 100, 700, 500)
 
@@ -171,6 +169,24 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about_dialog)
         about_menu.addAction(about_action)
 
+        disclaimer_menu = self.menubar.addMenu("⚠️ IMPORTANT DISCLAIMER")
+        disclaimer_menu.setProperty("warning", True)
+
+        disclaimer_menu.setStyleSheet("""
+            QMenu {
+                background-color: #fff5f5;
+                color: #842029;
+                font-weight: bold;
+            }
+            QMenu::item:selected {
+                background-color: #f1aeb5;
+            }
+        """)
+
+        disclaimer_action = QAction("Read this BEFORE using Phoenix", self)
+        disclaimer_action.triggered.connect(self.show_disclaimer)
+        disclaimer_menu.addAction(disclaimer_action)
+
         # Central Widget
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -207,30 +223,16 @@ class MainWindow(QMainWindow):
         site_selection_layout.addWidget(self.remotesite_dropdown)
         section1_layout.addWidget(site_selection_widget)
         #
-        remote_manual_widget = QWidget()
-        remote_manual_layout = QHBoxLayout()
-        remote_manual_layout.setContentsMargins(0, 0, 0, 0)
-        remote_manual_widget.setLayout(remote_manual_layout)
-        self.add_remote_manual_button = QPushButton("Set Remote Measurement Manually")
-        self.add_remote_manual_button.clicked.connect(self.open_manual_selection_dialog)
-        remote_manual_layout.addWidget(self.add_remote_manual_button)
-        remote_manual_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        section1_layout.addWidget(remote_manual_widget)
-        #
         section1_grid_widget = QWidget()
         section1_grid_layout = QGridLayout()
         section1_grid_layout.setContentsMargins(0, 0, 0, 0)
         section1_grid_widget.setLayout(section1_grid_layout)
-        section1_grid_layout.addWidget(QLabel("Select Sampling Frequency"), 0, 0)
+        section1_grid_layout.addWidget(QLabel("Select Sampling Frequency (Hz)"), 0, 0)
         self.sampling_frequency_dropdown = QComboBox()
         section1_grid_layout.addWidget(self.sampling_frequency_dropdown, 0, 1, 1, 40)
         self.read_time_series_button = QPushButton("Read time series")
         self.read_time_series_button.clicked.connect(self.read_ts)
         section1_grid_layout.addWidget(self.read_time_series_button, 1, 0)
-        self.verify_layout_button = QPushButton("Verify/Edit layout settings")
-        self.verify_layout_button.clicked.connect(self.open_layout_settings)
-        self.verify_layout_button.hide()
-        section1_grid_layout.addWidget(self.verify_layout_button, 1, 1)
         section1_grid_layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         #
         section1_layout.addWidget(section1_grid_widget)
@@ -241,7 +243,7 @@ class MainWindow(QMainWindow):
         section2_layout = QGridLayout()
         section2_layout.addWidget(QLabel("Select Decimation from the list:"), 0, 0)
         self.decimation_list_dropdown = QComboBox()
-        self.decimation_list_dropdown.addItems(['4', '8'])
+        self.decimation_list_dropdown.addItems(['5'])
         section2_layout.addWidget(self.decimation_list_dropdown, 0, 1)
         self.decimate_button = QPushButton("Decimate")
         self.decimate_button.clicked.connect(self.decimate)
@@ -443,7 +445,7 @@ class MainWindow(QMainWindow):
                 self.setWindowTitle(self.project_setup[
                                         'project_name'] +
                                     ' - SigMT | '
-                                    'A Tool for Magnetotelluric Data Processing (Metronix)')
+                                    f'A Tool for Magnetotelluric Data Processing ({self.interface})')
 
     def open_project(self) -> None:
         """
@@ -453,8 +455,6 @@ class MainWindow(QMainWindow):
         :rtype: NoneType
 
         """
-        if self.verify_layout_button is not None:
-            self.verify_layout_button.hide()
         self.new_fs.hide()
         self.fft_length_dropdown.clear()
         self.parzen_radius_entry.clear()
@@ -470,12 +470,14 @@ class MainWindow(QMainWindow):
             if 'target_frequency_table_type' not in self.project_setup:
                 self.project_setup['target_frequency_table_type'] = 'Default'
             if self.project_setup['interface'] == self.interface:
-                self.setWindowTitle(self.project_setup[
-                                        'project_name'] +
-                                    ' - SigMT | '
-                                    'A Tool for Magnetotelluric Data Processing (Metronix)')
+                self.setWindowTitle(
+                    self.project_setup[
+                        'project_name'] +
+                    ' - SigMT | A Tool for Magnetotelluric Data Processing '
+                    f'({self.interface})'
+                )
             else:
-                QMessageBox.warning(self, "Warning", "Not a Metronix Project")
+                QMessageBox.warning(self, "Warning", f"Not a {self.interface} Project")
         except:
             QMessageBox.warning(self, "Warning", "Not a valid SigMT Project")
 
@@ -513,10 +515,11 @@ class MainWindow(QMainWindow):
                         yaml.dump(self.project_setup, yaml_file)
                     QMessageBox.information(
                         self, 'Done', f'Project setup edited at: {self.project_dir}')
-                self.setWindowTitle(self.project_setup[
-                                        'project_name'] +
-                                    ' - SigMT | '
-                                    'A Tool for Magnetotelluric Data Processing (Metronix)')
+                self.setWindowTitle(
+                    self.project_setup[
+                        'project_name'] +
+                    ' - SigMT | A Tool for Magnetotelluric Data Processing '
+                    f'({self.interface})')
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"An error occurred while editing setup: {e}")
         else:
@@ -533,6 +536,17 @@ class MainWindow(QMainWindow):
         self.about_dialog = AboutDialog()
         self.about_dialog.show()
 
+    def show_disclaimer(self):
+        """
+        Opens a dialog box with some message.
+
+        :return: None
+        :rtype: NoneType
+
+        """
+        self.disclaimer_dialog = DisclaimerDialog()
+        self.disclaimer_dialog.show()
+
     def load_sites(self) -> None:
         """
         Method to load the sites in the time_series folder in the project folder.
@@ -545,9 +559,7 @@ class MainWindow(QMainWindow):
         # Resetting some buttons
         self.apply_coh_thresh_button.setText("Apply coherency threshold")
         self.apply_pd_thresh_button.setText("Perform PD thresholding")
-        #
-        if self.verify_layout_button is not None:
-            self.verify_layout_button.hide()
+
         self.new_fs.hide()
         self.fft_length_dropdown.clear()
         self.parzen_radius_entry.clear()
@@ -558,16 +570,13 @@ class MainWindow(QMainWindow):
             self.remotesite_dropdown.currentIndexChanged.disconnect(self.site_dropdown_changed)
             self.sampling_frequency_dropdown.clear()
             self.localsite = None
-            self.localsite_meas = None
             self.remotesite = None
-            self.remotesite_meas = None
-            self.remotesite_manual = None
         except:
             pass
 
         if self.project_dir is not None:
             try:
-                self.allsites = metronix_utils.loadsites(self.project_dir)
+                self.allsites = phoenix_utils.load_sites(self.project_dir)
                 if self.localsite_dropdown is not None:
                     self.localsite_dropdown.clear()
                 self.localsite_dropdown.addItem("Select---")
@@ -580,8 +589,6 @@ class MainWindow(QMainWindow):
                 self.remotesite_dropdown.addItem("Select---")
                 self.remotesite_dropdown.addItems(self.allsites)
                 self.remotesite_dropdown.currentIndexChanged.connect(self.site_dropdown_changed)
-                # Disable the "Select" option
-                # self.remotesite_dropdown.model().item(0).setEnabled(False)
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"An error occurred while loading sites: {e}")
         else:
@@ -590,348 +597,301 @@ class MainWindow(QMainWindow):
 
     def site_dropdown_changed(self) -> None:
         """
-        Gets current text from local site and remote site dropdown menus and finds matching
-        meas folders in both. Gets sampling frequencies available in overlapping measurements.
+        Gets current text from local site and remote site dropdown menus and
+        gets sampling frequencies available in both stations.
         Displays in the sampling frequency dropdown.
-        Two things are checked:
-        1. If folder names are same - First and must condition
-        2. Folders with same names have same type of measurements? (fs and chopper status)
-        If two above conditions are met, the folders are considered as overlapping measurements.
-        Added: If folder names are not matching, user will be asked to select remote meas manually.
-
-        :TODO Need to improve strategy later. Works for now!
 
         :return: None
         :rtype: NoneType
 
         """
-        if self.verify_layout_button is not None:
-            self.verify_layout_button.hide()
         self.new_fs.hide()
         self.fft_length_dropdown.clear()
         self.parzen_radius_entry.clear()
         self.md_threshold_entry.clear()
-        #
-        self.remotesite_manual = None
+
         self.localsite = self.localsite_dropdown.currentText()
+        self.localsite_path = os.path.join(
+            self.project_dir,
+            'time_series',
+            self.localsite
+        )
+
+        # Find the first valid recording folder
+        recording_pattern = re.compile(
+            r"^\d+_\d{4}-\d{2}-\d{2}-\d{6}$"
+        )
+
+        recording_folders = sorted(
+            entry for entry in os.listdir(self.localsite_path)
+            if os.path.isdir(os.path.join(self.localsite_path, entry))
+            and recording_pattern.match(entry)
+        )
+
+        # Full path to the first recording folder
+        self.localsite_path = os.path.join(
+            self.localsite_path,
+            recording_folders[0]
+        )
+
+        unique_samp_values = phoenix_utils.get_sampling_rate_list(
+            recording_path=self.localsite_path)
+
         if self.remotesite_dropdown.currentText() == "Select---":
             self.remotesite = None
-            self.remotesite_meas = None
         else:
             self.remotesite = self.remotesite_dropdown.currentText()
-        # List meas folders in local site
-        self.localsite_path = os.path.join(self.project_dir, 'time_series', self.localsite)
-        self.localsite_meas = metronix_utils.list_meas_folders(self.localsite_path)
-        # List meas folders in remote site
-        if self.remotesite is not None:
-            self.remotesite_path = os.path.join(self.project_dir, 'time_series', self.remotesite)
-            self.remotesite_meas = metronix_utils.list_meas_folders(self.remotesite_path)
+            self.remotesite_path = os.path.join(
+                self.project_dir,
+                'time_series',
+                self.remotesite
+            )
+
+        # Read metadata
+        # Define the file path
+        local_recmeta_file = os.path.join(
+            self.localsite_path,
+            'recmeta.json'
+        )
+
+        # Read JSON file
+        with open(local_recmeta_file, 'r', encoding='utf-8') as f:
+            self.recmeta_data_local = json.load(f)
+
+        local_channel_map = self.recmeta_data_local['channel_map']['mapping']
+        self.local_channel_map = {ch['tag']: ch['idx'] for ch in local_channel_map}
+
         # Finding overlapping measurements
         if self.remotesite is not None:
-            overlapping_meas = sorted(
-                list(set(self.localsite_meas).intersection(set(self.remotesite_meas))))
-            # If no overlapping found with remote, return to single site mode
-            if not overlapping_meas:
+            remote_recording_folders = sorted(
+                entry for entry in os.listdir(self.remotesite_path)
+                if os.path.isdir(os.path.join(self.remotesite_path, entry))
+                and recording_pattern.match(entry)
+            )
+
+            # Full path to the first recording folder
+            self.remotesite_path = os.path.join(
+                self.remotesite_path,
+                remote_recording_folders[0]
+            )
+
+            remote_recmeta_file = os.path.join(
+                self.remotesite_path,
+                'recmeta.json'
+            )
+
+            # Read JSON file
+            with open(remote_recmeta_file, 'r', encoding='utf-8') as f:
+                self.recmeta_data_remote = json.load(f)
+
+            remote_channel_map = self.recmeta_data_remote['channel_map']['mapping']
+            self.remote_channel_map = {ch['tag']: ch['idx'] for ch in remote_channel_map}
+
+            local_start_time = self.recmeta_data_local.get('start', None)
+            remote_start_time = self.recmeta_data_remote.get('start', None)
+
+            if local_start_time != remote_start_time:
                 QMessageBox.warning(self, 'Warning',
-                                    "No overlapping measurements found! You need to "
-                                    "set remote measurement manually "
-                                    "by clicking 'Set Remote Measurement Manually' "
-                                    "button below. \n\n"
-                                    "Else, please proceed with single site processing.")
-                self.remotesite_manual = self.remotesite
+                                    "Remote reference processing cannot be done as "
+                                    "local and remote start time doesn't match. "
+                                    "Currently, SigMT needs same start time.")
                 self.remotesite = None
-                overlapping_meas = self.localsite_meas
-        elif self.remotesite is None:
-            overlapping_meas = self.localsite_meas
-        # Operations on local site
-        local_meas_paths = [os.path.join(self.project_dir, 'time_series', self.localsite, meas) for
-                            meas in
-                            overlapping_meas]
-        [sampfreq, chopper_value] = metronix_utils.get_sampling_frequency_from_xml(local_meas_paths)
-        localsite_meas_overlap = set(zip(overlapping_meas, sampfreq, chopper_value))
-        # Operations on remote site
-        if self.remotesite is not None:
-            remote_meas_paths = [
-                os.path.join(self.project_dir, 'time_series', self.remotesite, meas) for meas in
-                overlapping_meas]
-            [sampfreq, chopper_value] = metronix_utils.get_sampling_frequency_from_xml(
-                remote_meas_paths)
-            remotesite_meas_overlap = set(zip(overlapping_meas, sampfreq, chopper_value))
-        if self.remotesite is not None:
-            self.overlapping_meas = list(
-                localsite_meas_overlap.intersection(remotesite_meas_overlap))
-        elif self.remotesite is None:
-            self.overlapping_meas = list(localsite_meas_overlap)
-        # Creating processing route
-        # It is a dataframe containing measurement details
-        if self.remotesite is not None:
-            processing_route = {
-                'local': [meas[0] for meas in self.overlapping_meas],
-                'remote': [meas[0] for meas in self.overlapping_meas],
-                'sampling_frequency': [meas[1] for meas in self.overlapping_meas],
-                'chopper_status': [meas[2] for meas in self.overlapping_meas],
-                'sampling_chopper': [str(meas[1]) + ' Hz - ' + meas[2] for meas in
-                                     self.overlapping_meas]
-            }
-        elif self.remotesite is None:
-            processing_route = {
-                'local': [meas[0] for meas in self.overlapping_meas],
-                'remote': [None for meas in self.overlapping_meas],
-                'sampling_frequency': [meas[1] for meas in self.overlapping_meas],
-                'chopper_status': [meas[2] for meas in self.overlapping_meas],
-                'sampling_chopper': [str(meas[1]) + ' Hz - ' + meas[2] for meas in
-                                     self.overlapping_meas]
-            }
-        if self.remotesite_manual is not None:
-            processing_route = {
-                'local': [],
-                'remote': [],
-                'sampling_frequency': [],
-                'chopper_status': [],
-                'sampling_chopper': []
-            }
-        self.processing_route = pd.DataFrame(processing_route)
-        unique_samp_values = self.processing_route['sampling_chopper'].unique().tolist()
+                self.remotesite_dropdown.setCurrentIndex(0)
+                return
+
+            unique_sampling_rates_rr = phoenix_utils.get_sampling_rate_list(
+                recording_path=self.remotesite_path
+            )
+
+            unique_combined = sorted(set(unique_samp_values) | set(unique_sampling_rates_rr))
+
+            verified_sampling_rates = []
+
+            if unique_combined:
+                for sampling_rate in unique_combined:
+                    file_extension = phoenix_utils.sampling_rate_to_extension(
+                        sampling_rate=int(sampling_rate)
+                    )
+
+                    time_stamp = phoenix_utils.return_overlapping_info(
+                        file_extension=file_extension,
+                        local_station_path=self.localsite_path,
+                        remote_station_path=self.remotesite_path,
+                    )
+
+                    if time_stamp:
+                        verified_sampling_rates.append(sampling_rate)
+
+            # If no overlapping found with remote, return to single site mode
+            if not verified_sampling_rates:
+                QMessageBox.warning(self, 'Warning',
+                                    "No overlapping time series found!")
+                self.remotesite = None
+                self.remotesite_dropdown.setCurrentIndex(0)
+                verified_sampling_rates = unique_samp_values
+        else:
+            self.recmeta_data_remote = None
+            self.remote_channel_map = None
+            verified_sampling_rates = unique_samp_values
+
+        if self.remotesite is None:
+            verified_sampling_rates = unique_samp_values
+
         # Displaying in sampling frequency dropdown
         self.sampling_frequency_dropdown.clear()  # Clear existing dropdown
-        self.sampling_frequency_dropdown.addItems(unique_samp_values)  # Add new values
+        self.sampling_frequency_dropdown.addItems(verified_sampling_rates)  # Add new values
 
-    def open_manual_selection_dialog(self) -> None:
-        """
-        Opens a dialog window for manual selection of remote measurements.
-        This method creates a dialog window for manually selecting remote measurements.
-
-        :return: None
-        :rtype: NoneType
-
-        """
-        try:
-            dialog = SelectionDialog(local_meas=self.localsite_meas,
-                                     remote_meas=self.remotesite_meas, parent=self)
-            if dialog.exec_() == QDialog.Accepted:
-                [local, remote] = dialog.get_selected_values()
-                if self.remotesite is None:
-                    self.remotesite = self.remotesite_manual
-                local_meas_path = [
-                    os.path.join(self.project_dir, 'time_series', self.localsite, local)]
-                [l_sampfreq, l_chopper_value] = metronix_utils.get_sampling_frequency_from_xml(
-                    local_meas_path)
-                remote_meas_path = [
-                    os.path.join(self.project_dir, 'time_series', self.remotesite, remote)]
-                [r_sampfreq, r_chopper_value] = metronix_utils.get_sampling_frequency_from_xml(
-                    remote_meas_path)
-                if l_sampfreq != r_sampfreq:
-                    QMessageBox.critical(self, "Error",
-                                         f"Sampling frequencies are not matching. Cannot proceed.")
-                    self.remotesite = None
-                    self.remotesite_dropdown.setCurrentIndex(0)
-                    return
-                if l_chopper_value != r_chopper_value:
-                    QMessageBox.critical(self, "Error",
-                                         f"Chopper status not matching. Cannot proceed. "
-                                         f"Choose another match.")
-                    self.remotesite = None
-                    self.remotesite_dropdown.setCurrentIndex(0)
-                    return
-                new_row = {
-                    'local': local,
-                    'remote': remote,
-                    'sampling_frequency': r_sampfreq[0],
-                    'chopper_status': r_chopper_value[0],
-                    'sampling_chopper': str(r_sampfreq[0]) + ' Hz - ' + r_chopper_value[0]
-                }
-                # Append the new row to the DataFrame
-                self.processing_route = self.processing_route._append(new_row, ignore_index=True)
-                unique_samp_values = self.processing_route['sampling_chopper'].unique().tolist()
-                self.sampling_frequency_dropdown.clear()
-                self.sampling_frequency_dropdown.addItems(unique_samp_values)
-            self.processing_route.drop_duplicates(inplace=True)
-        except:
-            QMessageBox.critical(self, "Error",
-                                 f"Select local and remote site first! "
-                                 f"It works only if remote site is selected.")
-
-    # noinspection PyTypeChecker
     def read_ts(self) -> None:
         """
-        Reads time series based on the self.processing_route.
-        processing_route is a DataFrame containing ['local', 'remote', 'sampling_frequency',
-        'chopper_status', 'sampling_chopper'] for all measurements.
-        processing_df contains the values for selected sampling frequency &
-        chopper status combo.
+        Reads time series based from local and remote station (if requested).
+        Type of reading is decided based on the sampling rate.
 
         :return: None
         :rtype: NoneType
 
         """
-        # Reseting some buttons
+        # Resetting some buttons
         self.apply_coh_thresh_button.setText("Apply coherency threshold")
         self.apply_pd_thresh_button.setText("Perform PD thresholding")
-        #
         self.new_fs.hide()
-        if self.processing_route is not None:
-            self.sfreq_selected = self.sampling_frequency_dropdown.currentText()
-            self.processing_df = self.processing_route[
-                self.processing_route['sampling_chopper'] == self.sfreq_selected]
-        else:
+
+        self.sfreq_selected = self.sampling_frequency_dropdown.currentText()
+
+        if not self.sfreq_selected:
             QMessageBox.warning(self, 'Warning', "Please choose sampling frequency.")
             return
+
         if self.localsite is None:
             QMessageBox.warning(self, 'Warning', "Please choose local and/or remote site.")
             return
 
-        # Create a progress dialog
-        progress_dialog = QProgressDialog("Reading time series...", None, 0,
-                                          len(self.processing_df.index), self)
-        progress_dialog.setWindowModality(Qt.WindowModal)
-        progress_dialog.setWindowTitle("Please wait")
-        progress_dialog.show()
+        if int(self.sfreq_selected) > 150:
+            self.file_type = 'decimated_segmented'
+            print('Decimated Segmented')
+        else:
+            self.file_type = 'decimated_continuous'
+            print('Decimated Continuous')
 
-        # This is important to show the progress bar and GUI not to freeze
-        qapp_instance = QApplication.instance()
-        qapp_instance.processEvents()
+        self.file_extension = phoenix_utils.sampling_rate_to_extension(
+            sampling_rate=int(self.sfreq_selected)
+        )
 
-        # If single site processing or remote site processing?
-        if self.remotesite is None:
-            local_paths = [os.path.join(self.project_dir, 'time_series', self.localsite, meas) for
-                           meas in
-                           self.processing_df['local']]
-            num = 0
-            self.header = {}
-            self.xml_caldata = {}
-            self.h5file = os.path.join(self.project_dir, 'db.h5')
-            if os.path.exists(self.h5file):
-                os.remove(self.h5file)
-            # Creates a h5 file in project directory in write mode
-            with h5py.File(self.h5file, 'w') as f:
-                for local_path in local_paths:
-                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
-                                                                               self.project_setup)
-                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
-                        local_path)
-                    ts = f.create_group(f'ts_{num}')
-                    for key in ts_dict.keys():
-                        ts.create_dataset(key, data=ts_dict[key].values)
-                        self.header[f'ts_{num}'][key]['time_coord'] = ts_dict[key].time
-                    del ts_dict
-                    num += 1
-                    progress_dialog.setValue(num)
-        elif self.remotesite is not None:
-            local_paths = [os.path.join(self.project_dir, 'time_series', self.localsite, meas) for
-                           meas in
-                           self.processing_df['local']]
-            remote_paths = [os.path.join(self.project_dir, 'time_series', self.remotesite, meas) for
-                            meas in
-                            self.processing_df['remote']]
-            num = 0
-            self.header = {}
-            self.xml_caldata = {}
-            self.h5file = os.path.join(self.project_dir, 'db.h5')
-            if os.path.exists(self.h5file):
-                os.remove(self.h5file)
-            # Creates a h5 file in project directory in write mode
-            with h5py.File(self.h5file, 'w') as f:
-                for local_path, remote_path in zip(local_paths, remote_paths):
-                    self.header[f'ts_{num}'], ts_dict = metronix_utils.read_ts(local_path,
-                                                                               self.project_setup)
-                    self.xml_caldata[f'ts_{num}'] = metronix_utils.read_calibration_from_xml(
-                        local_path)
+        # Reading time series data
+        if self.file_type == 'decimated_continuous':
+            self.time_series = phoenix_utils.read_decimated_continuous_data(
+                recording_path=self.localsite_path,
+                channel_map=self.local_channel_map,
+                file_extension=self.file_extension
+            )
 
-                    header_r, ts_r = metronix_utils.read_ts(remote_path, self.project_setup)
+            if self.remotesite:
+                remote_time_series = phoenix_utils.read_decimated_continuous_data(
+                    recording_path=self.remotesite_path,
+                    channel_map=self.remote_channel_map,
+                    file_extension=self.file_extension
+                )
+                remote_time_series_length = len(
+                    next(iter(remote_time_series.get('run0', {}).values())))
+                local_time_series_length = len(
+                    next(iter(self.time_series.get('run0', {}).values())))
 
-                    # Take only 'hx' and 'hy' component of remote dataset
-                    header_r = {k: v for k, v in header_r.items() if k in ["hx", "hy"]}
-                    ts_r = {k: v for k, v in ts_r.items() if k in ["hx", "hy"]}
+                min_time_series_length = min(remote_time_series_length, local_time_series_length)
 
-                    xml_caldata_r = metronix_utils.read_calibration_from_xml(remote_path)
-                    self.xml_caldata[f'ts_{num}'].update(xml_caldata_r)
+                # Assuming same start time for local and remote station
+                for run in remote_time_series.keys():
+                    for channel in remote_time_series[run].keys():
+                        remote_time_series[run][channel] = remote_time_series[run][channel][
+                                                           :min_time_series_length]
 
-                    # Some checks on data.
-                    # Check if local stations time coordinates are all aligned
-                    time_coords = [v.coords['time'] for v in ts_dict.values()]
-                    if not all(time_coords[0].equals(tc) for tc in time_coords[1:]):
-                        raise ValueError("Time coordinates are not aligned!")
-                    # Check if remote stations time coordinates are all aligned
-                    time_coords = [v.coords['time'] for v in ts_r.values()]
-                    if not all(time_coords[0].equals(tc) for tc in time_coords[1:]):
-                        raise ValueError("Time coordinates are not aligned!")
+                for run in self.time_series.keys():
+                    for channel in self.time_series[run].keys():
+                        self.time_series[run][channel] = self.time_series[run][channel][
+                                                         :min_time_series_length]
+                    if 'hx' in remote_time_series[run].keys():
+                        self.time_series[run]['rx'] = remote_time_series[run]['hx'].copy()
+                    if 'hy' in remote_time_series[run].keys():
+                        self.time_series[run]['ry'] = remote_time_series[run]['hy'].copy()
 
-                    # Finding common time between local and remote station
-                    common_time = \
-                    xr.align(ts_dict[list(ts_dict.keys())[0]], ts_r[list(ts_r.keys())[0]],
-                             join="inner")[
-                        0].time
+        elif self.file_type == 'decimated_segmented':
+            self.time_series = phoenix_utils.read_decimated_segmented_data(
+                recording_path=self.localsite_path,
+                channel_map=self.local_channel_map,
+                file_extension=self.file_extension
+            )
+            if self.remotesite:
+                remote_time_series = phoenix_utils.read_decimated_segmented_data(
+                    recording_path=self.remotesite_path,
+                    channel_map=self.remote_channel_map,
+                    file_extension=self.file_extension
+                )
 
-                    if len(common_time) == 0:
-                        # Continue as local station processing
-                        print("No overlapping time series.")
-                        print("Continuing as local station processing.")
-                        # Write local data to database
-                        ts = f.create_group(f'ts_{num}')
-                        for key in ts_dict.keys():
-                            ts.create_dataset(key, data=ts_dict[key].values)
-                        # Write remote data to database
-                        # Rx
-                        self.header[f'ts_{num}']['rx'] = self.header[f'ts_{num}']['hx']
-                        ts.create_dataset('rx', data=ts_dict['hx'].values)
-                        # Ry
-                        self.header[f'ts_{num}']['ry'] = self.header[f'ts_{num}']['hy']
-                        ts.create_dataset('ry', data=ts_dict['hy'].values)
-                    else:
-                        # Else, use only the overlapping time series
-                        ts_dict = {k: v.sel(time=common_time) for k, v in ts_dict.items()}
-                        ts_r = {k: v.sel(time=common_time) for k, v in ts_r.items()}
-                        ts = f.create_group(f'ts_{num}')
-                        # Write local data to database
-                        for key in ts_dict.keys():
-                            ts.create_dataset(key, data=ts_dict[key].values)
-                            self.header[f'ts_{num}'][key]['nsamples'] = len(ts_dict[key].values)
-                        # Write remote data to database
-                        if 'hx' in header_r:
-                            header_r['hx']['nsamples'] = len(ts_r['hx'])
-                            self.header[f'ts_{num}']['rx'] = header_r['hx']
-                            ts.create_dataset('rx', data=ts_r['hx'].values)
-                        if 'hy' in header_r:
-                            header_r['hy']['nsamples'] = len(ts_r['hy'])
-                            self.header[f'ts_{num}']['ry'] = header_r['hy']
-                            ts.create_dataset('ry', data=ts_r['hy'].values)
-                    del ts_dict
-                    num += 1
-                    progress_dialog.setValue(num)
-        qapp_instance.processEvents()
-        progress_dialog.close()
-        self.procinfo['fs'] = self.processing_df['sampling_frequency'].iloc[0]
-        QMessageBox.information(self, "Information", "Time series reading completed!\n\n"
-                                                     "Summary\n"
-                                                     "----------\n"
-                                                     f"No. of measurements loaded: {len(self.processing_df)}\n"
-                                                     f"Sampling frequency: {self.procinfo['fs']} Hz")
-        self.procinfo['nsamples_mostly'] = utils.get_nsamples(self.header)
+                num_remote_segments = len(remote_time_series.keys())
+                num_local_segments = len(self.time_series.keys())
+
+                min_num_segments = min(num_remote_segments, num_local_segments)
+
+                self.time_series = dict(list(self.time_series.items())[:min_num_segments])
+                remote_time_series = dict(
+                    list(remote_time_series.items())[:min_num_segments])
+
+                for run in self.time_series.keys():
+                    if 'hx' in remote_time_series[run].keys():
+                        self.time_series[run]['rx'] = remote_time_series[run]['hx'].copy()
+                    if 'hy' in remote_time_series[run].keys():
+                        self.time_series[run]['ry'] = remote_time_series[run]['hy'].copy()
+
+        # read data here
+        self.procinfo['fs'] = int(self.sfreq_selected)
+
+        # Read calibration data
+        self.calibration_data_electric = phoenix_utils.prepare_calibration_data_electric(
+            local_recmeta_data=self.recmeta_data_local,
+            channel_map=self.local_channel_map
+        )
+
+        self.calibration_data_magnetic = phoenix_utils.prepare_calibration_data_magnetic(
+            project_dir=self.project_dir,
+            local_recmeta_data=self.recmeta_data_local,
+            local_channel_map=self.local_channel_map,
+            remote_recmeta_data=self.recmeta_data_remote,
+            remote_channel_map=self.remote_channel_map,
+        )
+
+        num_samples = len(next(iter(next(iter(self.time_series.values())).values())))
+
+        QMessageBox.information(
+            self,
+            "Information",
+            "Summary\n"
+            "----------\n"
+            f"Sampling frequency: {self.procinfo['fs']} Hz\n"
+            f"File type: {self.file_type.replace('_', ' ').title()}\n"
+            f"Number of continuous samples: {num_samples}\n"
+        )
+
+        self.procinfo['nsamples_mostly'] = num_samples
         fftlength = utils.get_fftlength(self.procinfo['nsamples_mostly'])
+
         # Updating FFT length dropdown
-        self.fft_length_dropdown.addItems(self.fft_values)
-        self.fft_length_dropdown.setCurrentIndex(self.fft_length_dropdown.findText(str(fftlength)))
+        fft_values = [
+            v for v in self.fft_values
+            if int(v) <= self.procinfo["nsamples_mostly"]
+        ]
+
+        fft_values = [str(v) for v in fft_values if int(v) < self.procinfo["nsamples_mostly"]]
+
+        self.fft_length_dropdown.addItems(fft_values)
+
+        if self.file_type == 'decimated_continuous':
+            self.fft_length_dropdown.setCurrentIndex(
+                self.fft_length_dropdown.findText(str(fftlength)))
+        elif self.file_type == 'decimated_segmented':
+            self.fft_length_dropdown.setCurrentIndex(0)
         # Updating parzen window radius
         parzen_radius = utils.get_parzen(self.procinfo['fs'])
         self.parzen_radius_entry.setText(str(parzen_radius))
-        self.verify_layout_button.show()
         # Updating MD thresholds
         self.md_threshold_entry.setText(str(1.5))
-
-    def open_layout_settings(self) -> None:
-        """
-        Opens layout settings dialog
-
-        :return: None
-        :rtype: NoneType
-
-        """
-        try:
-            dialog = LayoutSettingsDialog(header=self.header, parent=self)
-            if dialog.exec_() == QDialog.Accepted:
-                self.header = dialog.header
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"An error occurred while layout settings: {e}")
 
     def decimate(self) -> None:
         """
@@ -957,25 +917,52 @@ class MainWindow(QMainWindow):
             qapp_instance = QApplication.instance()
             qapp_instance.processEvents()
             decimation_factor = int(self.decimation_list_dropdown.currentText())
-            with h5py.File(self.h5file, 'r+') as f:
-                for ts in f.keys():
-                    for channel in f[ts]:
-                        decimated_data = signal.decimate(f[ts][channel][:], decimation_factor,
-                                                         n=None, ftype='iir')
-                        del f[ts][channel]
-                        ts_group = f[ts]
-                        ts_group.create_dataset(channel, data=decimated_data)
-                        self.header[ts][channel]['sfreq'] = [
-                            self.header[ts][channel]['sfreq'][0] / decimation_factor]
-                        self.header[ts][channel]['nsamples'] = len(decimated_data)
+
+            for ts in self.time_series:
+                for channel in self.time_series[ts]:
+                    self.time_series[ts][channel] = signal.decimate(
+                        self.time_series[ts][channel][:],
+                        decimation_factor,
+                        n=None,
+                        ftype='iir'
+                    )
+
             self.procinfo['fs'] = self.procinfo['fs'] / decimation_factor
             self.new_fs.setText(f"Now sampling frequency is {self.procinfo['fs']} Hz")
             self.new_fs.show()
-            self.procinfo['nsamples_mostly'] = utils.get_nsamples(self.header)
+
+            first_run = next(iter(self.time_series.values()))
+            first_array = next(iter(first_run.values()))
+            self.procinfo['nsamples_mostly'] = first_array.shape[0]
+
             fftlength = utils.get_fftlength(self.procinfo['nsamples_mostly'])
+
             # Updating FFT length dropdown
-            self.fft_length_dropdown.setCurrentIndex(
-                self.fft_length_dropdown.findText(str(fftlength)))
+            fft_values = [
+                v for v in self.fft_values
+                if int(v) <= self.procinfo["nsamples_mostly"]
+            ]
+
+            # Replace existing items
+            self.fft_length_dropdown.blockSignals(True)
+            self.fft_length_dropdown.clear()
+            self.fft_length_dropdown.addItems([str(v) for v in fft_values])
+
+            if self.file_type == 'decimated_continuous':
+                # Select fftlength if present, otherwise pick a sensible fallback
+                idx = self.fft_length_dropdown.findText(str(fftlength))
+                if idx >= 0:
+                    self.fft_length_dropdown.setCurrentIndex(idx)
+                else:
+                    # fallback: last item (largest) if any
+                    if self.fft_length_dropdown.count() > 0:
+                        self.fft_length_dropdown.setCurrentIndex(
+                            self.fft_length_dropdown.count() - 1)
+            elif self.file_type == 'decimated_segmented':
+                self.fft_length_dropdown.setCurrentIndex(0)
+
+            self.fft_length_dropdown.blockSignals(False)
+
             # Updating parzen window radius
             parzen_radius = utils.get_parzen(self.procinfo['fs'])
             self.parzen_radius_entry.setText(str(parzen_radius))
@@ -983,7 +970,6 @@ class MainWindow(QMainWindow):
             progress_dialog.setValue(1)
             qapp_instance.processEvents()
             QMessageBox.information(self, "Done", "Decimation done!")
-
         except Exception as e:
             QMessageBox.critical(self, "Error", f"An error occurred while decimation: {e}")
 
@@ -1013,7 +999,7 @@ class MainWindow(QMainWindow):
         self.apply_pd_thresh_button.setText("Perform PD thresholding")
         #
         try:
-            if self.header is not None:
+            if self.time_series is not None:
                 self.procinfo['localsite'] = self.localsite
                 self.procinfo['remotesite'] = self.remotesite
                 self.procinfo['notch'] = self.notch_status
@@ -1022,18 +1008,16 @@ class MainWindow(QMainWindow):
                 self.procinfo['parzen_radius'] = float(self.parzen_radius_entry.text())
                 self.procinfo['md_thresh'] = float(self.md_threshold_entry.text())
                 self.procinfo['notch_frequency'] = float(self.project_setup['notch_frequency'])
-                self.procinfo['preferred_cal_file'] = self.project_setup['preferred_cal_file']
                 self.procinfo['target_frequency_table_type'] = self.project_setup[
                     'target_frequency_table_type'].lower()
                 self.procinfo['frequencies_per_decade'] = int(
                     self.project_setup['frequencies_per_decade'])
-                first_header = next(iter(next(iter(self.header.values())).values()))
+
+                self.procinfo['lat'] = self.recmeta_data_local['timing']['gps_lat']
+                self.procinfo['lon'] = self.recmeta_data_local['timing']['gps_lon']
+                self.procinfo['elev'] = self.recmeta_data_local['timing']['gps_alt']
                 #
-                self.procinfo['lat'] = first_header['lat'][0] / 1000 / 60 / 60
-                self.procinfo['lon'] = first_header['lon'][0] / 1000 / 60 / 60
-                self.procinfo['elev'] = first_header['elev'][0] / 100
-                #
-                self.procinfo['start_time'] = first_header['start'][0]
+                self.procinfo['start_time'] = self.recmeta_data_local['start']
                 QMessageBox.information(self, "Done", f"Parameters are saved.")
             else:
                 QMessageBox.critical(self, "Error", f"Please read time series first!!")
@@ -1043,7 +1027,7 @@ class MainWindow(QMainWindow):
 
     def perform_bandavg(self) -> None:
         """
-        Set up the band averaging.
+        Perform band averaging.
 
         :return: None
         :rtype: NoneType
@@ -1054,186 +1038,12 @@ class MainWindow(QMainWindow):
         self.apply_pd_thresh_button.setText("Perform PD thresholding")
         #
         if 'localsite' in self.procinfo and self.procinfo['localsite'] == self.localsite:
-            datasets = []
-            #
-            progress_dialog = QProgressDialog("Performing band averaging...", None, 0,
-                                              len(self.header), self)
-            progress_dialog.setWindowModality(Qt.WindowModal)
-            progress_dialog.setWindowTitle("Please wait")
-            progress_dialog.show()
-            # This is important to show the progress bar and GUI not to freeze
-            qapp_instance = QApplication.instance()
-            qapp_instance.processEvents()
-            #
-            num = 0
-            bandavg_time = time.time()
-            for ts in self.header:
 
-                # Preparing inputs for band averaging
-                # TODO: Replace this with a better strategy later
-                if self.procinfo['notch'] == 'on':
-                    notch_filter_apply = True
-                else:
-                    notch_filter_apply = False
+            if self.file_type == 'decimated_continuous':
+                self.band_averaging_decimated_continuous()
+            elif self.file_type == 'decimated_segmented':
+                self.band_averaging_decimated_segmented()
 
-                # TODO: Replace this with a better strategy later
-                if self.procinfo['processing_mode'] == 'MT + Tipper':
-                    process_mt = True
-                    process_tipper = True
-                elif self.procinfo['processing_mode'] == 'MT Only':
-                    process_mt = True
-                    process_tipper = False
-                else:
-                    process_mt = None
-                    process_tipper = None
-
-                # TODO: Replace this with a better strategy later
-                if self.procinfo['remotesite'] is not None:
-                    remote_reference = True
-                else:
-                    remote_reference = False
-
-                # TODO: Replace this with a better strategy later
-                calibration_data_electric = {}
-                if 'ex' in self.header[ts]:
-                    calibration_data_electric['ex'] = {}
-                    calibration_data_electric['ex']['x1'] = self.header[ts]['ex']['x1'][0]
-                    calibration_data_electric['ex']['x2'] = self.header[ts]['ex']['x2'][0]
-
-                if 'ey' in self.header[ts]:
-                    calibration_data_electric['ey'] = {}
-                    calibration_data_electric['ey']['y1'] = self.header[ts]['ey']['y1'][0]
-                    calibration_data_electric['ey']['y2'] = self.header[ts]['ey']['y2'][0]
-
-                # TODO: Replace this with a better strategy later
-                calibration_data_magnetic = {'instrument': 'metronix'}
-                possible_magnetic_channels = ['hx', 'hy', 'hz', 'rx', 'ry']
-                available_magnetic_channels = [element for element in possible_magnetic_channels if
-                                               element in list(self.header[ts].keys())]
-                for magnetic_channel in available_magnetic_channels:
-                    calibration_data_magnetic[magnetic_channel] = {}
-                    calibration_data_magnetic[magnetic_channel]['sensor_type'] = \
-                    self.header[ts][magnetic_channel]['sensor']
-                    calibration_data_magnetic[magnetic_channel]['sensor_serial_number'] = \
-                        self.header[ts][magnetic_channel]['sensor_no'][0]
-                    calibration_data_magnetic[magnetic_channel]['chopper_status'] = \
-                        self.header[ts][magnetic_channel]['bychopper'][0]
-
-                    if calibration_data_magnetic[magnetic_channel]['chopper_status'] == 0:
-                        chopper_status = 'chopper_off'
-                    elif calibration_data_magnetic[magnetic_channel]['chopper_status'] == 1:
-                        chopper_status = 'chopper_on'
-                    else:
-                        chopper_status = None
-
-                    print('\n')
-                    print('====================================================')
-                    print(f'Working on calibration data for {magnetic_channel}')
-                    print(
-                        f"Coil serial number: {calibration_data_magnetic[magnetic_channel]['sensor_serial_number']}")
-                    print('\n')
-
-                    if str(calibration_data_magnetic[magnetic_channel]['sensor_serial_number']) in \
-                            self.xml_caldata[
-                                ts].keys():
-                        cal_data_xml = self.xml_caldata[ts][
-                            str(calibration_data_magnetic[magnetic_channel][
-                                    'sensor_serial_number'])]
-                    else:
-                        cal_data_xml = None
-
-                    # Sometimes null byte can be there in the sensor type string.
-                    # Removing that from string if exists
-                    if "\x00" in calibration_data_magnetic[magnetic_channel]["sensor_type"]:
-                        calibration_data_magnetic[magnetic_channel]["sensor_type"] = \
-                            calibration_data_magnetic[magnetic_channel]["sensor_type"].replace(
-                                "\x00", "")
-
-                    metronix_txt_filename = (
-                                calibration_data_magnetic[magnetic_channel]["sensor_type"].lower()
-                                + "_"
-                                + str(
-                            calibration_data_magnetic[magnetic_channel]["sensor_serial_number"])
-                                )
-                    cal_txt_path = Path(
-                        self.project_dir) / "calibration_files" / f"{metronix_txt_filename}.txt"
-
-                    if cal_txt_path.exists():
-                        print('Metronix txt calibration file found.')
-                        cal_data_txt = sigmt.utils.metronix.cal_from_metronix_txt.read_calibration_metronix_txt(
-                            filepath=cal_txt_path)
-                    else:
-                        cal_data_txt = None
-                        print(f'Metronix txt calibration file not found at {cal_txt_path}')
-
-                    if self.project_setup['preferred_cal_file'] == 'xml':
-                        print('Preferred calibration file selected: xml')
-                        if (cal_data_xml is not None) and (cal_data_xml[chopper_status].size != 0):
-                            print('Using calibration data from XML file.')
-                            calibration_data_magnetic[magnetic_channel][
-                                'calibration_data'] = cal_data_xml
-                        else:
-                            print('No calibration data is available from XML file.')
-                            print('Trying metronix txt.')
-                            if (cal_data_txt is None) or (cal_data_txt[chopper_status].size == 0):
-                                print('No calibration data is available from Metronix txt.')
-                                calibration_data_magnetic[magnetic_channel][
-                                    'calibration_data'] = None
-                            else:
-                                print('Calibration data found from Metronix txt. Using it.')
-                                calibration_data_magnetic[magnetic_channel][
-                                    'calibration_data'] = cal_data_txt
-                    elif self.project_setup['preferred_cal_file'] == 'metronix_txt':
-                        print('Preferred calibration file selected: metronix_txt')
-                        if (cal_data_txt is not None) and (cal_data_txt[chopper_status].size != 0):
-                            print('Using calibration data from metronix_txt file.')
-                            calibration_data_magnetic[magnetic_channel][
-                                'calibration_data'] = cal_data_txt
-                        else:
-                            print('No calibration data is available from metronix_txt file.')
-                            print('Trying XML.')
-                            if cal_data_xml[chopper_status].size == 0:
-                                print('No calibration data is available from XML.')
-                                calibration_data_magnetic[magnetic_channel][
-                                    'calibration_data'] = None
-                            else:
-                                print('Calibration data found from XML. Using it.')
-                                calibration_data_magnetic[magnetic_channel][
-                                    'calibration_data'] = cal_data_xml
-                    else:
-                        calibration_data_magnetic[magnetic_channel]['calibration_data'] = None
-                    print('====================================================')
-                    print('\n')
-
-                # Get the bandavg object
-                bandavg = BandAveraging(
-                    time_series=metronix_utils.prepare_ts_from_h5(self.h5file, ts),
-                    sampling_frequency=self.procinfo['fs'], overlap=50,
-                    calibrate_electric=True, calibrate_magnetic=True,
-                    calibration_data_electric=calibration_data_electric,
-                    calibration_data_magnetic=calibration_data_magnetic,
-                    fft_length=self.procinfo['fft_length'],
-                    parzen_window_radius=self.procinfo['parzen_radius'],
-                    target_frequency_table_type=self.procinfo['target_frequency_table_type'],
-                    frequencies_per_decade=self.procinfo['frequencies_per_decade'],
-                    apply_notch_filter=notch_filter_apply,
-                    notch_frequency=self.procinfo['notch_frequency'],
-                    process_mt=process_mt, process_tipper=process_tipper,
-                    remote_reference=remote_reference
-                    )
-                datasets.append(bandavg.band_averaged_dataset)  # appends xarray dataset (for a run)
-                num += 1
-                progress_dialog.setValue(num)
-            self.bandavg_dataset = xr.concat(datasets, dim='time_window').assign_coords(
-                time_window=np.arange(len(xr.concat(datasets, dim='time_window').time_window)))
-            self.dof = bandavg.dof
-            self.avgf = bandavg.avgf
-            self.bandavg_dataset['dof'] = xr.DataArray(
-                self.dof,
-                coords={'frequency': self.bandavg_dataset.coords['frequency']},
-                dims='frequency'
-            )
-            print(f'Time taken for band averaging: ' + str(time.time() - bandavg_time))
             # Calculating data selection parameters
             time_dataselection = time.time()
             self.bandavg_dataset['coh_ex'] = (
@@ -1247,10 +1057,192 @@ class MainWindow(QMainWindow):
                 'alpha_e'] = dstools.pdvalues(
                 self.bandavg_dataset)
             print(f'Time taken for data selection tool: ' + str(time.time() - time_dataselection))
-            qapp_instance.processEvents()
             QMessageBox.information(self, "Done", f"Band averaging done!")
         else:
             QMessageBox.critical(self, "Error", f"Please read time series again!!")
+
+    def band_averaging_decimated_continuous(self) -> None:
+        """
+        Band averaging for the decimated continuous datatype
+
+        :return: None
+        :rtype: NoneType
+        """
+        datasets = []
+
+        progress_dialog = QProgressDialog(
+            "Performing band averaging...",
+            None,
+            0,
+            len(self.time_series),
+            self
+        )
+        progress_dialog.setWindowModality(Qt.WindowModal)
+        progress_dialog.setWindowTitle("Please wait")
+        progress_dialog.show()
+        # This is important to show the progress bar and GUI not to freeze
+        qapp_instance = QApplication.instance()
+        qapp_instance.processEvents()
+        #
+        num = 0
+        bandavg_time = time.time()
+
+        for run in self.time_series:
+            # Preparing inputs for band averaging
+            # TODO: Replace this with a better strategy later
+            if self.procinfo['notch'] == 'on':
+                notch_filter_apply = True
+            else:
+                notch_filter_apply = False
+
+            # TODO: Replace this with a better strategy later
+            if self.procinfo['processing_mode'] == 'MT + Tipper':
+                process_mt = True
+                process_tipper = True
+            elif self.procinfo['processing_mode'] == 'MT Only':
+                process_mt = True
+                process_tipper = False
+            else:
+                process_mt = None
+                process_tipper = None
+
+            # TODO: Replace this with a better strategy later
+            if self.procinfo['remotesite'] is not None:
+                remote_reference = True
+            else:
+                remote_reference = False
+
+            # Get the bandavg object
+            bandavg = BandAveraging(
+                time_series=self.time_series[run].copy(),
+                sampling_frequency=self.procinfo['fs'],
+                fft_length=self.procinfo['fft_length'],
+                parzen_window_radius=self.procinfo['parzen_radius'],
+                overlap=50,
+                frequencies_per_decade=self.procinfo['frequencies_per_decade'],
+                remote_reference=remote_reference,
+                calibrate_electric=True,
+                calibrate_magnetic=True,
+                calibration_data_electric=self.calibration_data_electric,
+                calibration_data_magnetic=self.calibration_data_magnetic,
+                instrument='phoenix',
+                apply_notch_filter=notch_filter_apply,
+                notch_frequency=self.procinfo['notch_frequency'],
+                process_mt=process_mt,
+                process_tipper=process_tipper,
+            )
+
+            datasets.append(bandavg.band_averaged_dataset)  # appends xarray dataset (for a run)
+            num += 1
+            progress_dialog.setValue(num)
+        self.bandavg_dataset = xr.concat(datasets, dim='time_window').assign_coords(
+            time_window=np.arange(len(xr.concat(datasets, dim='time_window').time_window)))
+        self.dof = bandavg.dof
+        self.avgf = bandavg.avgf
+        self.bandavg_dataset['dof'] = xr.DataArray(
+            self.dof,
+            coords={'frequency': self.bandavg_dataset.coords['frequency']},
+            dims='frequency'
+        )
+        print(f'Time taken for band averaging: ' + str(time.time() - bandavg_time))
+        qapp_instance.processEvents()
+
+    def band_averaging_decimated_segmented(self):
+        """
+        Band averaging for the decimated continuous datatype
+
+        :return: None
+        :rtype: NoneType
+        """
+        datasets = []
+
+        # decimated_segmented type usually contains thousands of
+        # independent time series which make band averaging inefficient.
+        # so adding an optimization technique to reduce number of runs
+        optimized_time_series = phoenix_utils.optimize_time_series_dict(
+            time_series_dict=self.time_series.copy(),
+            fft_length=self.procinfo['fft_length'],
+            overlap=50,
+        )
+
+        progress_dialog = QProgressDialog(
+            "Performing band averaging...",
+            None,
+            0,
+            len(optimized_time_series),
+            self
+        )
+        progress_dialog.setWindowModality(Qt.WindowModal)
+        progress_dialog.setWindowTitle("Please wait")
+        progress_dialog.show()
+        # This is important to show the progress bar and GUI not to freeze
+        qapp_instance = QApplication.instance()
+        qapp_instance.processEvents()
+        #
+        num = 0
+        bandavg_time = time.time()
+
+        for run in optimized_time_series:
+
+            # Preparing inputs for band averaging
+            # TODO: Replace this with a better strategy later
+            if self.procinfo['notch'] == 'on':
+                notch_filter_apply = True
+            else:
+                notch_filter_apply = False
+
+            # TODO: Replace this with a better strategy later
+            if self.procinfo['processing_mode'] == 'MT + Tipper':
+                process_mt = True
+                process_tipper = True
+            elif self.procinfo['processing_mode'] == 'MT Only':
+                process_mt = True
+                process_tipper = False
+            else:
+                process_mt = None
+                process_tipper = None
+
+            # TODO: Replace this with a better strategy later
+            if self.procinfo['remotesite'] is not None:
+                remote_reference = True
+            else:
+                remote_reference = False
+
+            # Get the bandavg object
+            bandavg = BandAveraging(
+                time_series=optimized_time_series[run],
+                sampling_frequency=self.procinfo['fs'],
+                fft_length=self.procinfo['fft_length'],
+                parzen_window_radius=self.procinfo['parzen_radius'],
+                overlap=50,
+                frequencies_per_decade=self.procinfo['frequencies_per_decade'],
+                remote_reference=remote_reference,
+                calibrate_electric=True,
+                calibrate_magnetic=True,
+                calibration_data_electric=self.calibration_data_electric,
+                calibration_data_magnetic=self.calibration_data_magnetic,
+                instrument='phoenix',
+                apply_notch_filter=notch_filter_apply,
+                notch_frequency=self.procinfo['notch_frequency'],
+                process_mt=process_mt,
+                process_tipper=process_tipper,
+                reshape=False,
+            )
+
+            datasets.append(bandavg.band_averaged_dataset)  # appends xarray dataset (for a run)
+            num += 1
+            progress_dialog.setValue(num)
+        self.bandavg_dataset = xr.concat(datasets, dim='time_window').assign_coords(
+            time_window=np.arange(len(xr.concat(datasets, dim='time_window').time_window)))
+        self.dof = bandavg.dof
+        self.avgf = bandavg.avgf
+        self.bandavg_dataset['dof'] = xr.DataArray(
+            self.dof,
+            coords={'frequency': self.bandavg_dataset.coords['frequency']},
+            dims='frequency'
+        )
+        print(f'Time taken for band averaging: ' + str(time.time() - bandavg_time))
+        qapp_instance.processEvents()
 
     def plot_coh_all(self) -> None:
         """

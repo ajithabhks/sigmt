@@ -31,17 +31,21 @@ class EditProjectSetupDialog(QDialog):
 
         self.frequency_table_type = QComboBox()
         self.frequency_table_type.addItem('Default')
-        self.frequency_table_type.addItem('Metronix')
+        if self.interface == 'Metronix':
+            self.frequency_table_type.addItem('Metronix')
         # Set combo box selection based on dict key (with fallback to 'Default')
         target_type = self.project_setup.get('target_frequency_table_type', 'Default')
         self.frequency_table_type.setCurrentText(target_type)
-        self.toggle_frequencies_per_decade(text= target_type)
+        self.toggle_frequencies_per_decade(text=target_type)
         self.frequency_table_type.currentTextChanged.connect(self.toggle_frequencies_per_decade)
 
         self.notch_frequency = QLineEdit(self.project_setup['notch_frequency'])
         self.preferred_cal_file = QComboBox()
-        self.preferred_cal_file.addItem('xml')
-        self.preferred_cal_file.addItem('metronix_txt')
+        if self.interface == 'Metronix':
+            self.preferred_cal_file.addItem('xml')
+            self.preferred_cal_file.addItem('metronix_txt')
+        elif self.interface == 'Phoenix':
+            self.preferred_cal_file.addItem('phoenix_json')
         self.preferred_cal_file.setCurrentText(self.project_setup['preferred_cal_file'])
 
         layout.addWidget(QLabel("Project Name:"))

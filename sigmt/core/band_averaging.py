@@ -15,6 +15,7 @@ import sigmt.core.sigproc as sp
 import sigmt.core.statistics as stats
 import sigmt.utils.utils as utils
 from sigmt.utils.metronix.calibration import MetronixCalibration
+from sigmt.utils.phoenix.calibration import PhoenixCalibration
 
 
 class BandAveraging:
@@ -23,24 +24,29 @@ class BandAveraging:
 
     """
 
-    def __init__(self,
-                 time_series: dict[str, np.ndarray],
-                 sampling_frequency: float,
-                 fft_length: int = 1024,
-                 parzen_window_radius: float = 0.25,
-                 overlap: int = 50,
-                 frequencies_per_decade: int = 12,
-                 remote_reference: bool = False,
-                 calibrate_electric: bool = False,
-                 calibrate_magnetic: bool = False,
-                 calibration_data_electric: Optional[dict[str, dict[str, float]]] = None,
-                 calibration_data_magnetic: Optional[dict] = None,
-                 apply_notch_filter: bool = False,
-                 target_frequency_table_type: Optional[Literal['default', 'metronix', 'explicit']] = 'default',
-                 notch_frequency: Optional[float] = None,
-                 notch_harmonics: Optional[int] = None,
-                 process_mt: bool = True,
-                 process_tipper: bool = True) -> None:
+    def __init__(
+            self,
+            time_series: dict[str, np.ndarray],
+            sampling_frequency: float,
+            fft_length: int = 1024,
+            parzen_window_radius: float = 0.25,
+            overlap: int = 50,
+            frequencies_per_decade: int = 12,
+            remote_reference: bool = False,
+            calibrate_electric: bool = False,
+            calibrate_magnetic: bool = False,
+            calibration_data_electric: Optional[dict[str, dict[str, float]]] = None,
+            calibration_data_magnetic: Optional[dict] = None,
+            apply_notch_filter: bool = False,
+            target_frequency_table_type: Optional[
+                Literal['default', 'metronix', 'explicit']] = 'default',
+            instrument: Optional[Literal['metronix', 'phoenix']] = None,
+            notch_frequency: Optional[float] = None,
+            notch_harmonics: Optional[int] = None,
+            process_mt: bool = True,
+            process_tipper: bool = True,
+            reshape: Optional[bool] = True
+    ) -> None:
         """
         Constructor
 
@@ -191,6 +197,7 @@ class BandAveraging:
         self.process_mt = process_mt
         self.process_tipper = process_tipper
         self.target_frequency_table_type = target_frequency_table_type
+        self.instrument = instrument
 
         # Class related attributes
         self.channels = None
@@ -200,16 +207,25 @@ class BandAveraging:
         self.dof = None
         self.spectra = None
 
-        # Dividing time series into several time windows of length equals to fft length. Number of windows will
-        # depend on the time series overlap.
-        self.time_series = _reshape_time_series_with_overlap(time_series=time_series, fft_length=fft_length, overlap=overlap)
+        # Dividing time series into several time windows of length equals
+        # to fft length. Number of windows will depend on the time series overlap.
+        if reshape:
+            self.time_series = _reshape_time_series_with_overlap(
+                time_series=time_series,
+                fft_length=fft_length,
+                overlap=overlap
+            )
+        else:
+            self.time_series = time_series
         del time_series
 
-        self.ft_list = utils.get_target_frequency_list(sampling_frequency=self.sampling_frequency,
-                                                       parzen_window_radius=self.parzen_window_radius,
-                                                       fft_length=self.fft_length,
-                                                       table_type=self.target_frequency_table_type,
-                                                       frequencies_per_decade=frequencies_per_decade)
+        self.ft_list = utils.get_target_frequency_list(
+            sampling_frequency=self.sampling_frequency,
+            parzen_window_radius=self.parzen_window_radius,
+            fft_length=self.fft_length,
+            table_type=self.target_frequency_table_type,
+            frequencies_per_decade=frequencies_per_decade
+        )
 
         self.get_channels()  # Get list of available ts channel. 'Ex', 'Ey', ....
         if calibrate_electric:
@@ -246,10 +262,12 @@ class BandAveraging:
         """
         print('Calibrating electric field channels.')
         if 'ex' in self.channels:
-            dipole_ns = abs(self.calibration_data_electric['ex']['x1']) + abs(self.calibration_data_electric['ex']['x2'])
+            dipole_ns = (np.abs(self.calibration_data_electric['ex']['x1']) +
+                         np.abs(self.calibration_data_electric['ex']['x2']))
             self.time_series['ex'] = self.time_series['ex'] / (1 * dipole_ns / 1000)
         if 'ey' in self.channels:
-            dipole_ew = abs(self.calibration_data_electric['ey']['y1']) + abs(self.calibration_data_electric['ey']['y2'])
+            dipole_ew = (np.abs(self.calibration_data_electric['ey']['y1']) +
+                         np.abs(self.calibration_data_electric['ey']['y2']))
             self.time_series['ey'] = self.time_series['ey'] / (1 * dipole_ew / 1000)
 
     def calibrate_magnetic(self) -> None:
@@ -265,7 +283,12 @@ class BandAveraging:
         # Create a list mag channels out of desired elements if existing in self.channels
         magnetic_channels = [element for element in desired_elements if element in self.channels]
         for channel in magnetic_channels:
-            if self.calibration_data_magnetic['instrument'] == 'metronix':
+            if self.instrument == 'metronix':
+                if not self.calibration_data_magnetic['instrument'] == 'metronix':
+                    raise ValueError(
+                        f"Calibration data instrument mismatch: expected 'metronix', "
+                        f"got {self.calibration_data_magnetic['instrument']}"
+                    )
                 sensor_type = self.calibration_data_magnetic[channel]['sensor_type']
                 if self.calibration_data_magnetic[channel]['chopper_status'] == 1:
                     chopper_status = "chopper_on"
@@ -273,10 +296,23 @@ class BandAveraging:
                     chopper_status = "chopper_off"
                 else:
                     chopper_status = None
-                calibration_data = self.calibration_data_magnetic[channel]['calibration_data'][chopper_status]
-                calibration_object = MetronixCalibration(self.spectra[channel], self.fft_frequencies,
-                                                         sensor_type,
-                                                         chopper_status, calibration_data)
+                calibration_data = self.calibration_data_magnetic[channel]['calibration_data'][
+                    chopper_status]
+                calibration_object = MetronixCalibration(
+                    xfft=self.spectra[channel],
+                    fft_freqs=self.fft_frequencies,
+                    sensor_type=sensor_type,
+                    chopper_status=chopper_status,
+                    calibration_data=calibration_data
+                )
+                self.spectra[channel] = calibration_object.calibrated_data
+            elif self.instrument == 'phoenix':
+                calibration_data = self.calibration_data_magnetic[channel]['calibration_data']
+                calibration_object = PhoenixCalibration(
+                    xfft=self.spectra[channel],
+                    fft_freqs=self.fft_frequencies,
+                    calibration_data=calibration_data
+                )
                 self.spectra[channel] = calibration_object.calibrated_data
             else:
                 raise NotImplementedError(
@@ -299,11 +335,13 @@ class BandAveraging:
 
             # Submit each task to the executor
             for channel in self.channels:
-                futures[channel] = executor.submit(sp.notch_filter_sos,
-                                                   time_series=self.time_series[channel],
-                                                   sampling_frequency=self.sampling_frequency,
-                                                   notch_frequency=self.notch_frequency,
-                                                   harmonics=self.notch_harmonics)
+                futures[channel] = executor.submit(
+                    sp.notch_filter_sos,
+                    time_series=self.time_series[channel],
+                    sampling_frequency=self.sampling_frequency,
+                    notch_frequency=self.notch_frequency,
+                    harmonics=self.notch_harmonics
+                )
 
             # Retrieve the results when needed
             for channel, future in futures.items():
@@ -333,8 +371,11 @@ class BandAveraging:
         print('Performing FFT.')
         self.spectra = {}
         for channel in self.channels:
-            self.fft_frequencies, self.spectra[channel] = sp.do_fft(self.time_series[channel], self.sampling_frequency,
-                                                                    self.fft_length)
+            self.fft_frequencies, self.spectra[channel] = sp.do_fft(
+                ts=self.time_series[channel],
+                fs=self.sampling_frequency,
+                fft_length=self.fft_length
+            )
 
     def perform_band_averaging(self) -> None:
         """
@@ -348,16 +389,22 @@ class BandAveraging:
 
         # Creating empty arrays
         self.dof = np.empty(self.ft_list.shape[0], dtype=int)  # Degree of freedom
-        self.avgf = np.empty(self.ft_list.shape[0], dtype=int)  # Number of frequencies used for averaging
+        self.avgf = np.empty(self.ft_list.shape[0],
+                             dtype=int)  # Number of frequencies used for averaging
 
         # Create a 3D array for parzen window for all target frequencies
         parzen_window = np.empty(
-            (self.spectra[next(iter(self.spectra))].shape[0], 1, self.ft_list.shape[0]), dtype=float)
+            (self.spectra[next(iter(self.spectra))].shape[0], 1, self.ft_list.shape[0]),
+            dtype=float)
 
         # Populating parzen window arrays based on target frequency and window radius
         for i in range(self.ft_list.shape[0]):
             ft = float(self.ft_list[i])
-            parzen_window[:, :, i] = stats.parzen(self.fft_frequencies, ft, self.parzen_window_radius)
+            parzen_window[:, :, i] = stats.parzen(
+                f=self.fft_frequencies,
+                ft=ft,
+                cr=self.parzen_window_radius
+            )
             self.dof[i] = (2 * 2 * np.sum(parzen_window[:, :, i] != 0)) - 4
             self.avgf[i] = np.sum(parzen_window[:, :, i] != 0)
 
@@ -514,10 +561,18 @@ class BandAveraging:
                 axis=0) / sum_parzen)
 
             # Computing the Tipper transfer function for all time windows
-            self.band_averaged_dataset['tzx'] = ((self.band_averaged_dataset['hzhx'] * self.band_averaged_dataset[
-                'hyhy']) - (self.band_averaged_dataset['hzhy'] * self.band_averaged_dataset['hyhx'])) / denominator
-            self.band_averaged_dataset['tzy'] = ((self.band_averaged_dataset['hzhy'] * self.band_averaged_dataset[
-                'hxhx']) - (self.band_averaged_dataset['hzhx'] * self.band_averaged_dataset['hxhy'])) / denominator
+            self.band_averaged_dataset['tzx'] = (
+                                                        (self.band_averaged_dataset['hzhx'] *
+                                                         self.band_averaged_dataset['hyhy']) -
+                                                        (self.band_averaged_dataset['hzhy'] *
+                                                         self.band_averaged_dataset['hyhx'])
+                                                ) / denominator
+            self.band_averaged_dataset['tzy'] = (
+                                                        (self.band_averaged_dataset['hzhy'] *
+                                                         self.band_averaged_dataset['hxhx']) -
+                                                        (self.band_averaged_dataset['hzhx'] *
+                                                         self.band_averaged_dataset['hxhy'])
+                                                ) / denominator
 
             # TODO: This may not be created in this class
             self.band_averaged_dataset['hz_selection_coh'] = xr.DataArray(
@@ -538,8 +593,10 @@ def _reshape_time_series_with_overlap(time_series, fft_length, overlap):
 
     """
     for channel in time_series:
-        time_series[channel] = utils.reshape_array_with_overlap(window_length=fft_length,
-                                                                overlap=overlap,
-                                                                data=time_series[channel])
+        time_series[channel] = utils.reshape_array_with_overlap(
+            window_length=fft_length,
+            overlap=overlap,
+            data=time_series[channel]
+        )
 
     return time_series
