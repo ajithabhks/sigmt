@@ -1017,7 +1017,7 @@ class MainWindow(QMainWindow):
                 self.procinfo['lon'] = self.recmeta_data_local['timing']['gps_lon']
                 self.procinfo['elev'] = self.recmeta_data_local['timing']['gps_alt']
                 #
-                self.procinfo['start_time'] = 0  # TODO
+                self.procinfo['start_time'] = self.recmeta_data_local['start']
                 QMessageBox.information(self, "Done", f"Parameters are saved.")
             else:
                 QMessageBox.critical(self, "Error", f"Please read time series first!!")
@@ -1061,7 +1061,13 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.critical(self, "Error", f"Please read time series again!!")
 
-    def band_averaging_decimated_continuous(self):
+    def band_averaging_decimated_continuous(self) -> None:
+        """
+        Band averaging for the decimated continuous datatype
+
+        :return: None
+        :rtype: NoneType
+        """
         datasets = []
 
         progress_dialog = QProgressDialog(
@@ -1142,6 +1148,12 @@ class MainWindow(QMainWindow):
         qapp_instance.processEvents()
 
     def band_averaging_decimated_segmented(self):
+        """
+        Band averaging for the decimated continuous datatype
+
+        :return: None
+        :rtype: NoneType
+        """
         datasets = []
 
         # decimated_segmented type usually contains thousands of

@@ -2,6 +2,8 @@
 Class for the phoenix coil calibration
 
 """
+from typing import Dict
+
 import numpy as np
 import scipy
 
@@ -13,9 +15,9 @@ class PhoenixCalibration:
 
     def __init__(
             self,
-            xfft,
-            fft_freqs,
-            calibration_data
+            xfft: np.ndarray,
+            fft_freqs: np.ndarray,
+            calibration_data: Dict
     ):
         """
         Constructor
@@ -24,8 +26,8 @@ class PhoenixCalibration:
         :type xfft: np.ndarray
         :param fft_freqs: Frequencies for FFT values, 1D array.
         :type fft_freqs: np.ndarray
-        :param calibration_data: Calibration data as array. shape: (length(43), 3).
-        :type calibration_data: np.ndarray
+        :param calibration_data: Calibration data as dictionary
+        :type calibration_data: Dict
         """
         self.calibrated_data = None
         self.xfft = xfft

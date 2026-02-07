@@ -1,7 +1,5 @@
 import glob
 import os
-import zoneinfo
-from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -12,6 +10,10 @@ def read_decimated_continuous(
         channel_path: Path,
         file_extension: str
 ):
+    """
+    Helper function to use PhoenixReader to read decimated
+    continuous time series.
+    """
     ## DecimatedContinuousReader
     # Step 1: Get the first file (the earliest sequence)
     channel_path = Path(channel_path)
@@ -43,6 +45,10 @@ def read_decimated_segmented(
         channel_path: Path,
         file_extension: str
 ):
+    """
+    Helper function to use PhoenixReader to read decimated
+    segmented time series.
+    """
     # Step 1: Locate all td_24K files
     channel_path = Path(channel_path)
     files = sorted(glob.glob(os.path.join(channel_path, f"*.{file_extension}")))
