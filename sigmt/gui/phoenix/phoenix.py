@@ -44,7 +44,7 @@ if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
 
 class MainWindow(QMainWindow):
     """
-    Definition of the main window for Metronix processing
+    Definition of the main window for Phoenix processing
 
     """
 

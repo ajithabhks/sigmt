@@ -1,5 +1,5 @@
 """
-Class for the phoenix coil calibration
+Class for the Phoenix coil calibration
 
 """
 from typing import Dict

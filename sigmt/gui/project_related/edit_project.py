@@ -36,7 +36,7 @@ class EditProjectSetupDialog(QDialog):
         # Set combo box selection based on dict key (with fallback to 'Default')
         target_type = self.project_setup.get('target_frequency_table_type', 'Default')
         self.frequency_table_type.setCurrentText(target_type)
-        self.toggle_frequencies_per_decade(text= target_type)
+        self.toggle_frequencies_per_decade(text=target_type)
         self.frequency_table_type.currentTextChanged.connect(self.toggle_frequencies_per_decade)
 
         self.notch_frequency = QLineEdit(self.project_setup['notch_frequency'])

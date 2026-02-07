@@ -479,19 +479,19 @@ def prepare_calibration_data_electric(
         'ex': {},
         'ey': {},
     }
-    calibration_data_electric['ex']['x1'] = abs(
+    calibration_data_electric['ex']['x1'] = np.abs(
         local_recmeta_data['chconfig']['chans']
         [channel_map['E1']]['length1']
     )
-    calibration_data_electric['ex']['x2'] = abs(
+    calibration_data_electric['ex']['x2'] = np.abs(
         local_recmeta_data['chconfig']['chans']
         [channel_map['E1']]['length2']
     )
-    calibration_data_electric['ey']['y1'] = abs(
+    calibration_data_electric['ey']['y1'] = np.abs(
         local_recmeta_data['chconfig']['chans']
         [channel_map['E2']]['length1']
     )
-    calibration_data_electric['ey']['y2'] = abs(
+    calibration_data_electric['ey']['y2'] = np.abs(
         local_recmeta_data['chconfig']['chans']
         [channel_map['E2']]['length2']
     )

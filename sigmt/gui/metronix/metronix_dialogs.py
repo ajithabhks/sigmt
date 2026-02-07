@@ -2,7 +2,8 @@
 The design of all dialog boxes appears from the metronix main window
 """
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QListWidget, QVBoxLayout, QDialogButtonBox, QGroupBox, QHBoxLayout, QLabel, \
+from PyQt5.QtWidgets import QDialog, QListWidget, QVBoxLayout, QDialogButtonBox, QGroupBox, \
+    QHBoxLayout, QLabel, \
     QLineEdit, QComboBox, QGridLayout
 
 
@@ -97,51 +98,66 @@ class LayoutSettingsDialog(QDialog):
         list_of_coils = ['MFS06', 'MFS06e', 'MFS07e']
 
         if 'ex' in self.header[next(iter(self.header))]:
-            self.dipole_north = QLineEdit(str(abs(self.header[next(iter(self.header))]['ex']['x1'][0])))
-            self.dipole_south = QLineEdit(str(abs(self.header[next(iter(self.header))]['ex']['x2'][0])))
+            self.dipole_north = QLineEdit(
+                str(abs(self.header[next(iter(self.header))]['ex']['x1'][0])))
+            self.dipole_south = QLineEdit(
+                str(abs(self.header[next(iter(self.header))]['ex']['x2'][0])))
         if 'ey' in self.header[next(iter(self.header))]:
-            self.dipole_east = QLineEdit(str(abs(self.header[next(iter(self.header))]['ey']['y1'][0])))
-            self.dipole_west = QLineEdit(str(abs(self.header[next(iter(self.header))]['ey']['y2'][0])))
+            self.dipole_east = QLineEdit(
+                str(abs(self.header[next(iter(self.header))]['ey']['y1'][0])))
+            self.dipole_west = QLineEdit(
+                str(abs(self.header[next(iter(self.header))]['ey']['y2'][0])))
         #
         if 'hx' in self.header[next(iter(self.header))]:
             self.coil_hx_type = QComboBox()
             self.coil_hx_type.addItems(list_of_coils)
-            initial_hx_type = str(self.header[next(iter(self.header))]['hx']['sensor']).replace('\x00', '')
+            initial_hx_type = str(self.header[next(iter(self.header))]['hx']['sensor']).replace(
+                '\x00', '')
             if initial_hx_type in list_of_coils:
                 self.coil_hx_type.setCurrentIndex(self.coil_hx_type.findText(initial_hx_type))
-            self.coil_hx = QLineEdit(str(self.header[next(iter(self.header))]['hx']['sensor_no'][0]))
+            self.coil_hx = QLineEdit(
+                str(self.header[next(iter(self.header))]['hx']['sensor_no'][0]))
         #
         if 'hy' in self.header[next(iter(self.header))]:
             self.coil_hy_type = QComboBox()
             self.coil_hy_type.addItems(list_of_coils)
-            initial_hy_type = str(self.header[next(iter(self.header))]['hy']['sensor']).replace('\x00', '')
+            initial_hy_type = str(self.header[next(iter(self.header))]['hy']['sensor']).replace(
+                '\x00', '')
             if initial_hy_type in list_of_coils:
                 self.coil_hy_type.setCurrentIndex(self.coil_hy_type.findText(initial_hy_type))
-            self.coil_hy = QLineEdit(str(self.header[next(iter(self.header))]['hy']['sensor_no'][0]))
+            self.coil_hy = QLineEdit(
+                str(self.header[next(iter(self.header))]['hy']['sensor_no'][0]))
         #
         if 'hz' in self.header[next(iter(self.header))]:
             self.coil_hz_type = QComboBox()
             self.coil_hz_type.addItems(list_of_coils)
-            initial_hz_type = str(self.header[next(iter(self.header))]['hz']['sensor']).replace('\x00', '')
+            initial_hz_type = str(self.header[next(iter(self.header))]['hz']['sensor']).replace(
+                '\x00', '')
             if initial_hz_type in list_of_coils:
                 self.coil_hz_type.setCurrentIndex(self.coil_hz_type.findText(initial_hz_type))
-            self.coil_hz = QLineEdit(str(self.header[next(iter(self.header))]['hz']['sensor_no'][0]))
+            self.coil_hz = QLineEdit(
+                str(self.header[next(iter(self.header))]['hz']['sensor_no'][0]))
         #
-        if 'rx' in self.header[next(iter(self.header))] and 'ry' in self.header[next(iter(self.header))]:
+        if 'rx' in self.header[next(iter(self.header))] and 'ry' in self.header[
+            next(iter(self.header))]:
             #
             self.coil_rx_type = QComboBox()
             self.coil_rx_type.addItems(list_of_coils)
-            initial_rx_type = str(self.header[next(iter(self.header))]['rx']['sensor']).replace('\x00', '')
+            initial_rx_type = str(self.header[next(iter(self.header))]['rx']['sensor']).replace(
+                '\x00', '')
             if initial_rx_type in list_of_coils:
                 self.coil_rx_type.setCurrentIndex(self.coil_rx_type.findText(initial_rx_type))
-            self.coil_rx = QLineEdit(str(self.header[next(iter(self.header))]['rx']['sensor_no'][0]))
+            self.coil_rx = QLineEdit(
+                str(self.header[next(iter(self.header))]['rx']['sensor_no'][0]))
             #
             self.coil_ry_type = QComboBox()
             self.coil_ry_type.addItems(list_of_coils)
-            initial_ry_type = str(self.header[next(iter(self.header))]['ry']['sensor']).replace('\x00', '')
+            initial_ry_type = str(self.header[next(iter(self.header))]['ry']['sensor']).replace(
+                '\x00', '')
             if initial_ry_type in list_of_coils:
                 self.coil_ry_type.setCurrentIndex(self.coil_ry_type.findText(initial_ry_type))
-            self.coil_ry = QLineEdit(str(self.header[next(iter(self.header))]['ry']['sensor_no'][0]))
+            self.coil_ry = QLineEdit(
+                str(self.header[next(iter(self.header))]['ry']['sensor_no'][0]))
         else:
             self.coil_rx = QLineEdit('None')
             self.coil_ry = QLineEdit('None')
@@ -172,7 +188,8 @@ class LayoutSettingsDialog(QDialog):
             layout.addWidget(QLabel("Coil # Hz:"), 4, 2)
             layout.addWidget(self.coil_hz, 4, 3)
 
-        if 'rx' in self.header[next(iter(self.header))] and 'ry' in self.header[next(iter(self.header))]:
+        if 'rx' in self.header[next(iter(self.header))] and 'ry' in self.header[
+            next(iter(self.header))]:
             layout.addWidget(QLabel("Coil type Rx:"), 5, 0)
             layout.addWidget(self.coil_rx_type, 5, 1)
 

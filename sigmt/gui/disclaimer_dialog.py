@@ -65,8 +65,10 @@ class DisclaimerDialog(QDialog):
         links_row = QHBoxLayout()
         links_row.setSpacing(12)
 
-        github_link = self._make_link_label("SigMT GitHub Page", "https://github.com/ajithabhks/sigmt")
-        issues_link = self._make_link_label("Report an Issue", "https://github.com/ajithabhks/sigmt/issues")
+        github_link = self._make_link_label("SigMT GitHub Page",
+                                            "https://github.com/ajithabhks/sigmt")
+        issues_link = self._make_link_label("Report an Issue",
+                                            "https://github.com/ajithabhks/sigmt/issues")
 
         links_row.addWidget(github_link)
         links_row.addWidget(issues_link)
