@@ -4,7 +4,7 @@
 
 SigMT is an open-source Python package developed for the processing of magnetotelluric (MT) time series data to estimate MT impedance and tipper responses. The package enables data processing with minimal manual intervention by utilizing a Mahalanobis distance–based data selection tool. Final estimation is performed using a robust statistical approach. In addition, SigMT includes noise rejection tools such as coherency thresholding and polarization direction analysis to enhance the reliability of the estimated MT responses. 
 
-The package currently supports Metronix and Phoenix (MTU-5C) time-series formats through a graphical user interface.
+The package currently supports Metronix and Phoenix (MTU-5C) time series formats through a graphical user interface.
 
 ## How to install?
 
