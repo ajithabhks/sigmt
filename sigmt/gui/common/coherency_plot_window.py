@@ -8,7 +8,10 @@ from PyQt5.QtWidgets import (
     QLabel,
     QComboBox,
 )
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg as FigureCanvas,
+    NavigationToolbar2QT as NavigationToolbar,
+)
 from matplotlib.figure import Figure
 
 TF_OPTIONS = {
@@ -82,9 +85,11 @@ class CoherencyPlotWindow(QWidget):
 
         self.figure = Figure(constrained_layout=True)
         self.canvas = FigureCanvas(self.figure)
+        self.toolbar = NavigationToolbar(self.canvas, self)
 
         main_layout = QVBoxLayout()
         main_layout.addLayout(top_layout)
+        main_layout.addWidget(self.toolbar)
         main_layout.addWidget(self.canvas)
         self.setLayout(main_layout)
 
@@ -151,7 +156,6 @@ class CoherencyPlotWindow(QWidget):
                 edgecolors="none",
             )
 
-            ax.set_title(f"{coh_key} ({tf_component})", fontsize=14)
             ax.set_xlabel(f"Real ({tf_component})", fontsize=11)
             ax.set_ylabel(f"Imag ({tf_component})", fontsize=11)
 
