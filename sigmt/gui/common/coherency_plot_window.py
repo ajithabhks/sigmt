@@ -1,10 +1,7 @@
-import sys
+import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
-import matplotlib.pyplot as plt
-
 from PyQt5.QtWidgets import (
-    QApplication,
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -14,18 +11,15 @@ from PyQt5.QtWidgets import (
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
+TF_OPTIONS = {
+    "coh_ex": ["zxy", "zxx"],
+    "coh_ey": ["zyx", "zyy"],
+    "coh_hz": ["tzx", "tzy"],
+}
+
 
 def _get_custom_colormap():
     return plt.cm.viridis
-
-
-def _get_tf_key(coh_keys, index):
-    mapping = {
-        "coh_ex": "zxx",
-        "coh_ey": "zxy",
-        "coh_hz": "tzx",
-    }
-    return mapping[coh_keys[index]]
 
 
 class CoherencyPlotWindow(QWidget):
@@ -64,6 +58,26 @@ class CoherencyPlotWindow(QWidget):
         top_layout = QHBoxLayout()
         top_layout.addWidget(self.freq_label)
         top_layout.addWidget(self.freq_combo)
+
+        self.tf_selectors = {}
+        for coh_key in self.coh_keys:
+            label = QLabel(f"{coh_key}:")
+            combo = QComboBox()
+
+            for tf_key in TF_OPTIONS[coh_key]:
+                if tf_key in dataset:
+                    combo.addItem(tf_key)
+
+            if combo.count() == 0:
+                raise ValueError(f"No valid TF components found in dataset for {coh_key}")
+
+            combo.currentIndexChanged.connect(self.update_plot)
+            self.tf_selectors[coh_key] = combo
+
+            top_layout.addSpacing(12)
+            top_layout.addWidget(label)
+            top_layout.addWidget(combo)
+
         top_layout.addStretch()
 
         self.figure = Figure(constrained_layout=True)
@@ -106,8 +120,6 @@ class CoherencyPlotWindow(QWidget):
 
         ax.set_xlim(xmid - half, xmid + half)
         ax.set_ylim(ymid - half, ymid + half)
-
-        # Square drawing area + equal data scaling
         ax.set_box_aspect(1)
         ax.set_aspect("equal", adjustable="box")
 
@@ -118,15 +130,15 @@ class CoherencyPlotWindow(QWidget):
         self.figure.clear()
         num_coh = len(self.coh_keys)
 
-        # generous spacing handled by constrained_layout
         axes = self.figure.subplots(1, num_coh, squeeze=False)[0]
 
         for i, ax in enumerate(axes):
-            tf_component = _get_tf_key(self.coh_keys, i)
+            coh_key = self.coh_keys[i]
+            tf_component = self.tf_selectors[coh_key].currentText()
 
             x = data_for_freq[tf_component].real.values
             y = data_for_freq[tf_component].imag.values
-            c = data_for_freq[self.coh_keys[i]].values
+            c = data_for_freq[coh_key].values
 
             sc = ax.scatter(
                 x,
@@ -139,17 +151,15 @@ class CoherencyPlotWindow(QWidget):
                 edgecolors="none",
             )
 
-            ax.set_title(self.coh_keys[i], fontsize=14)
+            ax.set_title(f"{coh_key} ({tf_component})", fontsize=14)
             ax.set_xlabel(f"Real ({tf_component})", fontsize=11)
             ax.set_ylabel(f"Imag ({tf_component})", fontsize=11)
 
             self._set_square_equal(ax, x, y)
 
-            # slimmer colorbar so it doesn't eat the plot area
             cbar = self.figure.colorbar(sc, ax=ax, fraction=0.046, pad=0.04)
-            cbar.set_label(self.coh_keys[i], fontsize=11)
+            cbar.set_label(coh_key, fontsize=11)
 
             ax.grid(True, alpha=0.25)
 
-        self.figure.suptitle(f"Coherency plots for {freq:.6f} Hz", fontsize=16)
         self.canvas.draw()
