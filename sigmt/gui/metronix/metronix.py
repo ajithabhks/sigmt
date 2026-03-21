@@ -27,12 +27,13 @@ from sigmt.core import plots
 from sigmt.core.band_averaging import BandAveraging
 from sigmt.core.robust_estimation import RobustEstimation
 from sigmt.gui.about_dialog import AboutDialog
+from sigmt.gui.common.coherency_plot_window import CoherencyPlotWindow
+from sigmt.gui.common.pd_plot_window import PolarizationDirectionWindow
 from sigmt.gui.edi_merger import EDIMerger
 from sigmt.gui.metronix.metronix_dialogs import LayoutSettingsDialog
 from sigmt.gui.metronix.metronix_dialogs import SelectionDialog
 from sigmt.gui.project_related.create_project import ProjectSetupDialog
 from sigmt.gui.project_related.edit_project import EditProjectSetupDialog
-from sigmt.gui.common.coherency_plot_window import CoherencyPlotWindow
 from sigmt.utils import utils
 from sigmt.utils.edi import edi_ops
 from sigmt.utils.metronix import cal_from_metronix_txt
@@ -320,7 +321,7 @@ class MainWindow(QMainWindow):
         # --- Polarization direction ---
         section5_pd_layout = QHBoxLayout()
         self.pd_plot_button = QPushButton("Check Polarization Direction (PD) Plots")
-        self.pd_plot_button.clicked.connect(self.plot_pd_all)
+        self.pd_plot_button.clicked.connect(self.open_pd_viewer)
         section5_pd_layout.addWidget(self.pd_plot_button)
         section5_pd_layout.addWidget(QLabel("PD Min:"))
         self.pd_min_edit = QLineEdit()
@@ -1274,12 +1275,13 @@ class MainWindow(QMainWindow):
         self.coh_window = CoherencyPlotWindow(self.bandavg_dataset)
         self.coh_window.show()
 
-    def plot_pd_all(self) -> None:
+    def open_pd_viewer(self):
         """
         Plot polarization direction plots for all frequencies
 
         """
-        plots.plot_pd_all(self.bandavg_dataset)
+        self.pd_window = PolarizationDirectionWindow(self.bandavg_dataset)
+        self.pd_window.show()
 
     def apply_coh_thresh(self) -> None:
         """
