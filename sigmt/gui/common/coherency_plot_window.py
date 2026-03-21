@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+import matplotlib
 import numpy as np
 import xarray as xr
 from PyQt5.QtWidgets import (
@@ -21,8 +21,34 @@ TF_OPTIONS = {
 }
 
 
-def _get_custom_colormap():
-    return plt.cm.viridis
+def _get_custom_colormap() -> matplotlib.colors.LinearSegmentedColormap:
+    """
+       Creates and returns a custom colormap for coherency plots
+
+       :return: Custom colormap
+    """
+    color_dictionary = {'red': [(0.0, 0.0, 0.0),
+                                (0.1, 0.5, 0.5),
+                                (0.2, 0.0, 0.0),
+                                (0.4, 0.2, 0.2),
+                                (0.6, 0.0, 0.0),
+                                (0.8, 1.0, 1.0),
+                                (1.0, 1.0, 1.0)],
+                        'green': [(0.0, 0.0, 0.0),
+                                  (0.1, 0.0, 0.0),
+                                  (0.2, 0.0, 0.0),
+                                  (0.4, 1.0, 1.0),
+                                  (0.6, 1.0, 1.0),
+                                  (0.8, 1.0, 1.0),
+                                  (1.0, 0.0, 0.0)],
+                        'blue': [(0.0, 0.0, 0.0),
+                                 (0.1, 0.5, 0.5),
+                                 (0.2, 1.0, 1.0),
+                                 (0.4, 1.0, 1.0),
+                                 (0.6, 0.0, 0.0),
+                                 (0.8, 0.0, 0.0),
+                                 (1.0, 0.0, 0.0)]}
+    return matplotlib.colors.LinearSegmentedColormap('my_colormap', color_dictionary, 256)
 
 
 class CoherencyPlotWindow(QWidget):
