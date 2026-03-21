@@ -63,10 +63,8 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str
     plt.yscale('log')
     if max(ftlist) < 15000 and min(ftlist) > 0.0001:
         plt.xlim((15000, 0.0001))
-    else:
-        plt.xlim((max(ftlist) + 10, min(ftlist) - 10))
-        if min(ftlist) > 0.001:
-            plt.xlim((max(ftlist) + 10, 0.001))
+    elif max(ftlist) < 10 and min(ftlist) > 0.00001:
+        plt.xlim((10, 0.00001))
     ymax_magnitude = int(np.ceil(np.log10(max(np.nanmax(rho_xy), np.nanmax(rho_yx)))))
     ymin_magnitude = int(np.floor(np.log10(min(np.nanmin(rho_xy), np.nanmin(rho_yx)))))
     plt.ylim(10 ** (ymin_magnitude - 2), 10 ** (ymax_magnitude + 2))
@@ -84,11 +82,10 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str
     plt.xscale('log')
     if max(ftlist) < 15000 and min(ftlist) > 0.0001:
         plt.xlim((15000, 0.0001))
-    else:
-        plt.xlim((max(ftlist) + 10, min(ftlist) - 10))
-        if min(ftlist) > 0.001:
-            plt.xlim((max(ftlist) + 10, 0.001))
-    if (np.nanmin(phase_xy) > 0 and np.nanmin(phase_yx) > 0) and (np.nanmax(phase_xy) < 90 and np.nanmax(phase_yx) < 90):
+    elif max(ftlist) < 10 and min(ftlist) > 0.00001:
+        plt.xlim((10, 0.00001))
+    if (np.nanmin(phase_xy) > 0 and np.nanmin(phase_yx) > 0) and (
+            np.nanmax(phase_xy) < 90 and np.nanmax(phase_yx) < 90):
         plt.ylim((0, 90))
         plt.yticks([0, 15, 30, 45, 60, 75, 90])
     else:
@@ -100,7 +97,8 @@ def plot_mt_app_res(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str
     plt.grid(which='both', linestyle='-.', linewidth=0.4)
 
     if save_path:
-        plt.savefig(os.path.join(save_path, f"mt_impedance_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"),
+        plt.savefig(os.path.join(save_path,
+                                 f"mt_impedance_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"),
                     dpi=300)  # Save figure to file
         plt.close()
     else:
@@ -142,10 +140,8 @@ def plot_tipper(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str] = 
     plt.xscale('log')
     if max(ftlist) < 15000 and min(ftlist) > 0.0001:
         plt.xlim((15000, 0.0001))
-    else:
-        plt.xlim((max(ftlist) + 10, min(ftlist) - 10))
-        if min(ftlist) > 0.001:
-            plt.xlim((max(ftlist) + 10, 0.001))
+    elif max(ftlist) < 10 and min(ftlist) > 0.00001:
+        plt.xlim((10, 0.00001))
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Tipper Amplitude')
     plt.grid(which='both', linestyle='-.', linewidth=0.4)
@@ -156,17 +152,16 @@ def plot_tipper(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str] = 
     plt.xscale('log')
     if max(ftlist) < 15000 and min(ftlist) > 0.0001:
         plt.xlim((15000, 0.0001))
-    else:
-        plt.xlim((max(ftlist) + 10, min(ftlist) - 10))
-        if min(ftlist) > 0.001:
-            plt.xlim((max(ftlist) + 10, 0.001))
+    elif max(ftlist) < 10 and min(ftlist) > 0.00001:
+        plt.xlim((10, 0.00001))
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('Tipper Phase')
     plt.grid(which='both', linestyle='-.', linewidth=0.4)
 
     if save_path:
-        plt.savefig(os.path.join(save_path, f"tipper_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"),
-                    dpi=300)  # Save figure to file
+        plt.savefig(
+            os.path.join(save_path, f"tipper_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"),
+            dpi=300)  # Save figure to file
         plt.close()
     else:
         plt.show()
@@ -198,7 +193,7 @@ def plot_coherency(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str]
     if 'coh_hz' in dataset:
         plt.scatter(frequency_values, dataset['coh_hz'].values, c='g', label='Hz')
     plt.xscale('log')
-    plt.xlim((15000, 0.0001))
+    plt.xlim((15000, 0.00001))
     plt.ylim(0, 1)
     # generate tick values for y
     y_ticks = np.arange(0.1, 1.1, 0.1)
@@ -210,7 +205,8 @@ def plot_coherency(dataset: xr.Dataset, procinfo: dict, save_path: Optional[str]
     plt.legend()
 
     if save_path:
-        plt.savefig(os.path.join(save_path, f"predicted_coherency_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"),
+        plt.savefig(os.path.join(save_path,
+                                 f"predicted_coherency_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"),
                     dpi=300)  # Save figure to file
         plt.close()
     else:
@@ -250,7 +246,8 @@ def plot_coherencies_all(dataset: xr.Dataset) -> None:
         if num_coh == 1:
             tf_component = _get_tf_key(coh_keys, 0)
             plt.figure()
-            plt.scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag, c=data_for_freq[coh_keys[0]],
+            plt.scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag,
+                        c=data_for_freq[coh_keys[0]],
                         cmap=custom_colormap,
                         vmin=0, vmax=1)
             plt.colorbar(label=coh_keys[0])  # Add color bar for reference
@@ -261,7 +258,8 @@ def plot_coherencies_all(dataset: xr.Dataset) -> None:
             fig, axes = plt.subplots(1, 2, figsize=(10, 5))
             for i in range(2):
                 tf_component = _get_tf_key(coh_keys, i)
-                sc = axes[i].scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag,
+                sc = axes[i].scatter(data_for_freq[tf_component].real,
+                                     data_for_freq[tf_component].imag,
                                      c=data_for_freq[coh_keys[i]],
                                      cmap=custom_colormap, vmin=0, vmax=1)
                 fig.colorbar(sc, ax=axes[i], label=coh_keys[i])
@@ -273,7 +271,8 @@ def plot_coherencies_all(dataset: xr.Dataset) -> None:
             fig, axes = plt.subplots(1, 3, figsize=(15, 5))  # 3 horizontal subplots
             for i in range(3):
                 tf_component = _get_tf_key(coh_keys, i)
-                sc = axes[i].scatter(data_for_freq[tf_component].real, data_for_freq[tf_component].imag,
+                sc = axes[i].scatter(data_for_freq[tf_component].real,
+                                     data_for_freq[tf_component].imag,
                                      c=data_for_freq[coh_keys[i]],
                                      cmap=custom_colormap, vmin=0, vmax=1)
                 fig.colorbar(sc, ax=axes[i], label=coh_keys[i])

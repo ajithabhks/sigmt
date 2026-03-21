@@ -17,7 +17,7 @@ from sigmt.utils.geomag import read_time_series as geomag_reader
 
 
 def process_data(data_path: str):
-    header, df = geomag_reader.read_geomag_ascii(rf"{data_path}\MS_12_190715060407.TXT")
+    header, df = geomag_reader.read_geomag_ascii(rf"{data_path}\MS_09_180328102757.TXT")
 
     time_series = {
         "run1": {
@@ -73,10 +73,10 @@ def process_data(data_path: str):
             calibrate_electric=True,
             calibrate_magnetic=False,
             calibration_data_electric=calibration_data_electric,
-            fft_length=4096,
+            fft_length=16384,
             parzen_window_radius=0.6,
             target_frequency_table_type="default",
-            frequencies_per_decade=12,
+            frequencies_per_decade=8,
             process_mt=True,
             process_tipper=True,
             remote_reference=False,
@@ -124,7 +124,7 @@ def process_data(data_path: str):
         procinfo=procinfo,
         project_setup=project_setup,
         save_path=data_path,
-        file_name="metronix_local",
+        file_name="geomag2_local",
     )
 
     plots.plot_mt_app_res(
@@ -146,7 +146,7 @@ def process_data(data_path: str):
     )
 
 
-class TestMetronixLocal(unittest.TestCase):
+class TestGeoMag2Local(unittest.TestCase):
     def test_geomag_processing(self):
         path = Path(os.environ.get("SIGMT_TEST_DATA", r"D:/MTDATA/geomag2"))
 
