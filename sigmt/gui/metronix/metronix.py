@@ -32,6 +32,7 @@ from sigmt.gui.metronix.metronix_dialogs import LayoutSettingsDialog
 from sigmt.gui.metronix.metronix_dialogs import SelectionDialog
 from sigmt.gui.project_related.create_project import ProjectSetupDialog
 from sigmt.gui.project_related.edit_project import EditProjectSetupDialog
+from sigmt.gui.common.coherency_plot_window import CoherencyPlotWindow
 from sigmt.utils import utils
 from sigmt.utils.edi import edi_ops
 from sigmt.utils.metronix import cal_from_metronix_txt
@@ -299,7 +300,7 @@ class MainWindow(QMainWindow):
         # --- Coherency ---
         section5_coh_layout = QHBoxLayout()
         self.coh_plot_button = QPushButton("Check Coherency Plots")
-        self.coh_plot_button.clicked.connect(self.plot_coh_all)
+        self.coh_plot_button.clicked.connect(self.open_coh_viewer)
         section5_coh_layout.addWidget(self.coh_plot_button)
         section5_coh_layout.addWidget(QLabel("Coherency Threshold"))
         self.coherency_threshold_edit = QLineEdit()
@@ -1262,7 +1263,7 @@ class MainWindow(QMainWindow):
         else:
             QMessageBox.critical(self, "Error", f"Please read time series again!!")
 
-    def plot_coh_all(self) -> None:
+    def open_coh_viewer(self) -> None:
         """
         Plot coherency plots for all frequencies
 
@@ -1270,7 +1271,8 @@ class MainWindow(QMainWindow):
         :rtype: NoneType
 
         """
-        plots.plot_coherencies_all(self.bandavg_dataset)
+        self.coh_window = CoherencyPlotWindow(self.bandavg_dataset)
+        self.coh_window.show()
 
     def plot_pd_all(self) -> None:
         """
