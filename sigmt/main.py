@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QPushButton, QDialog, QVBoxLayout, QLabel
 
+from sigmt.gui.geomag2 import geomag2
 from sigmt.gui.metronix import metronix
 from sigmt.gui.phoenix import phoenix
 
@@ -30,6 +31,7 @@ class Welcome(QDialog):
         super().__init__()
         self.metronix_button = None
         self.phoenix_button = None
+        self.geomag2_button = None
         self.main_window = None
         self.init_ui()
 
@@ -56,14 +58,16 @@ class Welcome(QDialog):
 
         self.metronix_button = QPushButton('Metronix', self)
         self.phoenix_button = QPushButton(' Phoenix (Experimental) ', self)
+        self.geomag2_button = QPushButton(' Geomag2 ', self)
 
         # Prevent default focus / highlight
-        for btn in (self.metronix_button, self.phoenix_button):
+        for btn in (self.metronix_button, self.phoenix_button, self.geomag2_button):
             btn.setFocusPolicy(Qt.NoFocus)
             btn.setAutoDefault(False)
 
         layout.addWidget(self.metronix_button, alignment=Qt.AlignHCenter)
         layout.addWidget(self.phoenix_button, alignment=Qt.AlignHCenter)
+        layout.addWidget(self.geomag2_button, alignment=Qt.AlignHCenter)
 
         layout.addStretch()
 
@@ -71,6 +75,7 @@ class Welcome(QDialog):
 
         self.metronix_button.clicked.connect(self.open_metronix_main_window)
         self.phoenix_button.clicked.connect(self.open_phoenix_main_window)
+        self.geomag2_button.clicked.connect(self.open_geomag2_main_window)
 
     def open_metronix_main_window(self) -> None:
         """
@@ -89,6 +94,16 @@ class Welcome(QDialog):
         :return: None
         """
         self.main_window = phoenix.MainWindow()
+        self.main_window.show()
+        self.close()
+
+    def open_geomag2_main_window(self) -> None:
+        """
+        To open the geomag2 specific main window and close welcome page
+
+        :return: None
+        """
+        self.main_window = geomag2.MainWindow()
         self.main_window.show()
         self.close()
 

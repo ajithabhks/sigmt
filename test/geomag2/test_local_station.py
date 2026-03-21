@@ -13,7 +13,7 @@ from sigmt.core import plots
 from sigmt.core.band_averaging import BandAveraging
 from sigmt.core.robust_estimation import RobustEstimation
 from sigmt.utils.edi import edi_ops
-from sigmt.utils.geomag import read_time_series as geomag_reader
+from sigmt.utils.geomag2 import read_time_series as geomag_reader
 
 
 def process_data(data_path: str):
