@@ -57,6 +57,10 @@ class EDIMerger(QWidget):
         self.plot_data_button.clicked.connect(self.plot_data)
         layout.addWidget(self.plot_data_button)
 
+        self.plot_tipper_data_button = QPushButton("Plot Tipper Data")
+        self.plot_tipper_data_button.clicked.connect(self.plot_data_tipper)
+        layout.addWidget(self.plot_tipper_data_button)
+
         self.save_as_edi_button = QPushButton("Save as EDI")
         self.save_as_edi_button.clicked.connect(self.save_as_edi)
         layout.addWidget(self.save_as_edi_button)
@@ -167,6 +171,76 @@ class EDIMerger(QWidget):
 
         plt.show(block=False)
 
+    def plot_data_tipper(self) -> None:
+        """
+        Plots the data from multiple EDIs
+        """
+        self.fig, self.axs = plt.subplots(2)
+        # Plot the scatter points
+        self.scatter1 = self.axs[0].scatter(
+            self.data['freqs'],
+            self.data['tzx_r'],
+            marker="s",
+            color=self.color1,
+            s=50,
+            picker=True,
+            label='tzx_r'
+        )
+
+        self.scatter2 = self.axs[0].scatter(
+            self.data['freqs'],
+            self.data['tzy_r'],
+            marker="o",
+            color=self.color1,
+            s=50,
+            picker=True,
+            label='tzx_i'
+        )
+
+        self.scatter3 = self.axs[1].scatter(
+            self.data['freqs'],
+            self.data['tzx_i'],
+            marker="s",
+            color=self.color1,
+            s=50,
+            picker=True
+        )
+
+        self.scatter4 = self.axs[1].scatter(
+            self.data['freqs'],
+            self.data['tzy_i'],
+            marker="o",
+            color=self.color1,
+            s=50,
+            picker=True
+        )  # phase yx
+
+        # Store the scatter plots in a list for easy access
+        self.scatter_list = [self.scatter1, self.scatter2, self.scatter3, self.scatter4]
+        # Set log scale for scatter1 and scatter2
+        self.axs[0].set_xscale('log')
+        # self.axs[0].set_yscale('log')
+
+        # Add x-axis and y-axis labels
+        self.axs[0].set_xlabel('Frequency (Hz)')
+        self.axs[0].set_ylabel('Tipper Real')
+
+        self.axs[1].set_xlabel('Frequency (Hz)')
+        self.axs[1].set_ylabel('Tipper Imaginary')
+
+        # Set log scale for x-axis of scatter3 and scatter4
+        self.axs[1].set_xscale('log')
+        self.axs[0].grid(which='both', linestyle='-.', linewidth=0.4)
+        self.axs[1].grid(which='both', linestyle='-.', linewidth=0.4)
+        self.axs[0].invert_xaxis()
+        self.axs[1].invert_xaxis()
+        self.axs[0].legend(loc='upper right', bbox_to_anchor=(1, 1))
+
+        self.fig.canvas.mpl_connect('pick_event', self.on_pick_tipper)
+        self.fig.canvas.mpl_connect('button_press_event', self.on_right_click_tipper)
+
+        plt.show(block=False)
+
     def on_pick(self, event):
         """
         Action for left click
@@ -205,6 +279,44 @@ class EDIMerger(QWidget):
                 # Update the plots
                 self.axs[0].figure.canvas.draw()
 
+    def on_pick_tipper(self, event):
+        """
+        Action for left click
+        """
+        # Get the index of the clicked point
+        index = event.ind[0]
+
+        # Determine which scatter plot was clicked
+        for scatter in self.scatter_list:
+            if event.artist == scatter:
+                # Store initial state for undo
+                self.initial_data = self.data.copy()
+                self.initial_color1 = self.color1.copy()
+
+                # Deleting...
+                self.data = self.data.isel(
+                    frequency=[i for i in range(len(self.data['frequency'])) if i != index])
+                del self.color1[index]
+
+                # Update the scatter plots with the new data
+                self.scatter1.set_offsets(
+                    np.column_stack((self.data['freqs'], self.data['tzx_r'])))
+                self.scatter2.set_offsets(
+                    np.column_stack((self.data['freqs'], self.data['tzy_r'])))
+                self.scatter3.set_offsets(
+                    np.column_stack((self.data['freqs'], self.data['tzx_i'])))
+                self.scatter4.set_offsets(
+                    np.column_stack((self.data['freqs'], self.data['tzy_i'])))
+
+                # Update the colors
+                self.scatter1.set_color(self.color1)
+                self.scatter2.set_color(self.color1)
+                self.scatter3.set_color(self.color1)
+                self.scatter4.set_color(self.color1)
+
+                # Update the plots
+                self.axs[0].figure.canvas.draw()
+
     def on_right_click(self, event):
         """
         Action for right click
@@ -225,12 +337,33 @@ class EDIMerger(QWidget):
             # Update the plots
             self.axs[0].figure.canvas.draw()
 
+    def on_right_click_tipper(self, event):
+        """
+        Action for right click
+        """
+        if event.button == 3:  # Right mouse button click
+            self.data = self.initial_data.copy()
+            self.color1 = self.initial_color1.copy()
+            # Restore original scatter plots
+            self.scatter1.set_offsets(np.column_stack((self.data['freqs'], self.data['tzx_r'])))
+            self.scatter2.set_offsets(np.column_stack((self.data['freqs'], self.data['tzy_r'])))
+            self.scatter3.set_offsets(np.column_stack((self.data['freqs'], self.data['tzx_i'])))
+            self.scatter4.set_offsets(np.column_stack((self.data['freqs'], self.data['tzy_i'])))
+
+            self.scatter1.set_color(self.color1)
+            self.scatter2.set_color(self.color1)
+            self.scatter3.set_color(self.color1)
+            self.scatter4.set_color(self.color1)
+            # Update the plots
+            self.axs[0].figure.canvas.draw()
+
     def save_as_edi(self) -> None:
         """
         Save merged EDI
         """
         data_frame = self.data.to_dataframe().reset_index()
-        data_frame = data_frame.sort_values(by=["frequency"], ascending=False).reset_index(drop=True)
+        data_frame = data_frame.sort_values(by=["frequency"], ascending=False).reset_index(
+            drop=True)
 
         file_formats = "EDI Files (*.edi);;All Files (*)"
         save_path, _ = QFileDialog.getSaveFileName(None, "Save File", "", file_formats)
