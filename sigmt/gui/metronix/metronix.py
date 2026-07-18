@@ -764,6 +764,9 @@ class MainWindow(QMainWindow):
         :rtype: NoneType
 
         """
+        self.fft_length_dropdown.blockSignals(True)
+        self.fft_length_dropdown.clear()
+
         # Reseting some buttons
         self.apply_coh_thresh_button.setText("Apply coherency threshold")
         self.apply_pd_thresh_button.setText("Perform PD thresholding")
@@ -919,6 +922,7 @@ class MainWindow(QMainWindow):
         fftlength = utils.get_fftlength(self.procinfo['nsamples_mostly'])
         # Updating FFT length dropdown
         self.fft_length_dropdown.addItems(self.fft_values)
+        self.fft_length_dropdown.blockSignals(False)
         self.fft_length_dropdown.setCurrentIndex(self.fft_length_dropdown.findText(str(fftlength)))
         # Updating parzen window radius
         parzen_radius = utils.get_parzen(self.procinfo['fs'])

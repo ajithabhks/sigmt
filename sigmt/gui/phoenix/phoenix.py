@@ -750,6 +750,9 @@ class MainWindow(QMainWindow):
         :rtype: NoneType
 
         """
+        self.fft_length_dropdown.blockSignals(True)
+        self.fft_length_dropdown.clear()
+
         # Resetting some buttons
         self.apply_coh_thresh_button.setText("Apply coherency threshold")
         self.apply_pd_thresh_button.setText("Perform PD thresholding")
@@ -881,6 +884,7 @@ class MainWindow(QMainWindow):
         fft_values = [str(v) for v in fft_values if int(v) < self.procinfo["nsamples_mostly"]]
 
         self.fft_length_dropdown.addItems(fft_values)
+        self.fft_length_dropdown.blockSignals(False)
 
         if self.file_type == 'decimated_continuous':
             self.fft_length_dropdown.setCurrentIndex(
