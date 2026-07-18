@@ -27,8 +27,8 @@ from sigmt.core import plots
 from sigmt.core.band_averaging import BandAveraging
 from sigmt.core.robust_estimation import RobustEstimation
 from sigmt.gui.about_dialog import AboutDialog
-from sigmt.gui.phoenix.disclaimer_dialog import DisclaimerDialog
 from sigmt.gui.edi_merger import EDIMerger
+from sigmt.gui.phoenix.disclaimer_dialog import DisclaimerDialog
 from sigmt.gui.project_related.create_project import ProjectSetupDialog
 from sigmt.gui.project_related.edit_project import EditProjectSetupDialog
 from sigmt.utils import utils
@@ -618,8 +618,9 @@ class MainWindow(QMainWindow):
         )
 
         # Find the first valid recording folder
+        # allow anything after the timestamp
         recording_pattern = re.compile(
-            r"^\d+_\d{4}-\d{2}-\d{2}-\d{6}$"
+            r"^\d+_\d{4}-\d{2}-\d{2}-\d{6}(?:_.+)?$"
         )
 
         recording_folders = sorted(
@@ -804,12 +805,12 @@ class MainWindow(QMainWindow):
                 for run in remote_time_series.keys():
                     for channel in remote_time_series[run].keys():
                         remote_time_series[run][channel] = remote_time_series[run][channel][
-                                                           :min_time_series_length]
+                            :min_time_series_length]
 
                 for run in self.time_series.keys():
                     for channel in self.time_series[run].keys():
                         self.time_series[run][channel] = self.time_series[run][channel][
-                                                         :min_time_series_length]
+                            :min_time_series_length]
                     if 'hx' in remote_time_series[run].keys():
                         self.time_series[run]['rx'] = remote_time_series[run]['hx'].copy()
                     if 'hy' in remote_time_series[run].keys():

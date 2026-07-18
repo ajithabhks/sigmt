@@ -33,8 +33,9 @@ def load_sites(project_dir: str) -> List[str]:
     :rtype: List
     """
 
+    # allow anything after the timestamp
     recording_pattern = re.compile(
-        r"^\d+_\d{4}-\d{2}-\d{2}-\d{6}$"
+        r"^\d+_\d{4}-\d{2}-\d{2}-\d{6}(?:_.+)?$"
     )
 
     ts_path = os.path.join(project_dir, "time_series")
