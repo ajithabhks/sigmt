@@ -691,45 +691,58 @@ class MainWindow(QMainWindow):
             local_start_time = self.recmeta_data_local.get('start', None)
             remote_start_time = self.recmeta_data_remote.get('start', None)
 
-            if local_start_time != remote_start_time:
-                QMessageBox.warning(self, 'Warning',
-                                    "Remote reference processing cannot be done as "
-                                    "local and remote start time doesn't match. "
-                                    "Currently, SigMT needs same start time.")
+            local_stop_time = self.recmeta_data_local.get('stop', None)
+            remote_stop_time = self.recmeta_data_remote.get('stop', None)
+
+            overlap_seconds, overlap_hms = phoenix_utils.get_time_overlap(
+                local_start=local_start_time,
+                local_stop=local_stop_time,
+                remote_start=remote_start_time,
+                remote_stop=remote_stop_time,
+            )
+
+            if overlap_seconds > 0:
+                print(f"Overlap: {overlap_hms}")
+            else:
+                print("No overlap")
+
+            if overlap_seconds < 1:
+                QMessageBox.warning(
+                    self,
+                    'Warning',
+                    "Remote reference processing cannot be done as "
+                    f"only {overlap_hms} (hh:mm:ss) overlap is found based on the start and stop "
+                    f"times in recmeta.json."
+                )
+
                 self.remotesite = None
                 self.remotesite_dropdown.setCurrentIndex(0)
                 return
 
+            else:
+                reply = QMessageBox.question(
+                    self,
+                    'Confirm Remote Reference',
+                    f"An overlap of {overlap_hms} (hh:mm:ss) is found based on the start and stop "
+                    f"times in recmeta.json.\n\n"
+                    "Do you want to continue with remote reference processing?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.Yes
+                )
+
+                if reply == QMessageBox.No:
+                    self.remotesite = None
+                    self.remotesite_dropdown.setCurrentIndex(0)
+                    return
+
+            # Here get unique sampling rates in both
             unique_sampling_rates_rr = phoenix_utils.get_sampling_rate_list(
                 recording_path=self.remotesite_path
             )
 
-            unique_combined = sorted(set(unique_samp_values) | set(unique_sampling_rates_rr))
+            verified_sampling_rates = sorted(
+                set(unique_samp_values) | set(unique_sampling_rates_rr))
 
-            verified_sampling_rates = []
-
-            if unique_combined:
-                for sampling_rate in unique_combined:
-                    file_extension = phoenix_utils.sampling_rate_to_extension(
-                        sampling_rate=int(sampling_rate)
-                    )
-
-                    time_stamp = phoenix_utils.return_overlapping_info(
-                        file_extension=file_extension,
-                        local_station_path=self.localsite_path,
-                        remote_station_path=self.remotesite_path,
-                    )
-
-                    if time_stamp:
-                        verified_sampling_rates.append(sampling_rate)
-
-            # If no overlapping found with remote, return to single site mode
-            if not verified_sampling_rates:
-                QMessageBox.warning(self, 'Warning',
-                                    "No overlapping time series found!")
-                self.remotesite = None
-                self.remotesite_dropdown.setCurrentIndex(0)
-                verified_sampling_rates = unique_samp_values
         else:
             self.recmeta_data_remote = None
             self.remote_channel_map = None
@@ -789,6 +802,7 @@ class MainWindow(QMainWindow):
             )
 
             if self.remotesite:
+                # need to fix remote time alignment for this decimated continuous
                 remote_time_series = phoenix_utils.read_decimated_continuous_data(
                     recording_path=self.remotesite_path,
                     channel_map=self.remote_channel_map,
@@ -829,6 +843,58 @@ class MainWindow(QMainWindow):
                     file_extension=self.file_extension
                 )
 
+                overlap_count, _ = phoenix_utils.count_matching_timestamps(
+                    local_ts=self.time_series,
+                    remote_ts=remote_time_series,
+                )
+
+                if overlap_count < 1:
+                    QMessageBox.warning(
+                        self,
+                        "Warning",
+                        "Remote reference processing cannot be performed because "
+                        "no valid time-series overlap was found. This may be due to "
+                        "inconsistent sampling durations."
+                    )
+
+                    self.remotesite = None
+                    self.remotesite_dropdown.setCurrentIndex(0)
+                    return
+
+                reply = QMessageBox.question(
+                    self,
+                    'Confirm Remote Reference',
+                    f"{overlap_count} overlapping decimated segment(s) found "
+                    f"at a sampling frequency of {self.sfreq_selected} Hz.\n\n"
+                    "Do you want to continue with remote reference processing?",
+                    QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.Yes
+                )
+
+                if reply == QMessageBox.No:
+                    self.remotesite = None
+                    self.remotesite_dropdown.setCurrentIndex(0)
+                    return
+
+                try:
+                    self.time_series, remote_time_series = (
+                        phoenix_utils.trim_to_matching_timestamps(
+                            local_ts=self.time_series,
+                            remote_ts=remote_time_series,
+                        )
+                    )
+
+                except ValueError as error:
+                    QMessageBox.warning(
+                        self,
+                        "Remote Reference Error",
+                        f"Remote reference processing cannot continue.\n\n{error}"
+                    )
+
+                    self.remotesite = None
+                    self.remotesite_dropdown.setCurrentIndex(0)
+                    return
+
                 num_remote_segments = len(remote_time_series.keys())
                 num_local_segments = len(self.time_series.keys())
 
@@ -848,20 +914,30 @@ class MainWindow(QMainWindow):
         self.procinfo['fs'] = int(self.sfreq_selected)
 
         # Read calibration data
-        self.calibration_data_electric = phoenix_utils.prepare_calibration_data_electric(
-            local_recmeta_data=self.recmeta_data_local,
-            channel_map=self.local_channel_map
-        )
+        try:
+            self.calibration_data_electric = phoenix_utils.prepare_calibration_data_electric(
+                local_recmeta_data=self.recmeta_data_local,
+                channel_map=self.local_channel_map
+            )
 
-        self.calibration_data_magnetic = phoenix_utils.prepare_calibration_data_magnetic(
-            project_dir=self.project_dir,
-            local_recmeta_data=self.recmeta_data_local,
-            local_channel_map=self.local_channel_map,
-            remote_recmeta_data=self.recmeta_data_remote,
-            remote_channel_map=self.remote_channel_map,
-        )
+            self.calibration_data_magnetic = phoenix_utils.prepare_calibration_data_magnetic(
+                project_dir=self.project_dir,
+                local_recmeta_data=self.recmeta_data_local,
+                local_channel_map=self.local_channel_map,
+                remote_recmeta_data=self.recmeta_data_remote,
+                remote_channel_map=self.remote_channel_map,
+            )
 
-        num_samples = len(next(iter(next(iter(self.time_series.values())).values())))
+        except (ValueError, FileNotFoundError) as error:
+            QMessageBox.warning(
+                self,
+                "Calibration Error",
+                f"{error}\n\nFix the issue and run again."
+            )
+            return
+
+        num_samples = len(next(
+            v for v in next(iter(self.time_series.values())).values() if isinstance(v, np.ndarray)))
 
         QMessageBox.information(
             self,

@@ -287,7 +287,19 @@ def read_decimated_segmented_data(
             )
             for num, list_item in enumerate(segments):
                 run_key = f"run{num}"
-                ts.setdefault(run_key, {})["ex"] = list_item.get("samples")
+                current_timestamp = list_item.get("timestamp")
+                run_data = ts.setdefault(run_key, {})
+                # Check timestamp if it was already set
+                if "timestamp" in run_data:
+                    if run_data["timestamp"] != current_timestamp:
+                        raise ValueError(
+                            f"Timestamp mismatch for {run_key}: "
+                            f"existing={run_data['timestamp']}, "
+                            f"current={current_timestamp}"
+                        )
+                else:
+                    run_data["timestamp"] = current_timestamp
+                run_data["ex"] = list_item.get("samples")
 
     ey_map = channel_map.get('E2', None)
     if ey_map is not None:
@@ -299,7 +311,19 @@ def read_decimated_segmented_data(
             )
             for num, list_item in enumerate(segments):
                 run_key = f"run{num}"
-                ts.setdefault(run_key, {})["ey"] = list_item.get("samples")
+                current_timestamp = list_item.get("timestamp")
+                run_data = ts.setdefault(run_key, {})
+                # Check timestamp if it was already set
+                if "timestamp" in run_data:
+                    if run_data["timestamp"] != current_timestamp:
+                        raise ValueError(
+                            f"Timestamp mismatch for {run_key}: "
+                            f"existing={run_data['timestamp']}, "
+                            f"current={current_timestamp}"
+                        )
+                else:
+                    run_data["timestamp"] = current_timestamp
+                run_data["ey"] = list_item.get("samples")
 
     hx_map = channel_map.get('H1', None)
     if hx_map is not None:
@@ -311,7 +335,19 @@ def read_decimated_segmented_data(
             )
             for num, list_item in enumerate(segments):
                 run_key = f"run{num}"
-                ts.setdefault(run_key, {})["hx"] = list_item.get("samples")
+                current_timestamp = list_item.get("timestamp")
+                run_data = ts.setdefault(run_key, {})
+                # Check timestamp if it was already set
+                if "timestamp" in run_data:
+                    if run_data["timestamp"] != current_timestamp:
+                        raise ValueError(
+                            f"Timestamp mismatch for {run_key}: "
+                            f"existing={run_data['timestamp']}, "
+                            f"current={current_timestamp}"
+                        )
+                else:
+                    run_data["timestamp"] = current_timestamp
+                run_data["hx"] = list_item.get("samples")
 
     hy_map = channel_map.get('H2', None)
     if hy_map is not None:
@@ -323,7 +359,19 @@ def read_decimated_segmented_data(
             )
             for num, list_item in enumerate(segments):
                 run_key = f"run{num}"
-                ts.setdefault(run_key, {})["hy"] = list_item.get("samples")
+                current_timestamp = list_item.get("timestamp")
+                run_data = ts.setdefault(run_key, {})
+                # Check timestamp if it was already set
+                if "timestamp" in run_data:
+                    if run_data["timestamp"] != current_timestamp:
+                        raise ValueError(
+                            f"Timestamp mismatch for {run_key}: "
+                            f"existing={run_data['timestamp']}, "
+                            f"current={current_timestamp}"
+                        )
+                else:
+                    run_data["timestamp"] = current_timestamp
+                run_data["hy"] = list_item.get("samples")
 
     hz_map = channel_map.get('H3', None)
     if hz_map is not None:
@@ -335,7 +383,19 @@ def read_decimated_segmented_data(
             )
             for num, list_item in enumerate(segments):
                 run_key = f"run{num}"
-                ts.setdefault(run_key, {})["hz"] = list_item.get("samples")
+                current_timestamp = list_item.get("timestamp")
+                run_data = ts.setdefault(run_key, {})
+                # Check timestamp if it was already set
+                if "timestamp" in run_data:
+                    if run_data["timestamp"] != current_timestamp:
+                        raise ValueError(
+                            f"Timestamp mismatch for {run_key}: "
+                            f"existing={run_data['timestamp']}, "
+                            f"current={current_timestamp}"
+                        )
+                else:
+                    run_data["timestamp"] = current_timestamp
+                run_data["hz"] = list_item.get("samples")
     return ts
 
 
@@ -563,3 +623,164 @@ def prepare_calibration_data_magnetic(
         )
 
     return calibration_data_magnetic
+
+
+def get_time_overlap(local_start, local_stop, remote_start, remote_stop):
+    """
+    Find overlap between two Unix timestamp ranges.
+
+    Returns:
+        (overlap_seconds, overlap_hms)
+        or
+        (0, "00:00:00") if there is no overlap.
+    """
+    if None in (local_start, local_stop, remote_start, remote_stop):
+        return 0, "00:00:00"
+
+    overlap_start = max(local_start, remote_start)
+    overlap_stop = min(local_stop, remote_stop)
+
+    overlap_seconds = max(0, overlap_stop - overlap_start)
+
+    hours, remainder = divmod(overlap_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    overlap_hms = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+    return overlap_seconds, overlap_hms
+
+
+def count_matching_timestamps(local_ts, remote_ts):
+    local_timestamps = {
+        data.get("timestamp")
+        for data in local_ts.values()
+        if data.get("timestamp") is not None
+    }
+
+    remote_timestamps = {
+        data.get("timestamp")
+        for data in remote_ts.values()
+        if data.get("timestamp") is not None
+    }
+
+    matching_timestamps = local_timestamps & remote_timestamps
+
+    return len(matching_timestamps), matching_timestamps
+
+
+def build_timestamp_map(time_series, name):
+    """Create timestamp -> run data mapping."""
+
+    timestamp_map = {}
+
+    for run_key, run_data in time_series.items():
+        timestamp = run_data.get("timestamp")
+
+        if timestamp is None:
+            raise ValueError(
+                f"{name}: timestamp missing in {run_key}."
+            )
+
+        if timestamp in timestamp_map:
+            raise ValueError(
+                f"{name}: duplicate timestamp {timestamp} found."
+            )
+
+        timestamp_map[timestamp] = run_data
+
+    return timestamp_map
+
+
+def get_array_length(run_data, name, timestamp):
+    """Check that all arrays in a run have the same length."""
+
+    lengths = {}
+
+    for channel, data in run_data.items():
+
+        if channel == "timestamp":
+            continue
+
+        if isinstance(data, np.ndarray):
+            if data.ndim != 1:
+                raise ValueError(
+                    f"{name}: {channel} at timestamp {timestamp} "
+                    f"has invalid shape {data.shape}."
+                )
+
+            lengths[channel] = len(data)
+
+    if not lengths:
+        raise ValueError(
+            f"{name}: no channel arrays found at timestamp {timestamp}."
+        )
+
+    if len(set(lengths.values())) != 1:
+        raise ValueError(
+            f"{name}: inconsistent array lengths at timestamp "
+            f"{timestamp}: {lengths}"
+        )
+
+    return next(iter(lengths.values()))
+
+
+def trim_to_matching_timestamps(local_ts, remote_ts):
+    """
+    Keep only matching timestamps, sort in ascending order,
+    verify local/remote sample counts, and remove timestamp
+    from the final dictionaries.
+    """
+
+    local_map = build_timestamp_map(local_ts, "Local")
+    remote_map = build_timestamp_map(remote_ts, "Remote")
+
+    matching_timestamps = sorted(
+        set(local_map) & set(remote_map)
+    )
+
+    if not matching_timestamps:
+        raise ValueError(
+            "No matching timestamps found between local and remote data."
+        )
+
+    local_trimmed = {}
+    remote_trimmed = {}
+
+    for num, timestamp in enumerate(matching_timestamps):
+
+        local_data = local_map[timestamp]
+        remote_data = remote_map[timestamp]
+
+        local_length = get_array_length(
+            local_data,
+            "Local",
+            timestamp
+        )
+
+        remote_length = get_array_length(
+            remote_data,
+            "Remote",
+            timestamp
+        )
+
+        if local_length != remote_length:
+            raise ValueError(
+                f"Sample count mismatch at timestamp {timestamp}: "
+                f"local={local_length}, remote={remote_length}."
+            )
+
+        run_key = f"run{num}"
+
+        local_trimmed[run_key] = {
+            key: value
+            for key, value in local_data.items()
+            if key != "timestamp"
+        }
+
+        remote_trimmed[run_key] = {
+            key: value
+            for key, value in remote_data.items()
+            if key != "timestamp"
+        }
+
+    return local_trimmed, remote_trimmed
