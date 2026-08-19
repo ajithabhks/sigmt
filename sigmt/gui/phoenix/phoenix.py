@@ -694,6 +694,9 @@ class MainWindow(QMainWindow):
             local_stop_time = self.recmeta_data_local.get('stop', None)
             remote_stop_time = self.recmeta_data_remote.get('stop', None)
 
+            # TODO: check time zone
+            # TODO: check firmware version
+
             overlap_seconds, overlap_hms = phoenix_utils.get_time_overlap(
                 local_start=local_start_time,
                 local_stop=local_stop_time,
@@ -795,7 +798,7 @@ class MainWindow(QMainWindow):
 
         # Reading time series data
         if self.file_type == 'decimated_continuous':
-            self.time_series = phoenix_utils.read_decimated_continuous_data(
+            self.time_series, local_timestamp = phoenix_utils.read_decimated_continuous_data(
                 recording_path=self.localsite_path,
                 channel_map=self.local_channel_map,
                 file_extension=self.file_extension
@@ -803,32 +806,63 @@ class MainWindow(QMainWindow):
 
             if self.remotesite:
                 # need to fix remote time alignment for this decimated continuous
-                remote_time_series = phoenix_utils.read_decimated_continuous_data(
+                remote_time_series, remote_timestamp = phoenix_utils.read_decimated_continuous_data(
                     recording_path=self.remotesite_path,
                     channel_map=self.remote_channel_map,
                     file_extension=self.file_extension
                 )
+
+                try:
+                    self.time_series, remote_time_series = (
+                        phoenix_utils.align_continuous_time_series(
+                            local_ts=self.time_series,
+                            local_timestamp=local_timestamp,
+                            remote_ts=remote_time_series,
+                            remote_timestamp=remote_timestamp,
+                            sampling_rate=int(self.sfreq_selected),
+                        )
+                    )
+                except ValueError:
+                    QMessageBox.warning(
+                        self,
+                        "Warning",
+                        "Remote reference processing cannot be performed because "
+                        "no valid time-series overlap was found. This may be due to "
+                        "inconsistent sampling durations."
+                    )
+
+                    self.remotesite = None
+                    self.remotesite_dropdown.setCurrentIndex(0)
+                    return
+
                 remote_time_series_length = len(
-                    next(iter(remote_time_series.get('run0', {}).values())))
+                    next(iter(remote_time_series.get("run0", {}).values()))
+                )
                 local_time_series_length = len(
-                    next(iter(self.time_series.get('run0', {}).values())))
+                    next(iter(self.time_series.get("run0", {}).values()))
+                )
 
-                min_time_series_length = min(remote_time_series_length, local_time_series_length)
+                if remote_time_series_length != local_time_series_length:
+                    QMessageBox.warning(
+                        self,
+                        "Warning",
+                        "Remote reference processing cannot be performed because "
+                        "the aligned local and remote time series have different lengths."
+                    )
 
-                # Assuming same start time for local and remote station
-                for run in remote_time_series.keys():
-                    for channel in remote_time_series[run].keys():
-                        remote_time_series[run][channel] = remote_time_series[run][channel][
-                            :min_time_series_length]
+                    self.remotesite = None
+                    self.remotesite_dropdown.setCurrentIndex(0)
+                    return
 
-                for run in self.time_series.keys():
-                    for channel in self.time_series[run].keys():
-                        self.time_series[run][channel] = self.time_series[run][channel][
-                            :min_time_series_length]
-                    if 'hx' in remote_time_series[run].keys():
-                        self.time_series[run]['rx'] = remote_time_series[run]['hx'].copy()
-                    if 'hy' in remote_time_series[run].keys():
-                        self.time_series[run]['ry'] = remote_time_series[run]['hy'].copy()
+                for run in self.time_series:
+                    if run not in remote_time_series:
+                        continue
+
+                    if "hx" in remote_time_series[run]:
+                        self.time_series[run]["rx"] = remote_time_series[run]["hx"].copy()
+
+                    if "hy" in remote_time_series[run]:
+                        self.time_series[run]["ry"] = remote_time_series[run]["hy"].copy()
 
         elif self.file_type == 'decimated_segmented':
             self.time_series = phoenix_utils.read_decimated_segmented_data(

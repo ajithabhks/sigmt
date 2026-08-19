@@ -7,9 +7,10 @@ import os
 import pathlib
 import re
 from collections import defaultdict
+from datetime import datetime, timedelta
 from math import ceil
 from pathlib import Path
-from typing import List, Set, Dict, Optional, Any
+from typing import List, Set, Dict, Optional, Any, Tuple
 
 import numpy as np
 
@@ -179,7 +180,7 @@ def read_decimated_continuous_data(
         recording_path: str,
         channel_map: Dict,
         file_extension: str
-) -> Dict:
+) -> Tuple[Dict, Optional[datetime]]:
     """
     Read decimated continuous data.
 
@@ -189,71 +190,58 @@ def read_decimated_continuous_data(
     :type channel_map: Dict
     :param file_extension: File extension of file
     :type file_extension: str
-    :return: Dictionary containing time series data
-    :rtype: Dict
+    :return: Dictionary containing time series data and timestamp
+    :rtype: Tuple
 
     """
     recording_path = pathlib.Path(recording_path)
+
     ts = {
-        'run0': {}
+        "run0": {}
     }
 
-    ex_map = channel_map.get('E1', None)
-    if ex_map is not None:
-        channel_path = recording_path / str(ex_map)
-        if channel_path.exists():
-            ts["run0"]["ex"] = phoenix_readers.read_decimated_continuous(
-                channel_path=channel_path,
-                file_extension=file_extension,
-            )
-        else:
-            print(f"Warning: channel path does not exist: {channel_path}")
+    timestamps = {}
 
-    ey_map = channel_map.get('E2', None)
-    if ey_map is not None:
-        channel_path = recording_path / str(ey_map)
-        if channel_path.exists():
-            ts['run0']['ey'] = phoenix_readers.read_decimated_continuous(
-                channel_path=channel_path,
-                file_extension=file_extension,
-            )
-        else:
-            print(f"Warning: channel path does not exist: {channel_path}")
+    channel_keys = {
+        "E1": "ex",
+        "E2": "ey",
+        "H1": "hx",
+        "H2": "hy",
+        "H3": "hz",
+    }
 
-    hx_map = channel_map.get('H1', None)
-    if hx_map is not None:
-        channel_path = recording_path / str(hx_map)
-        if channel_path.exists():
-            ts['run0']['hx'] = phoenix_readers.read_decimated_continuous(
-                channel_path=channel_path,
-                file_extension=file_extension,
-            )
-        else:
-            print(f"Warning: channel path does not exist: {channel_path}")
+    for map_key, component in channel_keys.items():
+        channel = channel_map.get(map_key)
 
-    hy_map = channel_map.get('H2', None)
-    if hy_map is not None:
-        channel_path = recording_path / str(hy_map)
-        if channel_path.exists():
-            ts['run0']['hy'] = phoenix_readers.read_decimated_continuous(
-                channel_path=channel_path,
-                file_extension=file_extension,
-            )
-        else:
-            print(f"Warning: channel path does not exist: {channel_path}")
+        if channel is None:
+            continue
 
-    hz_map = channel_map.get('H3', None)
-    if hz_map is not None:
-        channel_path = recording_path / str(hz_map)
-        if channel_path.exists():
-            ts['run0']['hz'] = phoenix_readers.read_decimated_continuous(
-                channel_path=channel_path,
-                file_extension=file_extension,
-            )
-        else:
-            print(f"Warning: channel path does not exist: {channel_path}")
+        channel_path = recording_path / str(channel)
 
-    return ts
+        if not channel_path.exists():
+            print(f"Warning: channel path does not exist: {channel_path}")
+            continue
+
+        data, timestamp = phoenix_readers.read_decimated_continuous(
+            channel_path=channel_path,
+            file_extension=file_extension,
+        )
+
+        ts["run0"][component] = data
+        timestamps[component] = timestamp
+
+    if timestamps:
+        unique_timestamps = set(timestamps.values())
+
+        if len(unique_timestamps) != 1:
+            raise ValueError(
+                f"Channel timestamps do not match: {timestamps}"
+            )
+        timestamp = next(iter(unique_timestamps))
+    else:
+        timestamp = None
+
+    return ts, timestamp
 
 
 def read_decimated_segmented_data(
@@ -784,3 +772,69 @@ def trim_to_matching_timestamps(local_ts, remote_ts):
         }
 
     return local_trimmed, remote_trimmed
+
+
+def align_continuous_time_series(
+        local_ts: Dict,
+        local_timestamp: datetime,
+        remote_ts: Dict,
+        remote_timestamp: datetime,
+        sampling_rate: float,
+) -> Tuple[Dict, Dict]:
+    """
+    Trim local and remote time series to their overlapping time interval.
+
+    Assumes all channels within each time series have the same number of samples.
+    Timestamps are datetime objects.
+    """
+    if sampling_rate <= 0:
+        raise ValueError("Sampling rate must be greater than zero.")
+
+    if not local_ts.get("run0") or not remote_ts.get("run0"):
+        raise ValueError("Local or remote time series is empty.")
+
+    local_n = min(len(data) for data in local_ts["run0"].values())
+    remote_n = min(len(data) for data in remote_ts["run0"].values())
+
+    local_end = local_timestamp + timedelta(
+        seconds=local_n / sampling_rate
+    )
+    remote_end = remote_timestamp + timedelta(
+        seconds=remote_n / sampling_rate
+    )
+
+    overlap_start = max(local_timestamp, remote_timestamp)
+    overlap_end = min(local_end, remote_end)
+
+    if overlap_start >= overlap_end:
+        raise ValueError("Local and remote time series do not overlap.")
+
+    local_start_idx = round(
+        (overlap_start - local_timestamp).total_seconds()
+        * sampling_rate
+    )
+
+    remote_start_idx = round(
+        (overlap_start - remote_timestamp).total_seconds()
+        * sampling_rate
+    )
+
+    overlap_n = round(
+        (overlap_end - overlap_start).total_seconds()
+        * sampling_rate
+    )
+
+    if overlap_n <= 0:
+        raise ValueError("No valid samples exist within the overlap.")
+
+    for channel in local_ts["run0"]:
+        local_ts["run0"][channel] = local_ts["run0"][channel][
+            local_start_idx: local_start_idx + overlap_n
+        ]
+
+    for channel in remote_ts["run0"]:
+        remote_ts["run0"][channel] = remote_ts["run0"][channel][
+            remote_start_idx: remote_start_idx + overlap_n
+        ]
+
+    return local_ts, remote_ts

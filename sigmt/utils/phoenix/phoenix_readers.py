@@ -1,5 +1,7 @@
 import glob
 import os
+import pathlib
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -28,6 +30,8 @@ def read_decimated_continuous(
     frag_s = decimated_reader.header_info['frag_period']
     samples_per_file = int(sample_rate * frag_s)
 
+    timestamp = get_timestamp(file_path=pathlib.Path(first_file))
+
     # Step 4: Read continuously until data ends
     all_data = []
     while True:
@@ -38,7 +42,7 @@ def read_decimated_continuous(
 
     ts = np.concatenate(all_data) * 1000  # Convert to mV
 
-    return ts
+    return ts, timestamp
 
 
 def read_decimated_segmented(
@@ -75,3 +79,9 @@ def read_decimated_segmented(
     print(f"Read {len(segments)} segments across {len(files)} files")
 
     return segments
+
+
+def get_timestamp(file_path: Path) -> datetime:
+    """Extract the 32-bit unsigned hex timestamp from a TD filename."""
+    hex_timestamp = file_path.name.split("_")[1]
+    return datetime.fromtimestamp(int(hex_timestamp, 16), tz=timezone.utc)
