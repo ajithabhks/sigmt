@@ -694,8 +694,25 @@ class MainWindow(QMainWindow):
             local_stop_time = self.recmeta_data_local.get('stop', None)
             remote_stop_time = self.recmeta_data_remote.get('stop', None)
 
-            # TODO: check time zone
-            # TODO: check firmware version
+            local_firmware_version = self.recmeta_data_local.get('sw_version', None)
+            remote_firmware_version = self.recmeta_data_remote.get('sw_version', None)
+
+            if not phoenix_utils.is_firmware_compatible(
+                    local_firmware_version=local_firmware_version,
+                    remote_firmware_version=remote_firmware_version
+            ):
+                QMessageBox.warning(
+                    self,
+                    "Firmware Version Mismatch",
+                    "Cannot proceed with the remote reference due to a firmware "
+                    "version mismatch.\n\n"
+                    "The local and remote stations must both be running firmware "
+                    "below v2.0, or both be running firmware v2.0 or later. "
+                    "Using firmware versions from different ranges may cause timing issues."
+                )
+                self.remotesite = None
+                self.remotesite_dropdown.setCurrentIndex(0)
+                return
 
             overlap_seconds, overlap_hms = phoenix_utils.get_time_overlap(
                 local_start=local_start_time,
@@ -784,6 +801,22 @@ class MainWindow(QMainWindow):
         if self.localsite is None:
             QMessageBox.warning(self, 'Warning', "Please choose local and/or remote site.")
             return
+
+        progress_dialog = QProgressDialog(
+            "Reading time series data...\nPlease wait.",
+            None,
+            0,
+            0,
+            self
+        )
+        progress_dialog.setWindowModality(Qt.WindowModal)
+        progress_dialog.setWindowTitle("Please wait")
+        progress_dialog.setCancelButton(None)
+        progress_dialog.setMinimumDuration(0)
+        progress_dialog.show()
+
+        qapp_instance = QApplication.instance()
+        qapp_instance.processEvents()
 
         if int(self.sfreq_selected) > 150:
             self.file_type = 'decimated_segmented'
@@ -1007,6 +1040,9 @@ class MainWindow(QMainWindow):
         self.parzen_radius_entry.setText(str(parzen_radius))
         # Updating MD thresholds
         self.md_threshold_entry.setText(str(1.5))
+
+        progress_dialog.close()
+        qapp_instance.processEvents()
 
     def decimate(self) -> None:
         """

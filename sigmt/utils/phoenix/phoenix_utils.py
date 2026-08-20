@@ -838,3 +838,14 @@ def align_continuous_time_series(
         ]
 
     return local_ts, remote_ts
+
+
+def is_firmware_compatible(
+        local_firmware_version: str,
+        remote_firmware_version: str
+) -> bool:
+    local_major = int(local_firmware_version.lstrip("v").split(".")[0])
+    remote_major = int(remote_firmware_version.lstrip("v").split(".")[0])
+
+    # Allow if both are v2+ or both are below v2
+    return (local_major >= 2) == (remote_major >= 2)
