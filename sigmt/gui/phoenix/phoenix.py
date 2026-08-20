@@ -28,7 +28,6 @@ from sigmt.core.band_averaging import BandAveraging
 from sigmt.core.robust_estimation import RobustEstimation
 from sigmt.gui.about_dialog import AboutDialog
 from sigmt.gui.edi_merger import EDIMerger
-from sigmt.gui.phoenix.disclaimer_dialog import DisclaimerDialog
 from sigmt.gui.project_related.create_project import ProjectSetupDialog
 from sigmt.gui.project_related.edit_project import EditProjectSetupDialog
 from sigmt.utils import utils
@@ -129,7 +128,7 @@ class MainWindow(QMainWindow):
 
         """
         self.setWindowTitle('[No Project Opened] SigMT | A Tool for '
-                            f'Magnetotelluric Data Processing ({self.interface})')
+                            f'Magnetotelluric Data Processing ({self.interface} MTU-5C)')
         self.setWindowIcon(QIcon(r'sigmt\images\sigmt.ico'))
         self.setGeometry(100, 100, 700, 500)
 
@@ -168,24 +167,6 @@ class MainWindow(QMainWindow):
         about_action = QAction("About", self)
         about_action.triggered.connect(self.show_about_dialog)
         about_menu.addAction(about_action)
-
-        disclaimer_menu = self.menubar.addMenu("⚠️ IMPORTANT DISCLAIMER")
-        disclaimer_menu.setProperty("warning", True)
-
-        disclaimer_menu.setStyleSheet("""
-            QMenu {
-                background-color: #fff5f5;
-                color: #842029;
-                font-weight: bold;
-            }
-            QMenu::item:selected {
-                background-color: #f1aeb5;
-            }
-        """)
-
-        disclaimer_action = QAction("Read this BEFORE using Phoenix", self)
-        disclaimer_action.triggered.connect(self.show_disclaimer)
-        disclaimer_menu.addAction(disclaimer_action)
 
         # Central Widget
         central_widget = QWidget(self)
@@ -535,17 +516,6 @@ class MainWindow(QMainWindow):
         """
         self.about_dialog = AboutDialog()
         self.about_dialog.show()
-
-    def show_disclaimer(self):
-        """
-        Opens a dialog box with some message.
-
-        :return: None
-        :rtype: NoneType
-
-        """
-        self.disclaimer_dialog = DisclaimerDialog()
-        self.disclaimer_dialog.show()
 
     def load_sites(self) -> None:
         """
