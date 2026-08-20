@@ -876,19 +876,17 @@ class MainWindow(QMainWindow):
 
                     if len(common_time) == 0:
                         # Continue as local station processing
-                        print("No overlapping time series.")
-                        print("Continuing as local station processing.")
-                        # Write local data to database
-                        ts = f.create_group(f'ts_{num}')
-                        for key in ts_dict.keys():
-                            ts.create_dataset(key, data=ts_dict[key].values)
-                        # Write remote data to database
-                        # Rx
-                        self.header[f'ts_{num}']['rx'] = self.header[f'ts_{num}']['hx']
-                        ts.create_dataset('rx', data=ts_dict['hx'].values)
-                        # Ry
-                        self.header[f'ts_{num}']['ry'] = self.header[f'ts_{num}']['hy']
-                        ts.create_dataset('ry', data=ts_dict['hy'].values)
+                        qapp_instance.processEvents()
+                        progress_dialog.close()
+                        QMessageBox.warning(
+                            self,
+                            "Warning",
+                            "No overlapping time series. "
+                            "\nContinue as local station processing."
+                        )
+                        self.remotesite = None
+                        self.remotesite_dropdown.setCurrentIndex(0)
+                        return
                     else:
                         # Else, use only the overlapping time series
                         ts_dict = {k: v.sel(time=common_time) for k, v in ts_dict.items()}

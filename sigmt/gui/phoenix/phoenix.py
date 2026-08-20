@@ -826,6 +826,8 @@ class MainWindow(QMainWindow):
                         )
                     )
                 except ValueError:
+                    progress_dialog.close()
+                    qapp_instance.processEvents()
                     QMessageBox.warning(
                         self,
                         "Warning",
@@ -846,6 +848,8 @@ class MainWindow(QMainWindow):
                 )
 
                 if remote_time_series_length != local_time_series_length:
+                    progress_dialog.close()
+                    qapp_instance.processEvents()
                     QMessageBox.warning(
                         self,
                         "Warning",
@@ -886,6 +890,8 @@ class MainWindow(QMainWindow):
                 )
 
                 if overlap_count < 1:
+                    progress_dialog.close()
+                    qapp_instance.processEvents()
                     QMessageBox.warning(
                         self,
                         "Warning",
@@ -911,6 +917,8 @@ class MainWindow(QMainWindow):
                 if reply == QMessageBox.No:
                     self.remotesite = None
                     self.remotesite_dropdown.setCurrentIndex(0)
+                    progress_dialog.close()
+                    qapp_instance.processEvents()
                     return
 
                 try:
@@ -922,6 +930,8 @@ class MainWindow(QMainWindow):
                     )
 
                 except ValueError as error:
+                    progress_dialog.close()
+                    qapp_instance.processEvents()
                     QMessageBox.warning(
                         self,
                         "Remote Reference Error",
@@ -966,6 +976,8 @@ class MainWindow(QMainWindow):
             )
 
         except (ValueError, FileNotFoundError) as error:
+            progress_dialog.close()
+            qapp_instance.processEvents()
             QMessageBox.warning(
                 self,
                 "Calibration Error",

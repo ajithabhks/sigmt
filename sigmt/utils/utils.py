@@ -87,10 +87,8 @@ def get_parzen(fs: float) -> float:
     """
     if fs >= 512:
         parzen_radius = 0.25
-    elif fs > 32:
-        parzen_radius = 0.4
     else:  # fs <= 32
-        parzen_radius = 0.9
+        parzen_radius = 0.4
     return parzen_radius
 
 
