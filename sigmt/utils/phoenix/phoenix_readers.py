@@ -2,14 +2,14 @@ import glob
 import os
 import pathlib
 from datetime import datetime, timezone
-from pathlib import Path
+from typing import List
 
 import numpy as np
 from PhoenixGeoPy.Reader import TimeSeries as PhoenixReader
 
 
 def read_decimated_continuous(
-        channel_path: Path,
+        channel_path: pathlib.Path,
         file_extension: str
 ):
     """
@@ -18,7 +18,7 @@ def read_decimated_continuous(
     """
     ## DecimatedContinuousReader
     # Step 1: Get the first file (the earliest sequence)
-    channel_path = Path(channel_path)
+    channel_path = pathlib.Path(channel_path)
     files = sorted(glob.glob(os.path.join(channel_path, f"*.{file_extension}")))
     first_file = files[0]
 
@@ -30,7 +30,9 @@ def read_decimated_continuous(
     frag_s = decimated_reader.header_info['frag_period']
     samples_per_file = int(sample_rate * frag_s)
 
-    timestamp = get_timestamp(file_path=pathlib.Path(first_file))
+    timestamp = get_timestamp_from_filename(
+        file_path=pathlib.Path(first_file)
+    )
 
     # Step 4: Read continuously until data ends
     all_data = []
@@ -46,15 +48,15 @@ def read_decimated_continuous(
 
 
 def read_decimated_segmented(
-        channel_path: Path,
+        channel_path: pathlib.Path,
         file_extension: str
-):
+) -> List:
     """
     Helper function to use PhoenixReader to read decimated
     segmented time series.
     """
     # Step 1: Locate all td_24K files
-    channel_path = Path(channel_path)
+    channel_path = pathlib.Path(channel_path)
     files = sorted(glob.glob(os.path.join(channel_path, f"*.{file_extension}")))
     first_file = files[0]
 
@@ -81,7 +83,16 @@ def read_decimated_segmented(
     return segments
 
 
-def get_timestamp(file_path: Path) -> datetime:
-    """Extract the 32-bit unsigned hex timestamp from a TD filename."""
+def get_timestamp_from_filename(
+        file_path: pathlib.Path
+) -> datetime:
+    """
+        Extract the 32-bit unsigned hex timestamp from a TD filename.
+        :param file_path: File path
+        :type file_path: pathlib.Path
+        :return: time samp as datetime
+        :rtype: datetime
+
+    """
     hex_timestamp = file_path.name.split("_")[1]
     return datetime.fromtimestamp(int(hex_timestamp, 16), tz=timezone.utc)
