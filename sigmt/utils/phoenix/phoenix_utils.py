@@ -676,7 +676,7 @@ def get_array_length(run_data: Dict, name: str, timestamp: int):
     return next(iter(lengths.values()))
 
 
-def trim_to_matching_timestamps(local_ts, remote_ts):
+def trim_to_matching_timestamps(local_ts: Dict, remote_ts: Dict):
     """
         Keep only matching timestamps, sort in ascending order,
         skip runs with mismatched sample counts, and remove
@@ -684,8 +684,14 @@ def trim_to_matching_timestamps(local_ts, remote_ts):
         
     """
 
-    local_map = build_timestamp_map(local_ts, "Local")
-    remote_map = build_timestamp_map(remote_ts, "Remote")
+    local_map = build_timestamp_map(
+        time_series=local_ts,
+        name="Local"
+    )
+    remote_map = build_timestamp_map(
+        time_series=remote_ts,
+        name="Remote"
+    )
 
     matching_timestamps = sorted(
         set(local_map) & set(remote_map)
@@ -707,15 +713,15 @@ def trim_to_matching_timestamps(local_ts, remote_ts):
         remote_data = remote_map[timestamp]
 
         local_length = get_array_length(
-            local_data,
-            "Local",
-            timestamp
+            run_data=local_data,
+            name="Local",
+            timestamp=timestamp,
         )
 
         remote_length = get_array_length(
-            remote_data,
-            "Remote",
-            timestamp
+            run_data=remote_data,
+            name="Remote",
+            timestamp=timestamp,
         )
 
         if local_length != remote_length:
