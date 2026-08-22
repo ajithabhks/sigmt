@@ -6,10 +6,9 @@ import json
 import os
 import pathlib
 import re
-from collections import defaultdict
+from datetime import datetime, timedelta
 from math import ceil
-from pathlib import Path
-from typing import List, Set, Dict, Optional, Any
+from typing import List, Set, Dict, Optional, Any, Tuple
 
 import numpy as np
 
@@ -19,22 +18,24 @@ from sigmt.utils.phoenix import phoenix_readers
 
 def load_sites(project_dir: str) -> List[str]:
     """
-    List valid Phoenix sites found under the `time_series` directory.
+        List valid Phoenix sites found under the `time_series` directory.
 
-    A site is considered valid if:
-    1. It is a directory
-    2. It is not empty
-    3. It contains at least one recording folder matching the pattern:
-       <digits>_YYYY-MM-DD-HHMMSS
+        A site is considered valid if:
+        1. It is a directory
+        2. It is not empty
+        3. It contains at least one recording folder matching the pattern:
+           <digits>_YYYY-MM-DD-HHMMSS
 
-    :param project_dir: Path to the project directory
-    :type project_dir: str
-    :return: List of valid site names
-    :rtype: List
+        :param project_dir: Path to the project directory
+        :type project_dir: str
+        :return: List of valid site names
+        :rtype: List
+
     """
 
+    # allow anything after the timestamp
     recording_pattern = re.compile(
-        r"^\d+_\d{4}-\d{2}-\d{2}-\d{6}$"
+        r"^\d+_\d{4}-\d{2}-\d{2}-\d{6}(?:_.+)?$"
     )
 
     ts_path = os.path.join(project_dir, "time_series")
@@ -73,18 +74,19 @@ def load_sites(project_dir: str) -> List[str]:
 
 def get_sampling_rate_list(recording_path: str) -> List[str]:
     """
-    Return a sorted list of unique sampling rates found in a recording folder.
+        Return a sorted list of unique sampling rates found in a recording folder.
 
-    Mapping:
-        td_24k  -> 24000
-        td_2400 -> 2400
-        td_150  -> 150
-        td_30   -> 30
+        Mapping:
+            td_24k  -> 24000
+            td_2400 -> 2400
+            td_150  -> 150
+            td_30   -> 30
 
-    :param recording_path: Path to the recording folder.
-    :type recording_path: str
-    :return: List of sampling rates
-    :rtype: List
+        :param recording_path: Path to the recording folder.
+        :type recording_path: str
+        :return: List of sampling rates
+        :rtype: List
+
     """
     extension_to_sampling_rate = {
         "td_24k": 24000,
@@ -106,18 +108,19 @@ def get_sampling_rate_list(recording_path: str) -> List[str]:
 
 def sampling_rate_to_extension(sampling_rate: int) -> str:
     """
-    Convert a sampling rate to its corresponding td_* extension.
+        Convert a sampling rate to its corresponding td_* extension.
 
-    Examples:
-        24000 -> "td_24k"
-        2400  -> "td_2400"
-        150   -> "td_150"
-        30    -> "td_30"
+        Examples:
+            24000 -> "td_24k"
+            2400  -> "td_2400"
+            150   -> "td_150"
+            30    -> "td_30"
 
-    :param sampling_rate: Sampling rate
-    :type sampling_rate: int
-    :return: File extension
-    :rtype: str
+        :param sampling_rate: Sampling rate
+        :type sampling_rate: int
+        :return: File extension
+        :rtype: str
+
     """
     sampling_rate_to_extension_map = {
         24000: "td_24k",
@@ -137,21 +140,22 @@ def list_unique_td_extensions(
         subfolders: tuple = ("0", "1", "2", "3", "4"),
 ) -> List[str]:
     """
-    Scan subfolders (0..4) under a Phoenix recording folder and return unique
-    file extensions that start with 'td' (e.g., 'td_24k').
+        Scan subfolders (0..4) under a Phoenix recording folder and return unique
+        file extensions that start with 'td' (e.g., 'td_24k').
 
-    Works even if some subfolders are missing.
+        Works even if some subfolders are missing.
 
-    Example match:
-        "abc.xyz.td_24k" -> extension "td_24k"
-        "data.td_24k"    -> extension "td_24k"
+        Example match:
+            "abc.xyz.td_24k" -> extension "td_24k"
+            "data.td_24k"    -> extension "td_24k"
 
-    :param recording_path: Path to recording path
-    :type recording_path: str
-    :param subfolders: Folders in recording path
-    :type subfolders: tuple
-    :return: List of file extensions
-    :rtype: List
+        :param recording_path: Path to recording path
+        :type recording_path: str
+        :param subfolders: Folders in recording path
+        :type subfolders: tuple
+        :return: List of file extensions
+        :rtype: List
+
     """
     td_exts: Set[str] = set()
 
@@ -177,82 +181,69 @@ def list_unique_td_extensions(
 def read_decimated_continuous_data(
         recording_path: str,
         channel_map: Dict,
-        file_extension: str
-) -> Dict:
+        file_extension: str,
+) -> Tuple[Dict, Optional[datetime]]:
     """
-    Read decimated continuous data.
+        Read decimated continuous data.
 
-    :param recording_path: Path to the recording folder
-    :type recording_path: str
-    :param channel_map: Channel map dict
-    :type channel_map: Dict
-    :param file_extension: File extension of file
-    :type file_extension: str
-    :return: Dictionary containing time series data
-    :rtype: Dict
+        :param recording_path: Path to the recording folder
+        :type recording_path: str
+        :param channel_map: Channel map dict
+        :type channel_map: Dict
+        :param file_extension: File extension of file
+        :type file_extension: str
+        :return: Dictionary containing time series data and timestamp
+        :rtype: Tuple
 
     """
     recording_path = pathlib.Path(recording_path)
+
     ts = {
-        'run0': {}
+        "run0": {}
     }
 
-    ex_map = channel_map.get('E1', None)
-    if ex_map is not None:
-        channel_path = recording_path / str(ex_map)
-        if channel_path.exists():
-            ts["run0"]["ex"] = phoenix_readers.read_decimated_continuous(
-                channel_path=channel_path,
-                file_extension=file_extension,
-            )
-        else:
-            print(f"Warning: channel path does not exist: {channel_path}")
+    timestamps = {}
 
-    ey_map = channel_map.get('E2', None)
-    if ey_map is not None:
-        channel_path = recording_path / str(ey_map)
-        if channel_path.exists():
-            ts['run0']['ey'] = phoenix_readers.read_decimated_continuous(
-                channel_path=channel_path,
-                file_extension=file_extension,
-            )
-        else:
-            print(f"Warning: channel path does not exist: {channel_path}")
+    channel_keys = {
+        "E1": "ex",
+        "E2": "ey",
+        "H1": "hx",
+        "H2": "hy",
+        "H3": "hz",
+    }
 
-    hx_map = channel_map.get('H1', None)
-    if hx_map is not None:
-        channel_path = recording_path / str(hx_map)
-        if channel_path.exists():
-            ts['run0']['hx'] = phoenix_readers.read_decimated_continuous(
-                channel_path=channel_path,
-                file_extension=file_extension,
-            )
-        else:
-            print(f"Warning: channel path does not exist: {channel_path}")
+    for map_key, component in channel_keys.items():
+        channel = channel_map.get(map_key)
 
-    hy_map = channel_map.get('H2', None)
-    if hy_map is not None:
-        channel_path = recording_path / str(hy_map)
-        if channel_path.exists():
-            ts['run0']['hy'] = phoenix_readers.read_decimated_continuous(
-                channel_path=channel_path,
-                file_extension=file_extension,
-            )
-        else:
-            print(f"Warning: channel path does not exist: {channel_path}")
+        if channel is None:
+            continue
 
-    hz_map = channel_map.get('H3', None)
-    if hz_map is not None:
-        channel_path = recording_path / str(hz_map)
-        if channel_path.exists():
-            ts['run0']['hz'] = phoenix_readers.read_decimated_continuous(
-                channel_path=channel_path,
-                file_extension=file_extension,
-            )
-        else:
-            print(f"Warning: channel path does not exist: {channel_path}")
+        channel_path = recording_path / str(channel)
 
-    return ts
+        if not channel_path.exists():
+            print(f"Warning: channel path does not exist: {channel_path}")
+            continue
+
+        data, timestamp = phoenix_readers.read_decimated_continuous(
+            channel_path=channel_path,
+            file_extension=file_extension,
+        )
+
+        ts["run0"][component] = data
+        timestamps[component] = timestamp
+
+    if timestamps:
+        unique_timestamps = set(timestamps.values())
+
+        if len(unique_timestamps) != 1:
+            raise ValueError(
+                f"Channel timestamps do not match: {timestamps}"
+            )
+        timestamp = next(iter(unique_timestamps))
+    else:
+        timestamp = None
+
+    return ts, timestamp
 
 
 def read_decimated_segmented_data(
@@ -261,16 +252,16 @@ def read_decimated_segmented_data(
         file_extension: str,
 ) -> Dict:
     """
-    Read decimated segmented data
+        Read decimated segmented data
 
-    :param recording_path: Path to recordings folder
-    :type recording_path: str
-    :param channel_map: Dict of channel map
-    :type channel_map: dict
-    :param file_extension: File extension
-    :type file_extension: str
-    :return: Dict of time series
-    :rtype: dict
+        :param recording_path: Path to recordings folder
+        :type recording_path: str
+        :param channel_map: Dict of channel map
+        :type channel_map: dict
+        :param file_extension: File extension
+        :type file_extension: str
+        :return: Dict of time series
+        :rtype: dict
 
     """
     recording_path = pathlib.Path(recording_path)
@@ -286,7 +277,19 @@ def read_decimated_segmented_data(
             )
             for num, list_item in enumerate(segments):
                 run_key = f"run{num}"
-                ts.setdefault(run_key, {})["ex"] = list_item.get("samples")
+                current_timestamp = list_item.get("timestamp")
+                run_data = ts.setdefault(run_key, {})
+                # Check timestamp if it was already set
+                if "timestamp" in run_data:
+                    if run_data["timestamp"] != current_timestamp:
+                        raise ValueError(
+                            f"Timestamp mismatch for {run_key}: "
+                            f"existing={run_data['timestamp']}, "
+                            f"current={current_timestamp}"
+                        )
+                else:
+                    run_data["timestamp"] = current_timestamp
+                run_data["ex"] = list_item.get("samples")
 
     ey_map = channel_map.get('E2', None)
     if ey_map is not None:
@@ -298,7 +301,19 @@ def read_decimated_segmented_data(
             )
             for num, list_item in enumerate(segments):
                 run_key = f"run{num}"
-                ts.setdefault(run_key, {})["ey"] = list_item.get("samples")
+                current_timestamp = list_item.get("timestamp")
+                run_data = ts.setdefault(run_key, {})
+                # Check timestamp if it was already set
+                if "timestamp" in run_data:
+                    if run_data["timestamp"] != current_timestamp:
+                        raise ValueError(
+                            f"Timestamp mismatch for {run_key}: "
+                            f"existing={run_data['timestamp']}, "
+                            f"current={current_timestamp}"
+                        )
+                else:
+                    run_data["timestamp"] = current_timestamp
+                run_data["ey"] = list_item.get("samples")
 
     hx_map = channel_map.get('H1', None)
     if hx_map is not None:
@@ -310,7 +325,19 @@ def read_decimated_segmented_data(
             )
             for num, list_item in enumerate(segments):
                 run_key = f"run{num}"
-                ts.setdefault(run_key, {})["hx"] = list_item.get("samples")
+                current_timestamp = list_item.get("timestamp")
+                run_data = ts.setdefault(run_key, {})
+                # Check timestamp if it was already set
+                if "timestamp" in run_data:
+                    if run_data["timestamp"] != current_timestamp:
+                        raise ValueError(
+                            f"Timestamp mismatch for {run_key}: "
+                            f"existing={run_data['timestamp']}, "
+                            f"current={current_timestamp}"
+                        )
+                else:
+                    run_data["timestamp"] = current_timestamp
+                run_data["hx"] = list_item.get("samples")
 
     hy_map = channel_map.get('H2', None)
     if hy_map is not None:
@@ -322,7 +349,19 @@ def read_decimated_segmented_data(
             )
             for num, list_item in enumerate(segments):
                 run_key = f"run{num}"
-                ts.setdefault(run_key, {})["hy"] = list_item.get("samples")
+                current_timestamp = list_item.get("timestamp")
+                run_data = ts.setdefault(run_key, {})
+                # Check timestamp if it was already set
+                if "timestamp" in run_data:
+                    if run_data["timestamp"] != current_timestamp:
+                        raise ValueError(
+                            f"Timestamp mismatch for {run_key}: "
+                            f"existing={run_data['timestamp']}, "
+                            f"current={current_timestamp}"
+                        )
+                else:
+                    run_data["timestamp"] = current_timestamp
+                run_data["hy"] = list_item.get("samples")
 
     hz_map = channel_map.get('H3', None)
     if hz_map is not None:
@@ -334,7 +373,19 @@ def read_decimated_segmented_data(
             )
             for num, list_item in enumerate(segments):
                 run_key = f"run{num}"
-                ts.setdefault(run_key, {})["hz"] = list_item.get("samples")
+                current_timestamp = list_item.get("timestamp")
+                run_data = ts.setdefault(run_key, {})
+                # Check timestamp if it was already set
+                if "timestamp" in run_data:
+                    if run_data["timestamp"] != current_timestamp:
+                        raise ValueError(
+                            f"Timestamp mismatch for {run_key}: "
+                            f"existing={run_data['timestamp']}, "
+                            f"current={current_timestamp}"
+                        )
+                else:
+                    run_data["timestamp"] = current_timestamp
+                run_data["hz"] = list_item.get("samples")
     return ts
 
 
@@ -345,18 +396,19 @@ def optimize_time_series_dict(
         max_runs: Optional[int] = 20,
 ) -> Dict:
     """
-    Optimized time series dictionary. It reduces number of runs.
+        Optimized time series dictionary. It reduces number of runs.
 
-    :param time_series_dict: Dictionary of time series
-    :type time_series_dict: dict
-    :param fft_length: FFT Length
-    :type fft_length: int
-    :param overlap: Overlap in percentage
-    :type overlap: int
-    :param max_runs: Number of runs reduced to
-    :type max_runs: int
-    :return: Optimized time series dict
-    :rtype: dict
+        :param time_series_dict: Dictionary of time series
+        :type time_series_dict: dict
+        :param fft_length: FFT Length
+        :type fft_length: int
+        :param overlap: Overlap in percentage
+        :type overlap: int
+        :param max_runs: Number of runs reduced to
+        :type max_runs: int
+        :return: Optimized time series dict
+        :rtype: Dict
+
     """
     print('Optimizing time series dictionary')
 
@@ -401,79 +453,13 @@ def optimize_time_series_dict(
     return reduced_time_series
 
 
-def extract_bbbbbbbb(filename: str) -> str:
-    """
-    Extract time stamp from filename
-    :param filename: filename
-    :type filename: str
-    :return: string
-    :rtype: str
-    """
-    parts = filename.split("_")
-    if len(parts) < 4:
-        return None
-    b = parts[1]
-    if len(b) == 8 and all(c in "0123456789abcdefABCDEF" for c in b):
-        return b.upper()
-    return None
-
-
-def list_files_by_bbbbbbbb_first_existing_channel(
-        base_path: str,
-        file_extension: str,
-        channels: tuple = (0, 1, 2, 3, 4)
-) -> tuple:
-    """
-    Search ONLY the first existing channel folder among 0..4.
-    Returns: (result_dict, chosen_channel or None)
-
-    :param base_path: Path to folder
-    :type base_path: str
-    :param file_extension: File extension
-    :type file_extension: str
-    :param channels: Channels
-    :type channels: tuple
-
-    """
-    suffix = f".{file_extension}" if not file_extension.startswith(".") else file_extension
-    base = Path(base_path)
-
-    for ch in channels:
-        ch_path = base / str(ch)
-        if ch_path.exists() and ch_path.is_dir():
-            result = defaultdict(list)
-            for f in ch_path.glob(f"*{suffix}"):
-                if f.is_file():
-                    b = extract_bbbbbbbb(f.name)
-                    if b:
-                        result[b].append(f)
-            return result, ch
-
-    return defaultdict(list), None
-
-
-def return_overlapping_info(
-        file_extension,
-        local_station_path,
-        remote_station_path,
-        channels=(0, 1, 2, 3, 4)
-):
-    local_map, local_ch = list_files_by_bbbbbbbb_first_existing_channel(local_station_path,
-                                                                        file_extension, channels)
-    remote_map, remote_ch = list_files_by_bbbbbbbb_first_existing_channel(remote_station_path,
-                                                                          file_extension, channels)
-
-    time_stamp = sorted(set(local_map.keys()) & set(remote_map.keys()))
-
-    return time_stamp
-
-
 def prepare_calibration_data_electric(
         local_recmeta_data: Dict,
-        channel_map: Dict
+        channel_map: Dict,
 ) -> Dict:
     """
-    Prepare electric calibration data.
+        Prepare electric calibration data.
+
     """
     calibration_data_electric = {
         'ex': {},
@@ -507,12 +493,12 @@ def prepare_calibration_data_magnetic(
         remote_channel_map: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
-    Prepare magnetic calibration data for Phoenix instrument.
+        Prepare magnetic calibration data for Phoenix instrument.
 
-    Expects calibration files at: <project_dir>/calibration_files/<serial>.json
-    Extracts: data['cal_data'][0]['chan_data'][0]
+        Expects calibration files at: <project_dir>/calibration_files/<serial>.json
+        Extracts: data['cal_data'][0]['chan_data'][0]
+
     """
-
     cal_dir = pathlib.Path(project_dir) / "calibration_files"
 
     def _extract_chan_cal(serial: str) -> Any:
@@ -562,3 +548,299 @@ def prepare_calibration_data_magnetic(
         )
 
     return calibration_data_magnetic
+
+
+def get_time_overlap(
+        local_start: int,
+        local_stop: int,
+        remote_start: int,
+        remote_stop: int,
+):
+    """
+        Find overlap between two Unix timestamp ranges. It is used to
+        compare timing between two station based on the time information
+        from the recmeta.json files.
+
+        Returns:
+            (overlap_seconds, overlap_hms)
+            or
+            (0, "00:00:00") if there is no overlap.
+
+    """
+    if None in (local_start, local_stop, remote_start, remote_stop):
+        return 0, "00:00:00"
+
+    overlap_start = max(local_start, remote_start)
+    overlap_stop = min(local_stop, remote_stop)
+
+    overlap_seconds = max(0, overlap_stop - overlap_start)
+
+    hours, remainder = divmod(overlap_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    overlap_hms = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+    return overlap_seconds, overlap_hms
+
+
+def count_matching_timestamps(
+        local_ts: Dict[str, Dict],
+        remote_ts: Dict[str, Dict],
+) -> Tuple[int, set]:
+    """
+        It gets time stamps from each segmented runs and returns
+        time stamps and count.
+
+        :param local_ts: Local station segmented (all runs) time series
+        :type  local_ts: Dict[str, Dict]
+        :param remote_ts: Remote station segmented (all runs) time series
+        :type  remote_ts: Dict[str, Dict]
+
+    """
+    local_timestamps = {
+        data.get("timestamp")
+        for data in local_ts.values()
+        if data.get("timestamp") is not None
+    }
+
+    remote_timestamps = {
+        data.get("timestamp")
+        for data in remote_ts.values()
+        if data.get("timestamp") is not None
+    }
+
+    matching_timestamps = local_timestamps & remote_timestamps
+
+    return len(matching_timestamps), matching_timestamps
+
+
+def build_timestamp_map(time_series: Dict, name: str) -> Dict:
+    """
+        Make runs as dictionaries with timestamp as key
+
+    """
+
+    timestamp_map = {}
+
+    for run_key, run_data in time_series.items():
+        timestamp = run_data.get("timestamp")
+
+        if timestamp is None:
+            raise ValueError(
+                f"{name}: timestamp missing in {run_key}."
+            )
+
+        if timestamp in timestamp_map:
+            raise ValueError(
+                f"{name}: duplicate timestamp {timestamp} found."
+            )
+
+        timestamp_map[timestamp] = run_data
+
+    return timestamp_map
+
+
+def get_array_length(run_data: Dict, name: str, timestamp: int):
+    """
+        Check that all arrays in a run have the same length.
+
+    """
+
+    lengths = {}
+
+    for channel, data in run_data.items():
+
+        if channel == "timestamp":
+            continue
+
+        if isinstance(data, np.ndarray):
+            if data.ndim != 1:
+                raise ValueError(
+                    f"{name}: {channel} at timestamp {timestamp} "
+                    f"has invalid shape {data.shape}."
+                )
+
+            lengths[channel] = len(data)
+
+    if not lengths:
+        raise ValueError(
+            f"{name}: no channel arrays found at timestamp {timestamp}."
+        )
+
+    if len(set(lengths.values())) != 1:
+        raise ValueError(
+            f"{name}: inconsistent array lengths at timestamp "
+            f"{timestamp}: {lengths}"
+        )
+
+    return next(iter(lengths.values()))
+
+
+def trim_to_matching_timestamps(local_ts: Dict, remote_ts: Dict):
+    """
+        Keep only matching timestamps, sort in ascending order,
+        skip runs with mismatched sample counts, and remove
+        timestamp from the final dictionaries.
+        
+    """
+
+    local_map = build_timestamp_map(
+        time_series=local_ts,
+        name="Local"
+    )
+    remote_map = build_timestamp_map(
+        time_series=remote_ts,
+        name="Remote"
+    )
+
+    matching_timestamps = sorted(
+        set(local_map) & set(remote_map)
+    )
+
+    if not matching_timestamps:
+        raise ValueError(
+            "No matching timestamps found between local and remote data."
+        )
+
+    local_trimmed = {}
+    remote_trimmed = {}
+
+    run_num = 0
+
+    for timestamp in matching_timestamps:
+
+        local_data = local_map[timestamp]
+        remote_data = remote_map[timestamp]
+
+        local_length = get_array_length(
+            run_data=local_data,
+            name="Local",
+            timestamp=timestamp,
+        )
+
+        remote_length = get_array_length(
+            run_data=remote_data,
+            name="Remote",
+            timestamp=timestamp,
+        )
+
+        if local_length != remote_length:
+            print(
+                f"Skipping timestamp {timestamp}: "
+                f"len(local samples)={local_length}, "
+                f"le(remote samples)={remote_length}."
+            )
+            continue
+
+        run_key = f"run{run_num}"
+        run_num += 1
+
+        local_trimmed[run_key] = {
+            key: value
+            for key, value in local_data.items()
+            if key != "timestamp"
+        }
+
+        remote_trimmed[run_key] = {
+            key: value
+            for key, value in remote_data.items()
+            if key != "timestamp"
+        }
+
+    if not local_trimmed:
+        raise ValueError(
+            "No matching timestamps with equal sample counts found."
+        )
+
+    return local_trimmed, remote_trimmed
+
+
+def align_continuous_time_series(
+        local_ts: Dict,
+        local_timestamp: datetime,
+        remote_ts: Dict,
+        remote_timestamp: datetime,
+        sampling_rate: float,
+) -> Tuple[Dict, Dict]:
+    """
+        Trim local and remote continuous time series to their overlapping time.
+
+        Assumes all channels within each time series have the same number of samples.
+        Timestamps are datetime objects.
+
+    """
+    if sampling_rate <= 0:
+        raise ValueError("Sampling rate must be greater than zero.")
+
+    if not local_ts.get("run0") or not remote_ts.get("run0"):
+        raise ValueError("Local or remote time series is empty.")
+
+    local_n = min(len(data) for data in local_ts["run0"].values())
+    remote_n = min(len(data) for data in remote_ts["run0"].values())
+
+    local_end = local_timestamp + timedelta(
+        seconds=local_n / sampling_rate
+    )
+    remote_end = remote_timestamp + timedelta(
+        seconds=remote_n / sampling_rate
+    )
+
+    overlap_start = max(local_timestamp, remote_timestamp)
+    overlap_end = min(local_end, remote_end)
+
+    if overlap_start >= overlap_end:
+        raise ValueError("Local and remote time series do not overlap.")
+
+    local_start_idx = round(
+        (overlap_start - local_timestamp).total_seconds()
+        * sampling_rate
+    )
+
+    remote_start_idx = round(
+        (overlap_start - remote_timestamp).total_seconds()
+        * sampling_rate
+    )
+
+    overlap_n = round(
+        (overlap_end - overlap_start).total_seconds()
+        * sampling_rate
+    )
+
+    if overlap_n <= 0:
+        raise ValueError("No valid samples exist within the overlap.")
+
+    for channel in local_ts["run0"]:
+        local_ts["run0"][channel] = local_ts["run0"][channel][
+            local_start_idx: local_start_idx + overlap_n
+        ]
+
+    for channel in remote_ts["run0"]:
+        remote_ts["run0"][channel] = remote_ts["run0"][channel][
+            remote_start_idx: remote_start_idx + overlap_n
+        ]
+
+    return local_ts, remote_ts
+
+
+def is_firmware_compatible(
+        local_firmware_version: str,
+        remote_firmware_version: str
+) -> bool:
+    """
+        It checks firmware versions in local and remote stations.
+        The Phoenix manual says there were issues with timing with
+        firmware versions v2.0. This is to prevent usage of mixed data.
+
+        :param local_firmware_version: Local station firmware version
+        :type local_firmware_version: str
+        :param remote_firmware_version: Remote station firmware version
+        :type remote_firmware_version: str
+        :return: True or False
+        :rtype: bool
+
+    """
+    local_major = int(local_firmware_version.lstrip("v").split(".")[0])
+    remote_major = int(remote_firmware_version.lstrip("v").split(".")[0])
+
+    # Allow if both are v2+ or both are below v2
+    return (local_major >= 2) == (remote_major >= 2)
